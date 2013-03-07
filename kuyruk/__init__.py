@@ -2,7 +2,9 @@ import sys
 import logging
 import optparse
 
-from task import task
+import pika
+
+from task import Task
 
 logger = logging.getLogger(__name__)
 
@@ -13,18 +15,35 @@ class JobReject(Exception):
 
 class Kuyruk(object):
 
-    def __init__(self, name, num_workers=1, config_path=None, local=False):
-        if local:
-            assert host is None
+    _connection = None
 
-        self.name = name
-        self.config_path = config_path
-        self.num_workers = int(num_workers)
-        assert self.num_workers > 0
-        self.local = local
+    def __init__(self, config={}):
+        self.host = getattr(config, 'RABBIT_HOST', 'localhost')
+        self.port = getattr(config, 'RABBIT_PORT', 5672)
+        self.user = getattr(config, 'RABBIT_USER', 'guest')
+        self.password = getattr(config, 'RABBIT_PASSWORD', 'guest')
 
-        if local:
-            self.name = '%s_%s' % (self.name, socket.gethostname())
+    @property
+    def connected(self):
+        return self._connection and self._connection.is_open
+
+    def _connect(self):
+        assert not self.connected
+        credentials = pika.PlainCredentials(self.user, self.password)
+        parameters = pika.ConnectionParameters(
+            host=self.host, port=self.port, credentials=credentials)
+        self._connection = pika.BlockingConnection(parameters)
+        logger.info('Connected to RabbitMQ')
+
+    @property
+    def connection(self):
+        if not self.connected:
+            self._connect()
+
+        return self._connection
+
+    def task(self, f):
+        return Task(f, self)
 
 
 def main():
