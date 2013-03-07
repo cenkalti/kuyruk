@@ -2,6 +2,8 @@ import sys
 import logging
 import optparse
 
+from task import task
+
 logger = logging.getLogger(__name__)
 
 
