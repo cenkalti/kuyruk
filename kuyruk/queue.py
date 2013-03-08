@@ -51,6 +51,9 @@ class Queue(object):
 
     def receive(self):
         method_frame, header_frame, body = self.channel.basic_get(queue=self.name)
+        if body is None:
+            return None
+
         obj = pickle.loads(body)
         logger.debug('Message received in queue: %s message: %s', self.name, obj)
         return method_frame.delivery_tag, obj
