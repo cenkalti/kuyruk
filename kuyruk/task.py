@@ -13,6 +13,7 @@ class Task(object):
 
     def __call__(self, *args, **kwargs):
         fname = self.f.__module__ + "." + self.f.__name__
+        # print self.f.__file__
         logger.debug('fname: %s', fname)
         if self.kuyruk.eager:
             self.f(*args, **kwargs)

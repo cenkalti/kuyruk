@@ -30,8 +30,16 @@ class Worker(object):
             fname = job['fname']
             args = job['args']
             kwargs = job['kwargs']
+
+            def reverse(s): return s[::-1]
+            func_name, module_name = map(reverse, reverse(fname).split('.', 1))
+            module = __import__(module_name)
+            # module = __import__(module_name, globals(), locals(), [func_name])
+            f = getattr(module, func_name)
+            print f
             self.out_queue.put((tag, Worker.RESULT_OK))
         except Exception:
+            traceback.print_exc()
             self.out_queue.put((tag, Worker.RESULT_ERROR))
 
     def run(self):
