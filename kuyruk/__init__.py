@@ -18,10 +18,11 @@ class Kuyruk(object):
     _connection = None
 
     def __init__(self, config={}):
-        self.host = getattr(config, 'RABBIT_HOST', 'localhost')
-        self.port = getattr(config, 'RABBIT_PORT', 5672)
-        self.user = getattr(config, 'RABBIT_USER', 'guest')
-        self.password = getattr(config, 'RABBIT_PASSWORD', 'guest')
+        self.host = getattr(config, 'KUYRUK_RABBIT_HOST', 'localhost')
+        self.port = getattr(config, 'KUYRUK_RABBIT_PORT', 5672)
+        self.user = getattr(config, 'KUYRUK_RABBIT_USER', 'guest')
+        self.password = getattr(config, 'KUYRUK_RABBIT_PASSWORD', 'guest')
+        self.eager = getattr(config, 'KUYRUK_EAGER', False)
 
     @property
     def connected(self):
