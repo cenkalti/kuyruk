@@ -13,12 +13,24 @@ class Queue(object):
 
     def __init__(self, name, connection):
         self.name = name
-        self.channel = connection.channel()
-        self.channel.queue_declare(queue=self.name, durable=True,
+        self.connection = connection
+        self._channel = None
+
+    @property
+    def channel(self):
+        if self._channel is None:
+            self._channel = self.connection.channel()
+
+        self._channel.queue_declare(queue=self.name, durable=True,
                                    exclusive=False, auto_delete=False)
+        return self._channel
 
     def __len__(self):
         return self.channel.method.message_count
+
+    def close(self):
+        self.channel.close()
+        logger.info('Channel closed')
 
     def delete(self):
         try:

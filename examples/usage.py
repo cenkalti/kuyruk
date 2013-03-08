@@ -1,3 +1,7 @@
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logging.getLogger('pika').level = logging.INFO
+
 from kuyruk import Kuyruk
 import config
 

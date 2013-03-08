@@ -42,6 +42,11 @@ class Kuyruk(object):
 
         return self._connection
 
+    def close(self):
+        if self.connected:
+            self.connection.close()
+            logger.info('Connection closed')
+
     def task(self, f):
         return Task(f, self)
 
