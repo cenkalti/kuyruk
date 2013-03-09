@@ -1,40 +1,44 @@
-from __future__ import absolute_import
-
 import os
-import warnings
-
-from celery.datastructures import DictAttribute
-from celery.exceptions import NotConfigured
-from celery.utils import strtobool
-
-from .base import BaseLoader
-
-DEFAULT_CONFIG_MODULE = 'celeryconfig'
-
-#: Warns if configuration file is missing if :envvar:`C_WNOCONF` is set.
-C_WNOCONF = strtobool(os.environ.get('C_WNOCONF', False))
+import sys
+import importlib
+from contextlib import contextmanager
 
 
-class Loader(BaseLoader):
-    """The loader used by the default app."""
-
-    def setup_settings(self, settingsdict):
-        return DictAttribute(settingsdict)
-
-    def read_configuration(self):
-        """Read configuration from :file:`celeryconfig.py` and configure
-        celery and Django so it can be used by regular Python."""
-        configname = os.environ.get('CELERY_CONFIG_MODULE',
-                                    DEFAULT_CONFIG_MODULE)
+@contextmanager
+def cwd_in_path():
+    cwd = os.getcwd()
+    if cwd in sys.path:
+        yield
+    else:
+        sys.path.insert(0, cwd)
         try:
-            usercfg = self._import_config_module(configname)
-        except ImportError:
-            # billiard sets this if forked using execv
-            if C_WNOCONF and not os.environ.get('FORKED_BY_MULTIPROCESSING'):
-                warnings.warn(NotConfigured(
-                    'No {module} module found! Please make sure it exists and '
-                    'is available to Python.'.format(module=configname)))
-            return self.setup_settings({})
-        else:
-            self.configured = True
-            return self.setup_settings(usercfg)
+            yield cwd
+        finally:
+            try:
+                sys.path.remove(cwd)
+            except ValueError:  # pragma: no cover
+                pass
+
+
+def import_from_cwd(module):
+    with cwd_in_path():
+        return importlib.import_module(module)
+
+
+def import_task_module(module):
+    return import_from_cwd(module)
+
+
+def import_task(fully_qualified_function_name):
+    module_name, func_name = split_function_name(fully_qualified_function_name)
+    module = import_task_module(module_name)
+    return getattr(module, func_name)
+
+
+def split_function_name(name):
+    func_name, module_name = map(reverse_str, reverse_str(name).split('.', 1))
+    return module_name, func_name
+
+
+def reverse_str(s):
+    return s[::-1]

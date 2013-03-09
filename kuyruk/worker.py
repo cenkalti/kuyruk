@@ -6,6 +6,8 @@ import json
 import traceback
 from time import sleep
 
+from kuyruk.loader import import_task
+
 logger = logging.getLogger(__name__)
 
 MAX_LOAD = math.ceil(multiprocessing.cpu_count() * 4)
@@ -31,14 +33,17 @@ class Worker(object):
             args = job['args']
             kwargs = job['kwargs']
 
-            def reverse(s): return s[::-1]
-            func_name, module_name = map(reverse, reverse(fname).split('.', 1))
-            module = __import__(module_name)
-            # module = __import__(module_name, globals(), locals(), [func_name])
-            f = getattr(module, func_name)
-            print f
+            task = import_task(fname)
+            logger.debug(
+                'Task %r will be executed with args=%r and kwargs=%r',
+                task, args, kwargs)
+
+            result = task.f(*args, **kwargs)
+            logger.debug('Result: %r', result)
+
             self.out_queue.put((tag, Worker.RESULT_OK))
         except Exception:
+            print '*' * 80
             traceback.print_exc()
             self.out_queue.put((tag, Worker.RESULT_ERROR))
 
