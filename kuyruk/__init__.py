@@ -1,5 +1,5 @@
-import sys
 import imp
+import time
 import logging
 import optparse
 import multiprocessing
@@ -22,11 +22,13 @@ class Kuyruk(object):
     _connection = None
 
     def __init__(self, config={}):
+        print config
         self.host = getattr(config, 'KUYRUK_RABBIT_HOST', 'localhost')
         self.port = getattr(config, 'KUYRUK_RABBIT_PORT', 5672)
         self.user = getattr(config, 'KUYRUK_RABBIT_USER', 'guest')
         self.password = getattr(config, 'KUYRUK_RABBIT_PASSWORD', 'guest')
         self.eager = getattr(config, 'KUYRUK_EAGER', False)
+        self.max_run_time = getattr(config, 'KUYRUK_MAX_RUN_TIME', None)
 
     @property
     def connected(self):
@@ -55,12 +57,24 @@ class Kuyruk(object):
     def task(self, f):
         return Task(f, self)
 
+    def should_exit(self, start):
+        if self.max_run_time:
+            diff = time.time() - start
+            return diff > self.max_run_time
+
     def run(self, queue):
         rabbit_queue = Queue(queue, self.connection)
         in_queue = multiprocessing.Queue(1)
         out_queue = multiprocessing.Queue(1)
         worker = Worker(in_queue, out_queue)
+        start = time.time()
         while 1:
+            if self.should_exit(start):
+                logger.warning(
+                    'Kuyruk run for %s seconds. Exiting now...',
+                    self.max_run_time)
+                break
+
             job = rabbit_queue.receive()
             if job is None:
                 self.connection.sleep(1)
@@ -77,6 +91,15 @@ class Kuyruk(object):
             }
             actions[result](delivery_tag)
 
+    def __run(self):
+            self.queue.discard()  # mesaj tekrar gelmesin
+
+            # ayri bir kuyruga tekrar atalim dursun,
+            # hatayi duzeltince yeniden deneriz
+            kwargs['queue'] = self.queue_name
+            kwargs['exception'] = traceback.format_exc()
+            Queue('failed').send(kwargs)
+
 
 def main():
     # from worker import Worker
@@ -87,13 +110,15 @@ def main():
 
     parser = optparse.OptionParser()
     parser.add_option('-c', '--config')
+    parser.add_option('-r', '--max-run-time', type='int')
     # parser.add_option('-w', '--workers', type='int')
     # parser.add_option("-l", "--local",
     #                   action="store_true", default=False,
     #                   help="append hostname to queue name")
     # sleep on load
     # max load
-    # max run time
+    # ayri queue
+
     options, args = parser.parse_args()
 
     if not args:
@@ -102,7 +127,10 @@ def main():
     if options.config:
         config = imp.load_source('config', options.config)
     else:
-        config = {}
+        config = imp.new_module('config')
+
+    if options.max_run_time:
+        config.KUYRUK_MAX_RUN_TIME = options.max_run_time
 
     kuyruk = Kuyruk(config=config)
     kuyruk.run(args[0])
@@ -116,3 +144,13 @@ def main():
     # fn = getattr(cls, method)
     # job_handler = create_job_handler(cls, fn)
     # Worker(queue, job_handler, local=options.local).run()
+
+
+
+    # def sleep_on_load(self):
+    #     if self._sleep_on_load:
+    #         load = os.getloadavg()
+    #         if load[1] > MAX_LOAD:
+    #             print 'Sleeping because of load... load:%s max_load:%s' % (load[1], MAX_LOAD)
+    #             sleep(1)
+    #             return True
