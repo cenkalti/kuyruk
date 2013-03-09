@@ -11,9 +11,11 @@ class Task(object):
         self.f = f
         self.kuyruk = kuyruk
 
+    def __repr__(self):
+        return "<Task %s>" % self.fully_qualified_name
+
     def __call__(self, *args, **kwargs):
-        fname = self.f.__module__ + "." + self.f.__name__
-        # print self.f.__file__
+        fname = self.fully_qualified_name
         logger.debug('fname: %s', fname)
         if self.kuyruk.eager:
             self.f(*args, **kwargs)
@@ -21,3 +23,7 @@ class Task(object):
             queue = Queue('kuyruk', self.kuyruk.connection)
             queue.send({'fname': fname, 'args': args, 'kwargs': kwargs})
             queue.close()
+
+    @property
+    def fully_qualified_name(self):
+        return "%s.%s" % (self.f.__module__, self.f.__name__)

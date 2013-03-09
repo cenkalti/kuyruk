@@ -70,10 +70,12 @@ class Kuyruk(object):
             worker.work()
             delivery_tag, result = out_queue.get()
             logger.debug('Worker result: %r', result)
-            if result == Worker.RESULT_OK:
-                rabbit_queue.ack(delivery_tag)
-            else:
-                pass
+            actions = {
+                Worker.RESULT_OK: rabbit_queue.ack,
+                Worker.RESULT_ERROR: rabbit_queue.discard,
+                Worker.RESULT_REJECT: rabbit_queue.reject
+            }
+            actions[result](delivery_tag)
 
 
 def main():

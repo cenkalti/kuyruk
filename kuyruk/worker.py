@@ -18,34 +18,41 @@ class Worker(object):
 
     RESULT_OK = 0
     RESULT_ERROR = 1
-    RESULT_RECECT = 2
+    RESULT_REJECT = 2
 
     def __init__(self, in_queue, out_queue):
         self.in_queue = in_queue
         self.out_queue = out_queue
 
     def work(self):
+        from kuyruk import JobReject
+
         tag, job = self.in_queue.get()
         logger.info('got message: %s', job)
 
         try:
-            fname = job['fname']
-            args = job['args']
-            kwargs = job['kwargs']
-
-            task = import_task(fname)
-            logger.debug(
-                'Task %r will be executed with args=%r and kwargs=%r',
-                task, args, kwargs)
-
-            result = task.f(*args, **kwargs)
-            logger.debug('Result: %r', result)
-
+            self.process_job(job)
             self.out_queue.put((tag, Worker.RESULT_OK))
+        except JobReject:
+            logger.info('Job is rejected')
+            self.out_queue.put((tag, Worker.RESULT_REJECT))
         except Exception:
             print '*' * 80
             traceback.print_exc()
             self.out_queue.put((tag, Worker.RESULT_ERROR))
+
+    def process_job(self, job):
+        fname = job['fname']
+        args = job['args']
+        kwargs = job['kwargs']
+
+        task = import_task(fname)
+        logger.debug(
+            'Task %r will be executed with args=%r and kwargs=%r',
+            task, args, kwargs)
+
+        result = task.f(*args, **kwargs)
+        logger.debug('Result: %r', result)
 
     def run(self):
         try:
