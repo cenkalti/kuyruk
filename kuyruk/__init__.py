@@ -28,6 +28,7 @@ class Kuyruk(object):
         self.password = getattr(config, 'KUYRUK_RABBIT_PASSWORD', 'guest')
         self.eager = getattr(config, 'KUYRUK_EAGER', False)
         self.max_run_time = getattr(config, 'KUYRUK_MAX_RUN_TIME', None)
+        self.exit = False
 
     @property
     def connected(self):
@@ -67,7 +68,7 @@ class Kuyruk(object):
         out_queue = multiprocessing.Queue(1)
         worker = Worker(in_queue, out_queue)
         start = time.time()
-        while 1:
+        while not self.exit:
             if self.should_exit(start):
                 logger.warning(
                     'Kuyruk run for %s seconds. Exiting now...',
