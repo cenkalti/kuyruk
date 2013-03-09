@@ -22,7 +22,6 @@ class Kuyruk(object):
     _connection = None
 
     def __init__(self, config={}):
-        print config
         self.host = getattr(config, 'KUYRUK_RABBIT_HOST', 'localhost')
         self.port = getattr(config, 'KUYRUK_RABBIT_PORT', 5672)
         self.user = getattr(config, 'KUYRUK_RABBIT_USER', 'guest')
