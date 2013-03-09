@@ -32,11 +32,13 @@ class Worker(object):
 
         try:
             self.process_job(job)
+            logger.debug('Job is successful')
             self.out_queue.put((tag, Worker.RESULT_OK))
         except JobReject:
             logger.info('Job is rejected')
             self.out_queue.put((tag, Worker.RESULT_REJECT))
         except Exception:
+            logger.error('Job raised an exception')
             print '*' * 80
             traceback.print_exc()
             self.out_queue.put((tag, Worker.RESULT_ERROR))
