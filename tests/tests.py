@@ -34,12 +34,6 @@ def print_task(message):
 class KuyrukTestCase(unittest.TestCase):
 
     def test_task_decorator(self):
-        kuyruk = Kuyruk()
-
-        @kuyruk.task
-        def print_task(message):
-            print message
-
         self.assertIsInstance(print_task, Task)
 
     def test_simple_task(self):
