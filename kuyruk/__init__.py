@@ -54,8 +54,17 @@ class Kuyruk(object):
             self.connection.close()
             logger.info('Connection closed')
 
-    def task(self, f):
-        return Task(f, self)
+    def task(self, *args, **opts):
+        def inner_create_task_class(**opts):
+            def _create_task_cls(fun):
+                return Task(fun, self)
+            
+            return _create_task_cls
+
+        if len(args) == 1 and callable(args[0]):
+            return inner_create_task_class(**opts)(*args)
+
+        return inner_create_task_class(**opts)
 
     def should_exit(self, start):
         if self.max_run_time:

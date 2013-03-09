@@ -36,6 +36,12 @@ class KuyrukTestCase(unittest.TestCase):
     def test_task_decorator(self):
         self.assertIsInstance(print_task, Task)
 
+        @kuyruk.task(queue='another_queue')
+        def _task():
+            pass
+
+        self.assertIsInstance(_task, Task)
+
     def test_simple_task(self):
         with run_kuyruk(kuyruk):
             print_task('hello world')
