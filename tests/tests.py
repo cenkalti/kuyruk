@@ -1,7 +1,9 @@
 import os
 import sys
+import logging
 import unittest
 import threading
+import traceback
 from time import sleep
 from contextlib import contextmanager
 
@@ -13,12 +15,22 @@ from kuyruk import Kuyruk
 from kuyruk.task import Task
 
 
+def exit_on_excption(f):
+    def inner(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception:
+            traceback.print_exc()
+    return inner
+
+
 @contextmanager
 def run_kuyruk(kuyruk, queue='kuyruk'):
-    thread = threading.Thread(target=kuyruk.run, args=(queue, ))
+    target = exit_on_excption(kuyruk.run)
+    thread = threading.Thread(target=target, args=(queue, ))
     thread.start()
     yield
-    sleep(1)
+    sleep(2)
     kuyruk.exit = True
     thread.join()
 
@@ -50,4 +62,6 @@ class KuyrukTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    logging.getLogger('pika').setLevel(logging.WARNING)
+    logging.basicConfig(level=logging.DEBUG)
     unittest.main()

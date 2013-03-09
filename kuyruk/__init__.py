@@ -54,17 +54,20 @@ class Kuyruk(object):
             self.connection.close()
             logger.info('Connection closed')
 
-    def task(self, *args, **opts):
-        def inner_create_task_class(**opts):
-            def _create_task_cls(fun):
-                return Task(fun, self)
-            
-            return _create_task_cls
+    def task(self, queue='kuyruk'):
+        def decorator():
+            def inner(f):
+                queue_ = 'kuyruk' if callable(queue) else queue
+                return Task(f, self, queue=queue_)
 
-        if len(args) == 1 and callable(args[0]):
-            return inner_create_task_class(**opts)(*args)
+            return inner
 
-        return inner_create_task_class(**opts)
+        if callable(queue):
+            logger.debug('task without args')
+            return decorator()(queue)
+
+        logger.debug('task with args')
+        return decorator()
 
     def should_exit(self, start):
         if self.max_run_time:

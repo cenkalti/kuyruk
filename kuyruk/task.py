@@ -7,9 +7,10 @@ logger = logging.getLogger(__name__)
 
 class Task(object):
 
-    def __init__(self, f, kuyruk):
+    def __init__(self, f, kuyruk, queue='kuyruk'):
         self.f = f
         self.kuyruk = kuyruk
+        self.queue_name = queue
 
     def __repr__(self):
         return "<Task %s>" % self.fully_qualified_name
@@ -20,7 +21,7 @@ class Task(object):
         if self.kuyruk.eager:
             self.f(*args, **kwargs)
         else:
-            queue = Queue('kuyruk', self.kuyruk.connection)
+            queue = Queue(self.queue_name, self.kuyruk.connection)
             queue.send({'fname': fname, 'args': args, 'kwargs': kwargs})
             queue.close()
 
