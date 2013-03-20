@@ -13,7 +13,7 @@ from kuyruk.queue import Queue
 logger = logging.getLogger(__name__)
 
 
-class JobReject(Exception):
+class Reject(Exception):
     pass
 
 

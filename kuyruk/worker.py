@@ -22,7 +22,7 @@ class Worker(object):
         self.out_queue = out_queue
 
     def work(self):
-        from kuyruk import JobReject
+        from kuyruk import Reject
 
         tag, job = self.in_queue.get()
         logger.info('got message: %s', job)
@@ -31,7 +31,7 @@ class Worker(object):
             self.process_job(job)
             logger.debug('Job is successful')
             self.out_queue.put((tag, Worker.RESULT_OK))
-        except JobReject:
+        except Reject:
             logger.info('Job is rejected')
             self.out_queue.put((tag, Worker.RESULT_REJECT))
         except Exception:
