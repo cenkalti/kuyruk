@@ -87,12 +87,12 @@ class Kuyruk(object):
                     self.max_run_time)
                 break
 
-            job = rabbit_queue.receive()
-            if job is None:
+            task_description = rabbit_queue.receive()
+            if task_description is None:
                 self.connection.sleep(1)
                 continue
 
-            in_queue.put(job)
+            in_queue.put(task_description)
             worker.work()
             delivery_tag, result = out_queue.get()
             logger.debug('Worker result: %r', result)

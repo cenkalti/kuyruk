@@ -24,26 +24,26 @@ class Worker(object):
     def work(self):
         from kuyruk import Reject
 
-        tag, job = self.in_queue.get()
-        logger.info('got message: %s', job)
+        tag, task_description = self.in_queue.get()
+        logger.info('got message: %s', task_description)
 
         try:
-            self.process_job(job)
-            logger.debug('Job is successful')
+            self.process_task(task_description)
+            logger.debug('Task is successful')
             self.out_queue.put((tag, Worker.RESULT_OK))
         except Reject:
-            logger.info('Job is rejected')
+            logger.info('Task is rejected')
             self.out_queue.put((tag, Worker.RESULT_REJECT))
         except Exception:
-            logger.error('Job raised an exception')
+            logger.error('Task raised an exception')
             print '*' * 80
             traceback.print_exc()
             self.out_queue.put((tag, Worker.RESULT_ERROR))
 
-    def process_job(self, job):
-        fname = job['fname']
-        args = job['args']
-        kwargs = job['kwargs']
+    def process_task(self, task_description):
+        fname = task_description['fname']
+        args = task_description['args']
+        kwargs = task_description['kwargs']
 
         task = import_task(fname)
         logger.debug(
