@@ -6,9 +6,9 @@ import multiprocessing
 
 import pika
 
-from .task import Task
-from .worker import Worker
-from .queue import Queue
+from kuyruk.task import Task
+from kuyruk.worker import Worker
+from kuyruk.queue import Queue
 
 logger = logging.getLogger(__name__)
 
