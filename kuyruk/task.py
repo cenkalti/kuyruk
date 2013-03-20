@@ -4,6 +4,7 @@ import inspect
 import logging
 
 from kuyruk.queue import Queue
+from kuyruk.loader import import_task
 
 logger = logging.getLogger(__name__)
 
@@ -43,10 +44,5 @@ class Task(object):
             return module_name + '.' + f.__name__
 
     def check_reachable(self, fname, f):
-        from kuyruk.loader import import_task
         imported = import_task(fname)
-        print imported.f
-        print f
-        assert imported.f is f, '%r cannot be reached by name %s' % (
-            f, fname
-        )
+        assert imported.f is f
