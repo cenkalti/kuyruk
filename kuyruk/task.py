@@ -24,7 +24,7 @@ class Task(object):
             self.f(*args, **kwargs)
         else:
             queue = Queue(self.queue_name, self.kuyruk.connection)
-            queue.send({'fname': fname, 'args': args, 'kwargs': kwargs})
+            queue.send({'f': fname, 'args': args, 'kwargs': kwargs})
             queue.close()
 
     @property

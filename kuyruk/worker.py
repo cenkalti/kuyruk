@@ -41,7 +41,7 @@ class Worker(object):
             self.out_queue.put((tag, Worker.RESULT_ERROR))
 
     def process_task(self, task_description):
-        fname = task_description['fname']
+        fname = task_description['f']
         args = task_description['args']
         kwargs = task_description['kwargs']
 
