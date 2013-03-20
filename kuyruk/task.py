@@ -1,10 +1,7 @@
-import os
-import sys
-import inspect
 import logging
 
 from kuyruk.queue import Queue
-from kuyruk.loader import import_task
+from kuyruk import loader
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +18,7 @@ class Task(object):
 
     def __call__(self, *args, **kwargs):
         fname = self.fully_qualified_name
-        self.check_reachable(fname, self.f)
+        assert self.is_reachable(fname, self.f)
         logger.debug('fname: %s', fname)
         if self.kuyruk.eager:
             self.f(*args, **kwargs)
@@ -32,17 +29,8 @@ class Task(object):
 
     @property
     def fully_qualified_name(self):
-        f = self.f
-        module_name = f.__module__
-        if module_name == '__main__':
-            main_module = sys.modules['__main__']
-            filename = os.path.basename(main_module.__file__)
-            module_name = os.path.splitext(filename)[0]
-        if inspect.ismethod(f):
-            return module_name + '.' + f.__self__.__name__ + '.' + f.__name__
-        else:
-            return module_name + '.' + f.__name__
+        return loader.get_fully_qualified_function_name(self.f)
 
-    def check_reachable(self, fname, f):
-        imported = import_task(fname)
-        assert imported.f is f
+    def is_reachable(self, fname, f):
+        imported = loader.import_task(fname)
+        return imported.f is f

@@ -1,7 +1,19 @@
 import os
 import sys
+import inspect
 import importlib
 from contextlib import contextmanager
+
+
+def get_fully_qualified_function_name(f):
+    module_name = f.__module__
+    if module_name == '__main__':
+        module_name = get_main_module()[1]
+
+    if inspect.ismethod(f):
+        return module_name + '.' + f.__self__.__name__ + '.' + f.__name__
+    else:
+        return module_name + '.' + f.__name__
 
 
 def import_task(fully_qualified_function_name):
@@ -17,9 +29,7 @@ def split_function_name(name):
 
 
 def import_task_module(module_name):
-    main_module = sys.modules['__main__']
-    filename = os.path.basename(main_module.__file__)
-    main_module_name = os.path.splitext(filename)[0]
+    main_module, main_module_name = get_main_module()
     if module_name == main_module_name:
         return main_module
     else:
@@ -45,3 +55,10 @@ def cwd_in_path():
                 sys.path.remove(cwd)
             except ValueError:
                 pass
+
+
+def get_main_module():
+    main_module = sys.modules['__main__']
+    filename = os.path.basename(main_module.__file__)
+    module_name = os.path.splitext(filename)[0]
+    return main_module, module_name
