@@ -1,3 +1,5 @@
+import os
+import sys
 import inspect
 import logging
 
@@ -30,10 +32,15 @@ class Task(object):
     @property
     def fully_qualified_name(self):
         f = self.f
+        module_name = f.__module__
+        if module_name == '__main__':
+            main_module = sys.modules['__main__']
+            filename = os.path.basename(main_module.__file__)
+            module_name = os.path.splitext(filename)[0]
         if inspect.ismethod(f):
-            return f.__module__ + '.' + f.__self__.__name__ + '.' + f.__name__
+            return module_name + '.' + f.__self__.__name__ + '.' + f.__name__
         else:
-            return f.__module__ + '.' + f.__name__
+            return module_name + '.' + f.__name__
 
     def check_reachable(self, fname, f):
         from kuyruk.loader import import_task
