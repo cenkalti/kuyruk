@@ -1,7 +1,7 @@
 import logging
 
-from kuyruk.queue import Queue
-from kuyruk import loader
+from .queue import Queue
+from . import loader
 
 logger = logging.getLogger(__name__)
 

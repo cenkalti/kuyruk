@@ -4,7 +4,7 @@ import pickle
 
 import pika
 
-from kuyruk.helpers import retry
+from .helpers import retry
 
 logger = logging.getLogger(__name__)
 

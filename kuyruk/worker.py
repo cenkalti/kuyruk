@@ -3,8 +3,8 @@ import multiprocessing
 import math
 import traceback
 
-from kuyruk.loader import import_task
-from kuyruk.exceptions import Reject
+from . import loader
+from .exceptions import Reject
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class Worker(object):
         args = task_description['args']
         kwargs = task_description['kwargs']
 
-        task = import_task(fname)
+        task = loader.import_task(fname)
         logger.debug(
             'Task %r will be executed with args=%r and kwargs=%r',
             task, args, kwargs)

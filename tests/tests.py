@@ -12,8 +12,7 @@ from contextlib import contextmanager
 TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.realpath(os.path.join(TESTS_ROOT, '..')))
 
-from kuyruk import Kuyruk
-from kuyruk.task import Task
+from kuyruk import Kuyruk, Task
 
 
 def exit_on_excption(f):
