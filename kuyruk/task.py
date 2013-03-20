@@ -18,6 +18,7 @@ class Task(object):
 
     def __call__(self, *args, **kwargs):
         fname = self.fully_qualified_name
+        self.check_reachable(fname, self.f)
         logger.debug('fname: %s', fname)
         if self.kuyruk.eager:
             self.f(*args, **kwargs)
@@ -33,3 +34,12 @@ class Task(object):
             return f.__module__ + '.' + f.__self__.__name__ + '.' + f.__name__
         else:
             return f.__module__ + '.' + f.__name__
+
+    def check_reachable(self, fname, f):
+        from kuyruk.loader import import_task
+        imported = import_task(fname)
+        print imported.f
+        print f
+        assert imported.f is f, '%r cannot be reached by name %s' % (
+            f, fname
+        )
