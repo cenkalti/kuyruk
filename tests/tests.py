@@ -8,7 +8,7 @@ import traceback
 from time import sleep
 from contextlib import contextmanager
 
-# HACK: Prepend ../ to PYTHONPATH so that we can import muhtar form there.
+# HACK: Prepend ../ to PYTHONPATH so that we can import kuyruk form there.
 TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.realpath(os.path.join(TESTS_ROOT, '..')))
 
