@@ -4,6 +4,7 @@ import math
 import traceback
 
 from kuyruk.loader import import_task
+from kuyruk.exceptions import Reject
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +23,6 @@ class Worker(object):
         self.out_queue = out_queue
 
     def work(self):
-        from kuyruk import Reject
-
         tag, task_description = self.in_queue.get()
         logger.info('got message: %s', task_description)
 

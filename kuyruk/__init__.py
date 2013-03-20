@@ -13,10 +13,6 @@ from kuyruk.queue import Queue
 logger = logging.getLogger(__name__)
 
 
-class Reject(Exception):
-    pass
-
-
 class Kuyruk(object):
 
     _connection = None
