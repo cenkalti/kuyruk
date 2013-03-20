@@ -6,13 +6,7 @@ from contextlib import contextmanager
 
 def import_task(fully_qualified_function_name):
     module_name, func_name = split_function_name(fully_qualified_function_name)
-    main_module = sys.modules['__main__']
-    filename = os.path.basename(main_module.__file__)
-    main_module_name = os.path.splitext(filename)[0]
-    if module_name == main_module_name:
-        module = main_module
-    else:
-        module = import_task_module(module_name)
+    module = import_task_module(module_name)
     return getattr(module, func_name)
 
 
@@ -22,8 +16,14 @@ def split_function_name(name):
     return module_name, func_name
 
 
-def import_task_module(module):
-    return import_from_cwd(module)
+def import_task_module(module_name):
+    main_module = sys.modules['__main__']
+    filename = os.path.basename(main_module.__file__)
+    main_module_name = os.path.splitext(filename)[0]
+    if module_name == main_module_name:
+        return main_module
+    else:
+        return import_from_cwd(module_name)
 
 
 def import_from_cwd(module):
