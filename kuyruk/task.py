@@ -1,3 +1,4 @@
+import inspect
 import logging
 
 from kuyruk.queue import Queue
@@ -27,4 +28,8 @@ class Task(object):
 
     @property
     def fully_qualified_name(self):
-        return "%s.%s" % (self.f.__module__, self.f.__name__)
+        f = self.f
+        if inspect.ismethod(f):
+            return f.__module__ + '.' + f.__self__.__name__ + '.' + f.__name__
+        else:
+            return f.__module__ + '.' + f.__name__
