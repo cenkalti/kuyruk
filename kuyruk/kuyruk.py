@@ -70,9 +70,13 @@ class Kuyruk(object):
         if self.max_run_time:
             diff = time.time() - start
             if diff > self.max_run_time:
+                logger.warning(
+                    'Kuyruk run for %s seconds', self.max_run_time)
                 return True
 
         if self.num_tasks >= self.max_tasks:
+            logger.warning(
+                'Kuyruk has processed %s tasks', self.max_tasks)
             return True
 
     def run(self, queue):
@@ -83,13 +87,12 @@ class Kuyruk(object):
         start = time.time()
         while not self.exit:
             if self.should_exit(start):
-                logger.warning(
-                    'Kuyruk run for %s seconds. Exiting now...',
-                    self.max_run_time)
+                logger.warning('Exiting...')
                 break
 
             task_description = rabbit_queue.receive()
             if task_description is None:
+                logger.debug('No tasks. Sleeping 1 second...')
                 self.connection.sleep(1)
                 continue
 
