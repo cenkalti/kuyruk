@@ -46,9 +46,9 @@ class KuyrukTestCase(unittest.TestCase):
 
 
 @contextmanager
-def run_kuyruk(kuyruk, queue='kuyruk'):
+def run_kuyruk(kuyruk):
     target = exit_on_excption(kuyruk.run)
-    thread = threading.Thread(target=target, args=(queue, ))
+    thread = threading.Thread(target=target)
     thread.start()
     yield
     sleep(2)

@@ -18,8 +18,8 @@ class Queue(object):
         if self._channel is None:
             self._channel = self.connection.channel()
 
-        self._channel.queue_declare(queue=self.name, durable=True,
-                                   exclusive=False, auto_delete=False)
+        self._channel.queue_declare(
+            queue=self.name, durable=True, exclusive=False, auto_delete=False)
         return self._channel
 
     def __len__(self):

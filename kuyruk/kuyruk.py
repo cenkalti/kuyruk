@@ -16,6 +16,7 @@ class Kuyruk(object):
     _connection = None
 
     def __init__(self, config={}):
+        self.queue = getattr(config, 'KUYRUK_QUEUE', 'kuyruk')
         self.host = getattr(config, 'KUYRUK_RABBIT_HOST', 'localhost')
         self.port = getattr(config, 'KUYRUK_RABBIT_PORT', 5672)
         self.user = getattr(config, 'KUYRUK_RABBIT_USER', 'guest')
@@ -51,10 +52,16 @@ class Kuyruk(object):
             self.connection.close()
             logger.info('Connection closed')
 
-    def task(self, queue='kuyruk'):
+    def task(self, queue=None):
+        """Wrap functions with this decorator to convert them
+        to background tasks."""
+
+        if queue is None:
+            queue = self.queue
+
         def decorator():
             def inner(f):
-                queue_ = 'kuyruk' if callable(queue) else queue
+                queue_ = self.queue if callable(queue) else queue
                 return Task(f, self, queue=queue_)
 
             return inner
@@ -79,8 +86,8 @@ class Kuyruk(object):
                 'Kuyruk has processed %s tasks', self.max_tasks)
             return True
 
-    def run(self, queue):
-        rabbit_queue = Queue(queue, self.connection)
+    def run(self):
+        rabbit_queue = Queue(self.queue, self.connection)
         in_queue = multiprocessing.Queue(1)
         out_queue = multiprocessing.Queue(1)
         worker = Worker(in_queue, out_queue)
