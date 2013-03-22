@@ -51,7 +51,7 @@ def run_kuyruk(kuyruk):
     thread = threading.Thread(target=target)
     thread.start()
     yield
-    sleep(2)
+    sleep(1)
     kuyruk.exit = True
     thread.join()
 
