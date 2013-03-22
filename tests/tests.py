@@ -15,21 +15,22 @@ sys.path.insert(0, os.path.realpath(os.path.join(TESTS_ROOT, '..')))
 from kuyruk import Kuyruk, Task
 
 kuyruk = Kuyruk()
-called = False
 
 
 @kuyruk.task
 def print_task(message):
-    global called
-    called = True
+    global called1
+    called1 = True
     print message
+called1 = False
 
 
 @kuyruk.task(queue='another_queue')
 def print_task2(message):
-    global called
-    called = True
+    global called2
+    called2 = True
     print message
+called2 = False
 
 
 class KuyrukTestCase(unittest.TestCase):
@@ -42,7 +43,7 @@ class KuyrukTestCase(unittest.TestCase):
         with run_kuyruk(kuyruk):
             print_task('hello world')
 
-        self.assertEqual(called, True)
+        self.assertEqual(called1, True)
 
 
 @contextmanager
