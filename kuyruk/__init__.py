@@ -4,7 +4,6 @@ from .worker import Worker
 from .queue import Queue
 from .exceptions import Reject
 
-# TODO max tasks
 # TODO seperate queue
 # TODO sleep on load
 # TODO local queuee

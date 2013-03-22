@@ -22,7 +22,10 @@ class Kuyruk(object):
         self.password = getattr(config, 'KUYRUK_RABBIT_PASSWORD', 'guest')
         self.eager = getattr(config, 'KUYRUK_EAGER', False)
         self.max_run_time = getattr(config, 'KUYRUK_MAX_RUN_TIME', None)
+        self.max_tasks = getattr(config, 'KUYRUK_MAX_TASKS', None)
+
         self.exit = False
+        self.num_tasks = 0
 
     @property
     def connected(self):
@@ -66,7 +69,11 @@ class Kuyruk(object):
     def should_exit(self, start):
         if self.max_run_time:
             diff = time.time() - start
-            return diff > self.max_run_time
+            if diff > self.max_run_time:
+                return True
+
+        if self.num_tasks >= self.max_tasks:
+            return True
 
     def run(self, queue):
         rabbit_queue = Queue(queue, self.connection)

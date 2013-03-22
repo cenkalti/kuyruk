@@ -12,6 +12,7 @@ def main():
     parser = optparse.OptionParser()
     parser.add_option('-c', '--config')
     parser.add_option('-r', '--max-run-time', type='int')
+    parser.add_option('-t', '--max-tasks', type='int')
     options, args = parser.parse_args()
 
     if not args:
@@ -22,8 +23,11 @@ def main():
     else:
         config = imp.new_module('config')
 
-    if options.max_run_time:
+    if options.max_run_time is not None:
         config.KUYRUK_MAX_RUN_TIME = options.max_run_time
+
+    if options.max_tasks is not None:
+        config.KUYRUK_MAX_TASKS = options.max_tasks
 
     kuyruk = Kuyruk(config=config)
     kuyruk.run(args[0])
