@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.realpath(os.path.join(TESTS_ROOT, '..')))
 from kuyruk import Kuyruk, Task
 
 kuyruk = Kuyruk()
+kuyruk2 = Kuyruk()
 called = False
 
 
@@ -21,7 +22,7 @@ def print_task(message):
     print message
 
 
-@kuyruk.task(queue='another_queue')
+@kuyruk2.task(queue='another_queue')
 def print_task2(message):
     global called
     called = True
@@ -46,6 +47,12 @@ class KuyrukTestCase(unittest.TestCase):
     def test_simple_task(self):
         print_task('hello world')
         run_kuyruk(kuyruk)
+        self.assertEqual(called, True)
+
+    def test_another_queue(self):
+        print_task2('hello world')
+        kuyruk2.queue = 'another_queue'
+        run_kuyruk(kuyruk2)
         self.assertEqual(called, True)
 
 
