@@ -1,10 +1,7 @@
 import logging
-import socket
 import pickle
 
 import pika
-
-from .helpers import retry
 
 logger = logging.getLogger(__name__)
 
