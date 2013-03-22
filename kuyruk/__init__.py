@@ -12,3 +12,4 @@ from .exceptions import Reject
 # TODO seperate queue
 # TODO set kuyruk log level
 # TODO set application log level
+# TODO requeue failed tasks

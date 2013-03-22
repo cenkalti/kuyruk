@@ -96,12 +96,3 @@ class Kuyruk(object):
                 Worker.RESULT_REJECT: rabbit_queue.reject
             }
             actions[result](delivery_tag)
-
-    def __run(self):
-            self.queue.discard()  # mesaj tekrar gelmesin
-
-            # ayri bir kuyruga tekrar atalim dursun,
-            # hatayi duzeltince yeniden deneriz
-            kwargs['queue'] = self.queue_name
-            kwargs['exception'] = traceback.format_exc()
-            Queue('failed').send(kwargs)
