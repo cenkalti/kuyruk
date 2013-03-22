@@ -81,7 +81,7 @@ class Kuyruk(object):
                     'Kuyruk run for %s seconds', self.max_run_time)
                 return True
 
-        if self.num_tasks >= self.max_tasks:
+        if self.num_tasks == self.max_tasks:
             logger.warning(
                 'Kuyruk has processed %s tasks', self.max_tasks)
             return True
