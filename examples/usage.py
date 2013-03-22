@@ -4,5 +4,4 @@ logging.getLogger('pika').level = logging.INFO
 
 from tasks import echo
 
-# runs in background
-echo('hello world')
+echo('hello world')  # runs in background
