@@ -49,8 +49,6 @@ def main():
     # job_handler = create_job_handler(cls, fn)
     # Worker(queue, job_handler, local=options.local).run()
 
-
-
     # def sleep_on_load(self):
     #     if self._sleep_on_load:
     #         load = os.getloadavg()
@@ -58,3 +56,6 @@ def main():
     #             print 'Sleeping because of load... load:%s max_load:%s' % (load[1], MAX_LOAD)
     #             sleep(1)
     #             return True
+
+if __name__ == '__main__':
+    main()
