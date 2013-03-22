@@ -4,6 +4,7 @@ from .worker import Worker
 from .queue import Queue
 from .exceptions import Reject
 
+# TODO max tasks
 # TODO sleep on load
 # TODO model extension
 # TODO set number of workers
