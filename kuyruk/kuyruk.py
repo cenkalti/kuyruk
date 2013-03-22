@@ -1,5 +1,6 @@
 import time
 import logging
+import threading
 import multiprocessing
 
 import pika
@@ -11,11 +12,13 @@ from .queue import Queue
 logger = logging.getLogger(__name__)
 
 
-class Kuyruk(object):
+class Kuyruk(threading.Thread):
 
     _connection = None
 
     def __init__(self, config={}):
+        super(Kuyruk, self).__init__(target=self.run)
+
         self.queue = getattr(config, 'KUYRUK_QUEUE', 'kuyruk')
         self.host = getattr(config, 'KUYRUK_RABBIT_HOST', 'localhost')
         self.port = getattr(config, 'KUYRUK_RABBIT_PORT', 5672)
@@ -25,7 +28,7 @@ class Kuyruk(object):
         self.max_run_time = getattr(config, 'KUYRUK_MAX_RUN_TIME', None)
         self.max_tasks = getattr(config, 'KUYRUK_MAX_TASKS', None)
 
-        self.exit = False
+        self._stop = threading.Event()
         self.num_tasks = 0
 
     @property
@@ -73,30 +76,25 @@ class Kuyruk(object):
         logger.debug('task with args')
         return decorator()
 
-    def should_exit(self, start):
-        if self.max_run_time:
-            diff = time.time() - start
-            if diff > self.max_run_time:
-                logger.warning(
-                    'Kuyruk run for %s seconds', self.max_run_time)
-                return True
+    def _max_run_time(self):
+        if self.max_run_time is not None:
+            passed_seconds = time.time() - self.started
+            if passed_seconds >= self.max_run_time:
+                logger.warning('Kuyruk run for %s seconds', passed_seconds)
+                self.stop()
 
+    def _max_tasks(self):
         if self.num_tasks == self.max_tasks:
-            logger.warning(
-                'Kuyruk has processed %s tasks', self.max_tasks)
-            return True
+            logger.warning('Kuyruk has processed %s tasks', self.max_tasks)
+            self.stop()
 
     def run(self):
         rabbit_queue = Queue(self.queue, self.connection)
         in_queue = multiprocessing.Queue(1)
         out_queue = multiprocessing.Queue(1)
         worker = Worker(in_queue, out_queue)
-        start = time.time()
-        while not self.exit:
-            if self.should_exit(start):
-                logger.warning('Exiting...')
-                break
-
+        self.started = time.time()
+        while not self._stop.isSet():
             task_description = rabbit_queue.receive()
             if task_description is None:
                 logger.debug('No tasks. Sleeping 1 second...')
@@ -113,3 +111,11 @@ class Kuyruk(object):
                 Worker.RESULT_REJECT: rabbit_queue.reject
             }
             actions[result](delivery_tag)
+            self.num_tasks += 1
+
+            self._max_run_time()
+            self._max_tasks()
+
+    def stop(self):
+        logger.warning('Stopping kuyruk...')
+        self._stop.set()

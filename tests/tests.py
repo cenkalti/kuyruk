@@ -3,10 +3,6 @@ import os
 import sys
 import logging
 import unittest
-import threading
-import traceback
-from time import sleep
-from contextlib import contextmanager
 
 # HACK: Prepend ../ to PYTHONPATH so that we can import kuyruk form there.
 TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -32,6 +28,11 @@ def print_task2(message):
     print message
 
 
+def run_kuyruk(kuyruk, max_tasks=1):
+    kuyruk.max_tasks = max_tasks
+    kuyruk.run()
+
+
 class KuyrukTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -43,30 +44,9 @@ class KuyrukTestCase(unittest.TestCase):
         self.assertIsInstance(print_task2, Task)
 
     def test_simple_task(self):
-        with run_kuyruk(kuyruk):
-            print_task('hello world')
-
+        print_task('hello world')
+        run_kuyruk(kuyruk)
         self.assertEqual(called, True)
-
-
-@contextmanager
-def run_kuyruk(kuyruk):
-    target = exit_on_excption(kuyruk.run)
-    thread = threading.Thread(target=target)
-    thread.start()
-    yield
-    sleep(1)
-    kuyruk.exit = True
-    thread.join()
-
-
-def exit_on_excption(f):
-    def inner(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except Exception:
-            traceback.print_exc()
-    return inner
 
 
 if __name__ == '__main__':

@@ -7,7 +7,7 @@ setup(
     install_requires=['pika>=0.9.9'],
     entry_points={
         'console_scripts': [
-            'kuyruk = kuyruk:main'
+            'kuyruk = kuyruk.__main__:main'
         ],
     }
 )

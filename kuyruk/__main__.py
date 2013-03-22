@@ -1,8 +1,12 @@
+import os
 import imp
+import time
 import logging
 import optparse
 
 from kuyruk import Kuyruk
+
+logger = logging.getLogger(__name__)
 
 
 def main():
@@ -16,9 +20,6 @@ def main():
     parser.add_option('-r', '--max-run-time', type='int')
     parser.add_option('-t', '--max-tasks', type='int')
     options, args = parser.parse_args()
-
-    if not args:
-        args = ['kuyruk']
 
     if options.config:
         config = imp.load_source('config', options.config)
@@ -35,7 +36,19 @@ def main():
         config.KUYRUK_MAX_TASKS = options.max_tasks
 
     kuyruk = Kuyruk(config=config)
-    kuyruk.run(args[0])
+    kuyruk.start()
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        logger.warning("Warm shutdown")
+        kuyruk.stop()
+        try:
+            while kuyruk.isAlive():
+                time.sleep(1)
+        except KeyboardInterrupt:
+            logger.critical('Cold shutdown!')
+            os._exit(1)
 
 if __name__ == '__main__':
     main()
