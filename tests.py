@@ -1,14 +1,9 @@
 #!/usr/bin/env python
-import os
-import sys
 import logging
 import unittest
 
-# HACK: Prepend ../ to PYTHONPATH so that we can import kuyruk form there.
-TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, os.path.realpath(os.path.join(TESTS_ROOT, '..')))
-
 from kuyruk import Kuyruk, Task, Queue
+
 
 # This global variable will be checked to determine if the tasks have run.
 called = False
