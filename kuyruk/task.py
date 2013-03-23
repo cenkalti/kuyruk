@@ -12,12 +12,8 @@ class Task(object):
     def __init__(self, f, kuyruk, queue='kuyruk', local=False):
         self.f = f
         self.kuyruk = kuyruk
+        self.queue = queue
         self.local = local
-
-        if local:
-            self.queue_name = "%s_%s" % (queue, socket.gethostname())
-        else:
-            self.queue_name = queue
 
     def __repr__(self):
         return "<Task %s>" % self.fully_qualified_name
@@ -29,7 +25,7 @@ class Task(object):
         if self.kuyruk.eager:
             self.f(*args, **kwargs)
         else:
-            queue = Queue(self.queue_name, self.kuyruk.connection)
+            queue = Queue(self.queue, self.kuyruk.connection, self.local)
             queue.send({'f': fname, 'args': args, 'kwargs': kwargs})
             queue.close()
 

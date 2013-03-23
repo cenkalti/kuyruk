@@ -32,11 +32,6 @@ class Kuyruk(threading.Thread):
         self.max_load = getattr(config, 'KUYRUK_MAX_LOAD', None)
         self.local = getattr(config, 'KUYRUK_LOCAL', False)
 
-        if self.local:
-            self.queue = "%s_%s" % (self.queue, socket.gethostname())
-        else:
-            self.queue = self.queue
-
         self._stop = threading.Event()
         self.num_tasks = 0
 
@@ -104,7 +99,7 @@ class Kuyruk(threading.Thread):
         if self.max_load is None:
             self.max_load = multiprocessing.cpu_count()
 
-        rabbit_queue = Queue(self.queue, self.connection)
+        rabbit_queue = Queue(self.queue, self.connection, self.local)
         in_queue = multiprocessing.Queue(1)
         out_queue = multiprocessing.Queue(1)
         worker = Worker(in_queue, out_queue)

@@ -1,3 +1,4 @@
+import socket
 import pickle
 import logging
 
@@ -8,10 +9,14 @@ logger = logging.getLogger(__name__)
 
 class Queue(object):
 
-    def __init__(self, name, connection):
+    def __init__(self, name, connection, local=False):
         self.name = name
         self.connection = connection
+        self.local = local
         self._channel = None
+
+        if self.local:
+            self.name = "%s_%s" % (self.name, socket.gethostname())
 
     @property
     def channel(self):
