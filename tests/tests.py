@@ -8,7 +8,7 @@ import unittest
 TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.realpath(os.path.join(TESTS_ROOT, '..')))
 
-from kuyruk import Kuyruk, Task
+from kuyruk import Kuyruk, Task, Queue
 
 kuyruk = Kuyruk()
 kuyruk2 = Kuyruk()
@@ -40,6 +40,8 @@ class KuyrukTestCase(unittest.TestCase):
         global called
         called = False
 
+        Queue('kuyruk', kuyruk.connection).delete()
+
     def test_task_decorator(self):
         self.assertIsInstance(print_task, Task)
         self.assertIsInstance(print_task2, Task)
@@ -50,6 +52,8 @@ class KuyrukTestCase(unittest.TestCase):
         self.assertEqual(called, True)
 
     def test_another_queue(self):
+        Queue('another_queue', kuyruk2.connection).delete()
+
         print_task2('hello world')
         kuyruk2.queue = 'another_queue'
         run_kuyruk(kuyruk2)
