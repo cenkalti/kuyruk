@@ -4,12 +4,10 @@ from .worker import Worker
 from .queue import Queue
 from .exceptions import Reject
 
-# TODO tests
-# TODO seperate queue
-# TODO sleep on load
 # TODO local queuee
 # TODO set kuyruk log level
 # TODO set application log level
 # TODO requeue failed tasks
 # TODO set number of workers
+# TODO coverage
 # TODO model extension
