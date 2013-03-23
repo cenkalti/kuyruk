@@ -1,6 +1,5 @@
 import os
 import time
-import socket
 import logging
 import threading
 import multiprocessing

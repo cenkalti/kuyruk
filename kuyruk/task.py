@@ -1,4 +1,3 @@
-import socket
 import logging
 
 from .queue import Queue
