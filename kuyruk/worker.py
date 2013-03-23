@@ -51,28 +51,3 @@ class Worker(object):
 
         result = task.f(*args, **kwargs)
         logger.debug('Result: %r', result)
-
-
-# def create_job_handler(cls, fn):
-#     def handle_job(id=None):
-#         id = int(id)
-#
-#         obj = cls.query.get(id)
-#
-#         if obj:
-#             logger.info(obj)
-#
-#             try:
-#                 fn(obj)
-#             except:
-#                 # raise_if_obj_is_not_deleted
-#                 try:
-#                     session.commit()
-#                 except:
-#                     session.rollback()
-#                 obj = cls.query.get(id)
-#                 if obj:
-#                     raise
-#         else:
-#             logger.info('%s(%s) is not found' % (cls.__name__, id))
-#     return handle_job
