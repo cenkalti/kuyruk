@@ -1,5 +1,5 @@
-import logging
 import pickle
+import logging
 
 import pika
 

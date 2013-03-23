@@ -40,7 +40,9 @@ class KuyrukTestCase(unittest.TestCase):
         global called
         called = False
 
-        Queue('kuyruk', kuyruk.connection).delete()
+        # Clear messages in default queue
+        kuyruk = Kuyruk()
+        Queue(kuyruk.queue, kuyruk.connection).delete()
 
     def test_task_decorator(self):
         self.assertIsInstance(print_task, Task)
