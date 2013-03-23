@@ -19,6 +19,7 @@ def main():
     parser.add_option('-q', '--queue')
     parser.add_option('-r', '--max-run-time', type='int')
     parser.add_option('-t', '--max-tasks', type='int')
+    parser.add_option('-l', '--max-load', type='int')
     options, args = parser.parse_args()
 
     if options.config:
@@ -34,6 +35,9 @@ def main():
 
     if options.max_tasks is not None:
         config.KUYRUK_MAX_TASKS = options.max_tasks
+
+    if options.max_load is not None:
+        config.KUYRUK_MAX_LOAD = options.max_load
 
     kuyruk = Kuyruk(config=config)
     kuyruk.start()

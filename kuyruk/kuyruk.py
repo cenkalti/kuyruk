@@ -1,3 +1,4 @@
+import os
 import time
 import logging
 import threading
@@ -27,6 +28,7 @@ class Kuyruk(threading.Thread):
         self.eager = getattr(config, 'KUYRUK_EAGER', False)
         self.max_run_time = getattr(config, 'KUYRUK_MAX_RUN_TIME', None)
         self.max_tasks = getattr(config, 'KUYRUK_MAX_TASKS', None)
+        self.max_load = getattr(config, 'KUYRUK_MAX_LOAD', None)
 
         self._stop = threading.Event()
         self.num_tasks = 0
@@ -88,13 +90,24 @@ class Kuyruk(threading.Thread):
             logger.warning('Kuyruk has processed %s tasks', self.max_tasks)
             self.stop()
 
+    def _max_load(self):
+        return os.getloadavg()[0] > self.max_load
+
     def run(self):
+        if self.max_load is None:
+            self.max_load = multiprocessing.cpu_count()
+
         rabbit_queue = Queue(self.queue, self.connection)
         in_queue = multiprocessing.Queue(1)
         out_queue = multiprocessing.Queue(1)
         worker = Worker(in_queue, out_queue)
         self.started = time.time()
         while not self._stop.isSet():
+            if self._max_load():
+                logger.debug('Load is over %s. Sleeping 10 seconds...')
+                self.connection.sleep(10)
+                continue
+
             task_description = rabbit_queue.receive()
             if task_description is None:
                 logger.debug('No tasks. Sleeping 1 second...')
