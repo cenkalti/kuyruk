@@ -1,3 +1,4 @@
+import socket
 import logging
 
 from .queue import Queue
@@ -8,10 +9,15 @@ logger = logging.getLogger(__name__)
 
 class Task(object):
 
-    def __init__(self, f, kuyruk, queue='kuyruk'):
+    def __init__(self, f, kuyruk, queue='kuyruk', local=False):
         self.f = f
         self.kuyruk = kuyruk
-        self.queue_name = queue
+        self.local = local
+
+        if local:
+            self.queue_name = "%s_%s" % (queue, socket.gethostname())
+        else:
+            self.queue_name = queue
 
     def __repr__(self):
         return "<Task %s>" % self.fully_qualified_name

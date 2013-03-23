@@ -1,5 +1,6 @@
 import os
 import time
+import socket
 import logging
 import threading
 import multiprocessing
@@ -7,8 +8,8 @@ import multiprocessing
 import pika
 
 from .task import Task
-from .worker import Worker
 from .queue import Queue
+from .worker import Worker
 
 logger = logging.getLogger(__name__)
 
@@ -20,15 +21,21 @@ class Kuyruk(threading.Thread):
     def __init__(self, config={}):
         super(Kuyruk, self).__init__(target=self.run)
 
-        self.queue = getattr(config, 'KUYRUK_QUEUE', 'kuyruk')
         self.host = getattr(config, 'KUYRUK_RABBIT_HOST', 'localhost')
         self.port = getattr(config, 'KUYRUK_RABBIT_PORT', 5672)
         self.user = getattr(config, 'KUYRUK_RABBIT_USER', 'guest')
         self.password = getattr(config, 'KUYRUK_RABBIT_PASSWORD', 'guest')
+        self.queue = getattr(config, 'KUYRUK_QUEUE', 'kuyruk')
         self.eager = getattr(config, 'KUYRUK_EAGER', False)
         self.max_run_time = getattr(config, 'KUYRUK_MAX_RUN_TIME', None)
         self.max_tasks = getattr(config, 'KUYRUK_MAX_TASKS', None)
         self.max_load = getattr(config, 'KUYRUK_MAX_LOAD', None)
+        self.local = getattr(config, 'KUYRUK_LOCAL', False)
+
+        if self.local:
+            self.queue = "%s_%s" % (self.queue, socket.gethostname())
+        else:
+            self.queue = self.queue
 
         self._stop = threading.Event()
         self.num_tasks = 0

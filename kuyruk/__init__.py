@@ -4,7 +4,6 @@ from .worker import Worker
 from .queue import Queue
 from .exceptions import Reject
 
-# TODO local queuee
 # TODO set kuyruk log level
 # TODO set application log level
 # TODO requeue failed tasks

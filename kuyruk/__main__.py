@@ -20,6 +20,7 @@ def main():
     parser.add_option('--max-run-time', type='int')
     parser.add_option('--max-tasks', type='int')
     parser.add_option('--max-load', type='int')
+    parser.add_option('--local', action='store_true', default=False)
     options, args = parser.parse_args()
 
     if options.config:
@@ -38,6 +39,9 @@ def main():
 
     if options.max_load is not None:
         config.KUYRUK_MAX_LOAD = options.max_load
+
+    if options.local is not None:
+        config.KUYRUK_LOCAL = options.local
 
     kuyruk = Kuyruk(config=config)
     kuyruk.start()
