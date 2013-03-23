@@ -14,12 +14,12 @@ def main():
     logging.getLogger('pika').level = logging.WARNING
 
     parser = optparse.OptionParser()
-    parser.add_option('-c', '--config')
+    parser.add_option('--config')
     # These options below override the options from config module
-    parser.add_option('-q', '--queue')
-    parser.add_option('-r', '--max-run-time', type='int')
-    parser.add_option('-t', '--max-tasks', type='int')
-    parser.add_option('-l', '--max-load', type='int')
+    parser.add_option('--queue')
+    parser.add_option('--max-run-time', type='int')
+    parser.add_option('--max-tasks', type='int')
+    parser.add_option('--max-load', type='int')
     options, args = parser.parse_args()
 
     if options.config:
