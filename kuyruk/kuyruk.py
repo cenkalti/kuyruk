@@ -103,7 +103,7 @@ class Kuyruk(threading.Thread):
         out_queue = multiprocessing.Queue(1)
         worker = Worker(in_queue, out_queue)
         self.started = time.time()
-        while not self._stop.isSet():
+        while self._runnable():
             if self._max_load():
                 logger.debug('Load is over %s. Sleeping 10 seconds...')
                 self.connection.sleep(10)
@@ -127,8 +127,10 @@ class Kuyruk(threading.Thread):
             actions[result](delivery_tag)
             self.num_tasks += 1
 
-            self._max_run_time()
-            self._max_tasks()
+    def _runnable(self):
+        self._max_run_time()
+        self._max_tasks()
+        return not self._stop.isSet()
 
     def stop(self):
         logger.warning('Stopping kuyruk...')
