@@ -1,15 +1,10 @@
 import logging
-import multiprocessing
-import math
 import traceback
 
 from . import loader
 from .exceptions import Reject
 
 logger = logging.getLogger(__name__)
-
-MAX_LOAD = math.ceil(multiprocessing.cpu_count() * 4)
-MAX_RUN_TIME = 60  # seconds
 
 
 class Worker(object):
