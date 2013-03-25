@@ -4,18 +4,15 @@ import logging
 import threading
 import multiprocessing
 
-import pika
-
 from .task import Task
 from .queue import Queue
 from .worker import Worker
+from .connection import LazyConnection
 
 logger = logging.getLogger(__name__)
 
 
 class Kuyruk(threading.Thread):
-
-    _connection = None
 
     def __init__(self, config={}):
         super(Kuyruk, self).__init__(target=self.run)
@@ -34,29 +31,8 @@ class Kuyruk(threading.Thread):
         self._stop = threading.Event()
         self.num_tasks = 0
 
-    @property
-    def connected(self):
-        return self._connection and self._connection.is_open
-
-    def _connect(self):
-        assert not self.connected
-        credentials = pika.PlainCredentials(self.user, self.password)
-        parameters = pika.ConnectionParameters(
-            host=self.host, port=self.port, credentials=credentials)
-        self._connection = pika.BlockingConnection(parameters)
-        logger.info('Connected to RabbitMQ')
-
-    @property
-    def connection(self):
-        if not self.connected:
-            self._connect()
-
-        return self._connection
-
-    def close(self):
-        if self.connected:
-            self.connection.close()
-            logger.info('Connection closed')
+        self.connection = LazyConnection(
+            self.host, self.port, self.user, self.password)
 
     def task(self, queue=None):
         """Wrap functions with this decorator to convert them

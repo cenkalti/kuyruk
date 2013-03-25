@@ -31,8 +31,8 @@ class Queue(object):
         return self.channel.method.message_count
 
     def close(self):
-        self.channel.close()
-        logger.info('Channel closed')
+        if self._channel is not None:
+            self._channel.close()
 
     def delete(self):
         try:
