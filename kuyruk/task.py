@@ -6,6 +6,15 @@ from . import loader
 logger = logging.getLogger(__name__)
 
 
+class TaskResult(object):
+
+    def __getattribute__(self, item):
+        raise Exception
+
+    def __getitem__(self, item):
+        raise Exception
+
+
 class Task(object):
 
     def __init__(self, f, kuyruk, queue='kuyruk', local=False):
@@ -27,6 +36,8 @@ class Task(object):
             queue = Queue(self.queue, self.kuyruk.connection, self.local)
             queue.send({'f': fname, 'args': args, 'kwargs': kwargs})
             queue.close()
+
+        return TaskResult()
 
     @property
     def fully_qualified_name(self):
