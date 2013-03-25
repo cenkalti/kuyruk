@@ -40,10 +40,9 @@ class Worker(object):
             self.out_queue.put((tag, Worker.RESULT_ERROR))
 
     def process_task(self, task_description):
-        fname = task_description['f']
-        args = task_description['args']
-        kwargs = task_description['kwargs']
-
+        fname, args, kwargs = (task_description['f'],
+                               task_description['args'],
+                               task_description['kwargs'])
         task = loader.import_task(fname)
         logger.debug(
             'Task %r will be executed with args=%r and kwargs=%r',
