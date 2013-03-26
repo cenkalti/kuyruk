@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import gc
 import logging
 import unittest
 
@@ -61,6 +62,19 @@ class KuyrukTestCase(unittest.TestCase):
         kuyruk2.queue = 'another_queue'
         run_kuyruk(kuyruk2)
         self.assertEqual(called, True)
+
+    def test_connection(self):
+        print 'Running GC...'
+        gc.collect()
+        print '-' * 70
+        print 'Testing connection...'
+        print '-' * 70
+        k = Kuyruk()
+        k.max_run_time = 1
+        k.run()
+        del k
+        print 'Running GC...'
+        gc.collect()
 
 
 if __name__ == '__main__':
