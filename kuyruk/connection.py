@@ -1,7 +1,17 @@
 import pika
 import logging
+from functools import wraps
 
 logger = logging.getLogger(__name__)
+
+
+def require_open(f):
+    @wraps(f)
+    def inner(self, *args, **kwargs):
+        if not self.is_open:
+            self.open()
+        return f(self, *args, **kwargs)
+    return inner
 
 
 class LazyConnection(object):
@@ -25,10 +35,8 @@ class LazyConnection(object):
         self._connection = pika.BlockingConnection(parameters)
         logger.info('Connected to RabbitMQ')
 
+    @require_open
     def channel(self):
-        if not self.is_open:
-            self.open()
-
         return self._connection.channel()
 
     def close(self):
