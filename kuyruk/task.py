@@ -39,9 +39,10 @@ class Task(object):
         if self.kuyruk.eager:
             self.f(*args, **kwargs)
         else:
-            queue = Queue(self.queue, self.kuyruk.connection, self.local)
+            channel = self.kuyruk.connection.channel()
+            queue = Queue(self.queue, channel, self.local)
             queue.send({'f': fname, 'args': args, 'kwargs': kwargs})
-            queue.close()
+            channel.close()
 
         return TaskResult()
 

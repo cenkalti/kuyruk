@@ -8,7 +8,7 @@ from .exceptions import Reject
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
-# TODO make connections lazy
+# TODO worker takes queues from config
 # TODO set kuyruk log level
 # TODO set application log level
 # TODO requeue failed tasks

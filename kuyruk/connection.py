@@ -14,34 +14,89 @@ def require_open(f):
     return inner
 
 
-class LazyConnection(object):
+class LazyBase(object):
+
+    def __init__(self):
+        self.real = None
+
+    @property
+    def is_open(self):
+        return self.real is not None and self.real.is_open
+
+    def open(self):
+        assert not self.is_open
+
+    def close(self):
+        class_name = self.__class__.__name__.lstrip('Lazy')
+        if self.is_open:
+            self.real.close()
+            logger.info('%s closed', class_name)
+        else:
+            logger.debug('%s already closed', class_name)
+
+
+class LazyConnection(LazyBase):
 
     def __init__(self, host, port, user, password):
+        super(LazyConnection, self).__init__()
         self.host = host
         self.port = port
         self.user = user
         self.password = password
-        self._connection = None
-
-    @property
-    def is_open(self):
-        return self._connection is not None and self._connection.is_open
 
     def open(self):
-        assert not self.is_open
+        super(LazyConnection, self).open()
         credentials = pika.PlainCredentials(self.user, self.password)
         parameters = pika.ConnectionParameters(
             host=self.host, port=self.port, credentials=credentials)
-        self._connection = pika.BlockingConnection(parameters)
+        self.real = pika.BlockingConnection(parameters)
         logger.info('Connected to RabbitMQ')
 
     @require_open
     def channel(self):
-        return self._connection.channel()
+        return LazyChannel(self)
 
-    def close(self):
-        if self.is_open:
-            self._connection.close()
-            logger.info('Connection closed')
-        else:
-            logger.debug('Not connected')
+
+class LazyChannel(LazyBase):
+
+    def __init__(self, connection):
+        super(LazyChannel, self).__init__()
+        self.connection = connection
+
+    def open(self):
+        super(LazyChannel, self).open()
+        if not self.connection.is_open:
+            self.connection.open()
+
+        self.real = self.connection.real.channel()
+        logger.info('Connected to channel')
+
+    @require_open
+    def queue_declare(self, queue, durable, exclusive, auto_delete):
+        return self.real.queue_declare(
+            queue=queue, durable=durable,
+            exclusive=exclusive, auto_delete=auto_delete)
+
+    @require_open
+    def queue_delete(self, queue):
+        self.real.queue_delete(queue=queue)
+
+    @require_open
+    def basic_ack(self, delivery_tag):
+        self.real.basic_ack(delivery_tag=delivery_tag)
+
+    @require_open
+    def basic_reject(self, delivery_tag, requeue):
+        self.real.basic_reject(delivery_tag=delivery_tag, requeue=requeue)
+
+    @require_open
+    def basic_get(self, queue):
+        return self.real.basic_get(queue=queue)
+
+    @require_open
+    def basic_publish(self, exchange, routing_key, body, properties):
+        self.real.basic_publish(
+            exchange=exchange,
+            routing_key=routing_key,
+            body=body,
+            properties=properties)

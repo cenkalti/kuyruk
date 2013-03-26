@@ -34,6 +34,9 @@ class Kuyruk(threading.Thread):
         self.connection = LazyConnection(
             self.host, self.port, self.user, self.password)
 
+    def __del__(self):
+        self.connection.close()
+
     def task(self, queue=None):
         """Wrap functions with this decorator to convert them
         to background tasks."""
@@ -74,7 +77,8 @@ class Kuyruk(threading.Thread):
         if self.max_load is None:
             self.max_load = multiprocessing.cpu_count()
 
-        rabbit_queue = Queue(self.queue, self.connection, self.local)
+        channel = self.connection.channel()
+        rabbit_queue = Queue(self.queue, channel, self.local)
         in_queue = multiprocessing.Queue(1)
         out_queue = multiprocessing.Queue(1)
         worker = Worker(in_queue, out_queue)
@@ -102,6 +106,9 @@ class Kuyruk(threading.Thread):
             }
             actions[result](delivery_tag)
             self.num_tasks += 1
+
+        channel.close()
+        logger.warning('Kuyruk finished running')
 
     def _runnable(self):
         self._max_run_time()

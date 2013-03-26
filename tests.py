@@ -40,7 +40,7 @@ class KuyrukTestCase(unittest.TestCase):
 
         # Clear messages in default queue
         kuyruk = Kuyruk()
-        Queue(kuyruk.queue, kuyruk.connection).delete()
+        Queue(kuyruk.queue, kuyruk.connection.channel()).delete()
 
     def test_task_decorator(self):
         # Decorator without args
@@ -55,7 +55,7 @@ class KuyrukTestCase(unittest.TestCase):
 
     def test_another_queue(self):
         # Clear another_queue
-        Queue('another_queue', kuyruk2.connection).delete()
+        Queue('another_queue', kuyruk2.connection.channel()).delete()
 
         print_task2('hello world')
         kuyruk2.queue = 'another_queue'
