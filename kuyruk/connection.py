@@ -20,8 +20,7 @@ class LazyBase(object):
         self.real = None
 
     def __del__(self):
-        if self.is_open:
-            self.real.close()
+        self.close()
 
     @property
     def is_open(self):
@@ -37,8 +36,6 @@ class LazyBase(object):
         if self.is_open:
             self.real.close()
             logger.info('%s closed', class_name)
-        else:
-            logger.debug('%s already closed', class_name)
 
 
 class LazyConnection(LazyBase):
