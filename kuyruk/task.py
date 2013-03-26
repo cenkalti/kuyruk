@@ -14,6 +14,12 @@ class TaskResult(object):
     def __getitem__(self, item):
         raise Exception
 
+    def __setattr__(self, key, value):
+        raise Exception
+
+    def __setitem__(self, key, value):
+        raise Exception
+
 
 class Task(object):
 
