@@ -34,9 +34,6 @@ class Kuyruk(threading.Thread):
         self.connection = LazyConnection(
             self.host, self.port, self.user, self.password)
 
-    def __del__(self):
-        self.connection.close()
-
     def task(self, queue=None):
         """Wrap functions with this decorator to convert them
         to background tasks."""

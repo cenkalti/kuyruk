@@ -19,12 +19,18 @@ class LazyBase(object):
     def __init__(self):
         self.real = None
 
+    def __del__(self):
+        if self.is_open:
+            self.real.close()
+
     @property
     def is_open(self):
         return self.real is not None and self.real.is_open
 
     def open(self):
         assert not self.is_open
+        if not issubclass(self.__class__, LazyBase):
+            raise NotImplementedError
 
     def close(self):
         class_name = self.__class__.__name__.lstrip('Lazy')
