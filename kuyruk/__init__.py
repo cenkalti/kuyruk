@@ -13,7 +13,7 @@ from .worker import Worker
 from .queue import Queue
 from .exceptions import Reject
 
-logging.getLogger(__name__).addHandler(logging.NullHandler())
+logging.getLogger(__name__).addHandler(NullHandler())
 
 # TODO worker takes queues from config
 # TODO set kuyruk log level

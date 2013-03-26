@@ -45,9 +45,9 @@ class KuyrukTestCase(unittest.TestCase):
 
     def test_task_decorator(self):
         # Decorator without args
-        self.assertIsInstance(print_task, Task)
+        self.assertTrue(isinstance(print_task, Task))
         # Decorator with args
-        self.assertIsInstance(print_task2, Task)
+        self.assertTrue(isinstance(print_task2, Task))
 
     def test_simple_task(self):
         print_task('hello world')  # sends task
