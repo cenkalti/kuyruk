@@ -16,7 +16,7 @@ def main():
     parser = optparse.OptionParser()
     parser.add_option('--config')
     # These options below override the options from config module
-    parser.add_option('--queue')
+    # parser.add_option('--queues')
     parser.add_option('--max-run-time', type='int')
     parser.add_option('--max-tasks', type='int')
     parser.add_option('--max-load', type='int')
@@ -28,8 +28,8 @@ def main():
     else:
         config = imp.new_module('config')
 
-    if options.queue is not None:
-        config.KUYRUK_QUEUE = options.queue
+    # if options.queue is not None:
+    #     config.KUYRUK_QUEUE = options.queue
 
     if options.max_run_time is not None:
         config.KUYRUK_MAX_RUN_TIME = options.max_run_time

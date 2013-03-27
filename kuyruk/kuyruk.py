@@ -21,7 +21,6 @@ class Kuyruk(threading.Thread):
         self.port = getattr(config, 'KUYRUK_RABBIT_PORT', 5672)
         self.user = getattr(config, 'KUYRUK_RABBIT_USER', 'guest')
         self.password = getattr(config, 'KUYRUK_RABBIT_PASSWORD', 'guest')
-        self.queue = getattr(config, 'KUYRUK_QUEUE', 'kuyruk')
         self.eager = getattr(config, 'KUYRUK_EAGER', False)
         self.max_run_time = getattr(config, 'KUYRUK_MAX_RUN_TIME', None)
         self.max_tasks = getattr(config, 'KUYRUK_MAX_TASKS', None)
@@ -34,16 +33,12 @@ class Kuyruk(threading.Thread):
         self.connection = LazyConnection(
             self.host, self.port, self.user, self.password)
 
-    def task(self, queue=None):
+    def task(self, queue='kuyruk'):
         """Wrap functions with this decorator to convert them
         to background tasks."""
-
-        if queue is None:
-            queue = self.queue
-
         def decorator():
             def inner(f):
-                queue_ = self.queue if callable(queue) else queue
+                queue_ = 'kuyruk' if callable(queue) else queue
                 return Task(f, self, queue=queue_)
 
             return inner
@@ -75,7 +70,40 @@ class Kuyruk(threading.Thread):
             self.max_load = multiprocessing.cpu_count()
 
         channel = self.connection.channel()
-        rabbit_queue = Queue(self.queue, channel, self.local)
+        control_queue = multiprocessing.Queue()
+        workers = []
+        queue_names = ['kuyruk', 'kuyruk']  # temporary
+        queues = {}
+        for name in queue_names:
+            queues[name] = Queue(name, channel)
+
+        for i, item in enumerate(queues.iteritems()):
+            name, queue = item
+            parent_conn, child_conn = multiprocessing.Pipe()
+            controller = object()
+            controller.worker = Worker(i, child_conn, control_queue)
+            controller.queue = queue
+            controller.pipe = parent_conn
+            workers.append(controller)
+
+        for controller in workers:
+            controller.worker.start()
+
+        while True:
+            worker_num, message = control_queue.get()
+            worker = workers[worker_num]
+            if message == 'get':
+                task_description = worker.queue.receive()
+                if task_description is None:
+                    worker.pipe.send('sleep')
+                else:
+                    worker.pipe.send(task_description)
+            elif message == 'result':
+
+
+
+        workers = [(Worker(chiled_conn), q, parent_conn)]
+        rabbit_queue = Queue('kuyruk', channel, self.local)
         in_queue = multiprocessing.Queue(1)
         out_queue = multiprocessing.Queue(1)
         worker = Worker(in_queue, out_queue)

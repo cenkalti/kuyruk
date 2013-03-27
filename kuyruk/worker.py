@@ -1,5 +1,6 @@
 import logging
 import traceback
+import multiprocessing
 
 from . import loader
 from .exceptions import Reject
@@ -7,15 +8,16 @@ from .exceptions import Reject
 logger = logging.getLogger(__name__)
 
 
-class Worker(object):
+class Worker(multiprocessing.Process):
 
     RESULT_OK = 0
     RESULT_ERROR = 1
     RESULT_REJECT = 2
 
-    def __init__(self, in_queue, out_queue):
-        self.in_queue = in_queue
-        self.out_queue = out_queue
+    def __init__(self, number, pipe, control_queue):
+        super(Worker, self).__init__(name="Worker-%i" % number)
+        self.pipe = pipe
+        self.control_queue = control_queue
 
     def work(self):
         tag, task_description = self.in_queue.get()
