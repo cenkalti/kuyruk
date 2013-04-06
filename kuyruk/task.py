@@ -2,6 +2,7 @@ import logging
 
 from .queue import Queue
 from . import loader
+from .connection import LazyConnection
 
 logger = logging.getLogger(__name__)
 
@@ -36,13 +37,17 @@ class Task(object):
         fname = self.fully_qualified_name
         assert self.is_reachable(fname, self.f)
         logger.debug('fname: %s', fname)
-        if self.kuyruk.eager:
+        if self.kuyruk.config.EAGER:
             self.f(*args, **kwargs)
         else:
-            channel = self.kuyruk.connection.channel()
+            connection = LazyConnection(
+                self.kuyruk.config.RABBIT_HOST, self.kuyruk.config.RABBIT_PORT,
+                self.kuyruk.config.RABBIT_USER, self.kuyruk.config.RABBIT_PASSWORD)
+            channel = connection.channel()
             queue = Queue(self.queue, channel, self.local)
             queue.send({'f': fname, 'args': args, 'kwargs': kwargs})
             channel.close()
+            connection.close()
 
         return TaskResult()
 

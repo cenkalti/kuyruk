@@ -34,7 +34,7 @@ class LazyBase(object):
             raise NotImplementedError
 
     def close(self):
-        if self.is_open and not self.real.closing:
+        if self.is_open and not self.real.is_closing:
             self.real.close()
             logger.info('%r closed', self)
 
