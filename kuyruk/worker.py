@@ -37,13 +37,13 @@ class Worker(multiprocessing.Process):
         while self._runnable():
             if self._max_load():
                 logger.debug('Load is over %s. Sleeping 10 seconds...')
-                self.connection.sleep(10)
+                time.sleep(10)
                 continue
 
             message = self.queue.receive()
             if message is None:
                 logger.debug('No tasks. Sleeping 1 second...')
-                self.connection.sleep(1)
+                time.sleep(1)
                 continue
 
             self.work(message)

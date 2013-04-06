@@ -34,7 +34,7 @@ class LazyBase(object):
             raise NotImplementedError
 
     def close(self):
-        if self.is_open:
+        if self.is_open and not self.real.closing:
             self.real.close()
             logger.info('%r closed', self)
 
@@ -59,12 +59,6 @@ class LazyConnection(LazyBase):
     @require_open
     def channel(self):
         return LazyChannel(self)
-
-    def sleep(self, seconds):
-        if self.is_open:
-            return self.real.sleep(seconds)
-        else:
-            return time.sleep(seconds)
 
 
 class LazyChannel(LazyBase):
