@@ -3,3 +3,8 @@ KUYRUK_RABBIT_PORT = 5672
 KUYRUK_RABBIT_USER = 'guest'
 KUYRUK_RABBIT_PASSWORD = 'guest'
 KUYRUK_EAGER = False
+KUYRUK_WORKERS = {
+    'lb.put.io': ['kuyruk'] + 2 * ['another'] + ['@local'],
+    'w24.put.io': 4 * ['mp4'],
+    'lb.put.io': 'kuyruk, 2*another, @local'
+}

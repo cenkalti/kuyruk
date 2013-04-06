@@ -87,15 +87,17 @@ class Kuyruk(object):
 
     def warm_shutdown(self):
         logger.warning('Warm shutdown')
-        logger.info('Sending SIGTERM to all workers...')
-        for worker in self.workers:
-            os.kill(worker.pid, signal.SIGTERM)
-
         start = time.time()
-        while any(lambda x: w.is_alive() for w in self.workers):
-            passed = time.time() - start
+        alive = True
+        while alive:
+            for worker in self.workers:
+                if worker.is_alive():
+                    logger.warning("%s is alive", worker.pid)
+            else:
+                alive = False
+
             logger.warning("Waiting for workers to finish their last task... "
-                           "%i seconds passed" % passed)
+                           "%i seconds passed" % (time.time() - start))
             time.sleep(1)
 
         sys.exit(0)
@@ -110,14 +112,9 @@ class Kuyruk(object):
 
 
 def parse_queues_str(s):
-    logger.debug("parse_queues_str: %s", s)
-    queues = [q.strip() for q in s.split(',')]
-    logger.debug("queues after split: %s", queues)
+    queues = (q.strip() for q in s.split(','))
     queues = itertools.chain.from_iterable(parse_count(q) for q in queues)
-    logger.debug("queues after parse_count: %s", queues)
-    queues = [parse_local(q) for q in queues]
-    logger.debug("queues after parse_local: %s", queues)
-    return queues
+    return [parse_local(q) for q in queues]
 
 
 def parse_count(q):

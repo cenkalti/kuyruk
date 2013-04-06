@@ -32,7 +32,7 @@ class Worker(multiprocessing.Process):
         self.num_tasks = 0
 
     def run(self):
-        self._register_sigterm_handler()
+        self._register_signals()
         self.started = time.time()
         while self._runnable():
             if self._max_load():
@@ -103,8 +103,9 @@ class Worker(multiprocessing.Process):
         logger.warning("Stopping %s...", self)
         self._stop.set()
 
-    def _register_sigterm_handler(self):
+    def _register_signals(self):
         def handler(signum, frame):
-            logger.warning("Catched SIGTERM")
+            logger.warning("Catched %s" % signum)
             self.stop()
         signal.signal(signal.SIGTERM, handler)
+        signal.signal(signal.SIGINT, handler)
