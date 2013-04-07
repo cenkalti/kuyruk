@@ -7,10 +7,30 @@ import threading
 import subprocess
 from time import sleep
 from Queue import Queue
+from functools import wraps
 
 from scripttest import TestFileEnvironment
 
+from ..connection import LazyConnection, LazyChannel
+from ..queue import Queue as RabbitQueue
+
 logger = logging.getLogger(__name__)
+
+
+def clear(*queues):
+    """Decorator for deleting queue from RabbitMQ"""
+    def decorator(f):
+        @wraps(f)
+        def inner(*args, **kwargs):
+            conn = LazyConnection()
+            ch = conn.channel()
+            with conn:
+                with ch:
+                    for name in queues:
+                        RabbitQueue(name, ch).delete()
+            return f(*args, **kwargs)
+        return inner
+    return decorator
 
 
 def run_kuyruk(queues='kuyruk', signum=signal.SIGTERM, expect_error=False):

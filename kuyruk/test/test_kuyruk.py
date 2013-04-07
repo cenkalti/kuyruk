@@ -1,19 +1,13 @@
 import logging
 import unittest
 
-from kuyruk import Kuyruk, Queue, Task
-from kuyruk.connection import LazyConnection, LazyChannel
-from util import run_kuyruk
+from kuyruk import Kuyruk, Task
+from util import run_kuyruk, clear
 
 logger = logging.getLogger(__name__)
 
 
 class KuyrukTestCase(unittest.TestCase):
-
-    def clear_queue(self, queue_name):
-        with LazyConnection() as conn:
-            with LazyChannel(conn) as ch:
-                Queue(queue_name, ch).delete()
 
     def test_task_decorator(self):
         # Decorator without args
@@ -21,17 +15,15 @@ class KuyrukTestCase(unittest.TestCase):
         # Decorator with args
         self.assertTrue(isinstance(print_task2, Task))
 
+    @clear('kuyruk')
     def test_simple_task(self):
-        self.clear_queue('kuyruk')
         print_task('hello world')
-
         result = run_kuyruk()
         assert 'hello world' in result.stdout
 
+    @clear('another_queue')
     def test_another_queue(self):
-        self.clear_queue('another_queue')
         print_task2('hello another')
-
         result = run_kuyruk(queues='another_queue')
         assert 'hello another' in result.stdout
 

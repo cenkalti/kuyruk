@@ -40,12 +40,14 @@ class Task(object):
         if self.kuyruk.config.EAGER:
             self.f(*args, **kwargs)
         else:
-            with LazyConnection(
-                    self.kuyruk.config.RABBIT_HOST,
-                    self.kuyruk.config.RABBIT_PORT,
-                    self.kuyruk.config.RABBIT_USER,
-                    self.kuyruk.config.RABBIT_PASSWORD) as connection:
-                with connection.channel() as channel:
+            connection = LazyConnection(
+                self.kuyruk.config.RABBIT_HOST,
+                self.kuyruk.config.RABBIT_PORT,
+                self.kuyruk.config.RABBIT_USER,
+                self.kuyruk.config.RABBIT_PASSWORD)
+            channel = connection.channel()
+            with connection:
+                with channel:
                     queue = Queue(self.queue, channel, self.local)
                     queue.send({'f': fname, 'args': args, 'kwargs': kwargs})
 
