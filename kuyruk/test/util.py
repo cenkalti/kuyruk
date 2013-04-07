@@ -51,13 +51,12 @@ def run_kuyruk(
     t = threading.Thread(target=target)
     t.start()
     sleep(seconds)
-    kill_cmd('kuyruk.__main__', signum=signum)
+    kill_kuyruk(signum=signum)
     return out.get()
 
 
-def kill_cmd(cmd, signum=signal.SIGTERM):
-    logger.debug('kill_cmd: %s', cmd)
-    pids = get_pids(cmd)
+def kill_kuyruk(signum=signal.SIGTERM):
+    pids = get_pids('kuyruk.__main__')
     kill_pids(pids, signum=signum)
 
 
