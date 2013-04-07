@@ -33,23 +33,25 @@ def clear(*queues):
     return decorator
 
 
-def run_kuyruk(queues='kuyruk', signum=signal.SIGTERM, expect_error=False):
+def run_kuyruk(
+        queues='kuyruk',
+        signum=signal.SIGTERM,
+        expect_error=False,
+        seconds=1):
     def target():
         result = env.run(
             sys.executable,
             '-m', 'kuyruk.__main__',  # run main module
             '--queues', queues,
             expect_stderr=True,  # logging output goes to stderr
-            expect_error=expect_error,
-            )
+            expect_error=expect_error)
         out.put(result)
     env = TestFileEnvironment()
     out = Queue()
     t = threading.Thread(target=target)
     t.start()
-    sleep(1)
+    sleep(seconds)
     kill_cmd('kuyruk.__main__', signum=signum)
-    sleep(1)
     return out.get()
 
 

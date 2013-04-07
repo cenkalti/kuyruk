@@ -27,6 +27,14 @@ class KuyrukTestCase(unittest.TestCase):
         result = run_kuyruk(queues='another_queue')
         assert 'hello another' in result.stdout
 
+    @clear('kuyruk')
+    def test_exception(self):
+        raise_exception()
+        result = run_kuyruk(seconds=2)
+        assert 'ZeroDivisionError' in result.stdout
+        count = len(result.stdout.split('ZeroDivisionError')) - 1
+        assert count == 2
+
 
 # These 2 functions below needs to be at module level in order that Kuyruk
 # to determine their fully qualified name.
@@ -41,3 +49,8 @@ def print_task(message):
 @kuyruk.task(queue='another_queue')
 def print_task2(message):
     print message
+
+
+@kuyruk.task
+def raise_exception():
+    return 1 / 0

@@ -85,7 +85,7 @@ class Worker(multiprocessing.Process):
         except Exception:
             logger.error('Task raised an exception')
             print '*' * 80
-            traceback.print_exc()
+            print traceback.format_exc()
             if self.config.SAVE_FAILED_TASKS:
                 raise NotImplementedError
                 self.queue.discard(tag)
