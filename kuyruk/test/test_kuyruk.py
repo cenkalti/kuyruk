@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import os
 import sys
 import time
@@ -48,7 +47,7 @@ def run_kuyruk(queues='kuyruk'):
     t = threading.Thread(target=target)
     t.start()
     time.sleep(1)
-    kill_cmd('kuyruk')
+    kill_cmd('kuyruk.__main__')
     time.sleep(1)
     return out.get()
 
@@ -107,9 +106,3 @@ def kill_pids(pids, signum=signal.SIGTERM):
             os.kill(pid, signum)
         except OSError:
             traceback.print_exc()
-
-
-if __name__ == '__main__':
-    logging.getLogger('pika').setLevel(logging.WARNING)
-    logging.basicConfig(level=logging.DEBUG)
-    unittest.main()
