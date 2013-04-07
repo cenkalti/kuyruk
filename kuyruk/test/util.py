@@ -37,7 +37,8 @@ def run_kuyruk(
         queues='kuyruk',
         signum=signal.SIGTERM,
         expect_error=False,
-        seconds=1):
+        seconds=1,
+        cold_shutdown=True):
     def target():
         result = env.run(
             sys.executable,
@@ -52,7 +53,9 @@ def run_kuyruk(
     t.start()
     sleep(seconds)
     kill_kuyruk(signum=signum)
-    return out.get()
+    if cold_shutdown:
+        kill_kuyruk(signum=signum)
+    return out.get(timeout=1)
 
 
 def kill_kuyruk(signum=signal.SIGTERM):

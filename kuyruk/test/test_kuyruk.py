@@ -35,6 +35,12 @@ class KuyrukTestCase(unittest.TestCase):
         count = len(result.stdout.split('ZeroDivisionError')) - 1
         assert count == 2
 
+    @clear('kuyruk')
+    def test_cold_shutdown(self):
+        loop_forever()
+        result = run_kuyruk(cold_shutdown=True, expect_error=True)
+        assert 'Cold shutdown' in result.stderr
+
 
 # These 2 functions below needs to be at module level in order that Kuyruk
 # to determine their fully qualified name.
@@ -54,3 +60,9 @@ def print_task2(message):
 @kuyruk.task
 def raise_exception():
     return 1 / 0
+
+
+@kuyruk.task
+def loop_forever():
+    while 1:
+        pass
