@@ -34,7 +34,7 @@ def main():
     if options.max_load is not None:
         config.KUYRUK_MAX_LOAD = options.max_load
 
-    kuyruk = Kuyruk(config_module=config)
+    kuyruk = Kuyruk(config_object=config)
     kuyruk.run(queues=options.queues)
 
 if __name__ == '__main__':

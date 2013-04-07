@@ -9,6 +9,7 @@ import multiprocessing
 
 from .task import Task
 from .worker import Worker
+from .config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -21,25 +22,8 @@ class Kuyruk(object):
     STATE_STOPPING = 3
     STATE_STOPPED = 4
 
-    def __init__(self, config_module):
-        DEFAULTS = {
-            'KUYRUK_RABBIT_HOST': 'localhost',
-            'KUYRUK_RABBIT_PORT': 5672,
-            'KUYRUK_RABBIT_USER': 'guest',
-            'KUYRUK_RABBIT_PASSWORD': 'guest',
-            'KUYRUK_EAGER': False,
-            'KUYRUK_MAX_RUN_TIME': None,
-            'KUYRUK_MAX_TASKS': None,
-            'KUYRUK_MAX_LOAD': None,
-            'KUYRUK_WORKERS': {},
-        }
-
-        self.config = object()
-        for k, v in DEFAULTS.iteritems():
-            value = getattr(config_module, k, v)
-            setattr(config_module, k[7:], value)
-
-        self.config = config_module
+    def __init__(self, config_object={}):
+        self.config = Config(config_object)
         self.workers = []
         self.last_worker_number = 0
         self.state = self.STATE_INIT
