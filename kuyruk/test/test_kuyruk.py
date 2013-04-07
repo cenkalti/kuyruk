@@ -1,18 +1,16 @@
-import os
 import sys
 import time
 import signal
 import logging
 import unittest
 import threading
-import traceback
-import subprocess
 from Queue import LifoQueue
 
 from scripttest import TestFileEnvironment
 
 from kuyruk import Kuyruk, Queue, Task
 from kuyruk.connection import LazyConnection, LazyChannel
+from util import kill_cmd
 
 logger = logging.getLogger(__name__)
 
@@ -38,16 +36,15 @@ def run_kuyruk(queues='kuyruk'):
     def target():
         result = env.run(
             sys.executable,
-            '-m', 'kuyruk.__main__',
+            '-m', 'kuyruk.__main__',  # run main module
             '--queues', queues,
-            cwd=os.path.dirname(os.path.abspath(__file__)),
             expect_stderr=True  # logging output goes to stderr
         )
         out.put(result)
     t = threading.Thread(target=target)
     t.start()
     time.sleep(1)
-    kill_cmd('kuyruk.__main__')
+    kill_cmd('kuyruk.__main__', signum=signal.SIGTERM)
     time.sleep(1)
     return out.get()
 
@@ -80,29 +77,3 @@ class KuyrukTestCase(unittest.TestCase):
 
         result = run_kuyruk(queues='another_queue')
         assert 'hello another' in result.stdout
-
-
-def kill_cmd(cmd):
-    logger.debug('kill_cmd: %s', cmd)
-    pids = get_pids(cmd)
-    kill_pids(pids)
-
-
-def get_pids(pattern):
-    logger.debug('get_pids: %s', pattern)
-    cmd = "pgrep -f '%s'" % pattern
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    pids = p.communicate()[0].split()
-    logger.debug('pids: %s', pids)
-    return map(int, pids)
-
-
-def kill_pids(pids, signum=signal.SIGTERM):
-    logger.debug('kill_pids: %s', pids)
-    for pid in pids:
-        logger.info("pid %s is alive, sending %s", pid, signum)
-        try:
-            logger.debug('killing %s', pid)
-            os.kill(pid, signum)
-        except OSError:
-            traceback.print_exc()
