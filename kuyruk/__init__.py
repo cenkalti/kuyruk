@@ -15,11 +15,9 @@ from .exceptions import Reject
 
 logging.getLogger(__name__).addHandler(NullHandler())
 
-# TODO worker takes queues from config
 # TODO set kuyruk log level
 # TODO set application log level
 # TODO requeue failed tasks
-# TODO set number of workers
 # TODO coverage
 # TODO test disconnect and reconnect
 # TODO model extension

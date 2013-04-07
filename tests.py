@@ -39,7 +39,7 @@ def run_kuyruk(queues='kuyruk'):
     def target():
         result = env.run(
             sys.executable,
-            '-m', 'kuyruk',
+            '-m', 'kuyruk.__main__',
             '--queues', queues,
             cwd=os.path.dirname(os.path.abspath(__file__)),
             expect_stderr=True  # logging output goes to stderr
