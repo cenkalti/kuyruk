@@ -41,7 +41,8 @@ class LazyBase(object):
 
 class LazyConnection(LazyBase):
 
-    def __init__(self, host, port, user, password):
+    def __init__(self,
+                 host='localhost', port=5672, user='guest', password='guest'):
         super(LazyConnection, self).__init__()
         self.host = host
         self.port = port

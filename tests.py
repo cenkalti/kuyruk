@@ -40,8 +40,15 @@ class KuyrukTestCase(unittest.TestCase):
         called = False
 
         # Clear messages in default queue
-        kuyruk = Kuyruk()
-        Queue(kuyruk.queue, kuyruk.connection.channel()).delete()
+        self.clear_queue('kuyruk')
+
+    def clear_queue(self, queue_name):
+        from kuyruk.connection import LazyConnection, LazyChannel
+        conn = LazyConnection()
+        ch = LazyChannel(conn)
+        Queue(queue_name, ch).delete()
+        ch.close()
+        conn.close()
 
     def test_task_decorator(self):
         # Decorator without args
@@ -55,8 +62,7 @@ class KuyrukTestCase(unittest.TestCase):
         self.assertEqual(called, True)
 
     def test_another_queue(self):
-        # Clear another_queue
-        Queue('another_queue', kuyruk2.connection.channel()).delete()
+        self.clear_queue('another_queue')
 
         print_task2('hello world')
         kuyruk2.queue = 'another_queue'
