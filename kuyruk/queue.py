@@ -53,6 +53,10 @@ class Queue(object):
         self.channel.basic_reject(delivery_tag=delivery_tag, requeue=False)
 
     @require_declare
+    def recover(self):
+        self.channel.basic_recover(requeue=True)
+
+    @require_declare
     def receive(self):
         method_frame, header_frame, body = self.channel.basic_get(self.name)
         if body is None:

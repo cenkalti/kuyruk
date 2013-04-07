@@ -95,6 +95,10 @@ class LazyChannel(LazyBase):
         self.real.basic_reject(delivery_tag=delivery_tag, requeue=requeue)
 
     @require_open
+    def basic_recover(self, requeue):
+        self.real.basic_recover(requeue=requeue)
+
+    @require_open
     def basic_get(self, queue):
         return self.real.basic_get(queue=queue)
 

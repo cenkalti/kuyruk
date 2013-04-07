@@ -10,6 +10,7 @@ class Config(object):
         'KUYRUK_MAX_TASKS': None,
         'KUYRUK_MAX_LOAD': None,
         'KUYRUK_WORKERS': {},
+        'KUYRUK_SAVE_FAILED_TASKS': False,
     }
 
     def __init__(self, obj):

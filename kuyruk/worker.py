@@ -86,7 +86,12 @@ class Worker(multiprocessing.Process):
             logger.error('Task raised an exception')
             print '*' * 80
             traceback.print_exc()
-            self.queue.discard(tag)
+            if self.config.SAVE_FAILED_TASKS:
+                raise NotImplementedError
+                self.queue.discard(tag)
+            else:
+                time.sleep(1)
+                self.queue.recover()
 
     def process_task(self, task_description):
         """Call task function.
