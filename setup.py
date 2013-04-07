@@ -12,6 +12,7 @@ setup(
     version='0.1',
     packages=['kuyruk'],
     install_requires=install_requires,
+    tests_require=['scripttest'],
     entry_points={
         'console_scripts': [
             'kuyruk = kuyruk.__main__:main'
