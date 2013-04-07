@@ -44,10 +44,10 @@ class Task(object):
                 self.kuyruk.config.RABBIT_HOST, self.kuyruk.config.RABBIT_PORT,
                 self.kuyruk.config.RABBIT_USER, self.kuyruk.config.RABBIT_PASSWORD)
             channel = connection.channel()
-            queue = Queue(self.queue, channel, self.local)
-            queue.send({'f': fname, 'args': args, 'kwargs': kwargs})
-            channel.close()
-            connection.close()
+            with connection:
+                with channel:
+                    queue = Queue(self.queue, channel, self.local)
+                    queue.send({'f': fname, 'args': args, 'kwargs': kwargs})
 
         return TaskResult()
 

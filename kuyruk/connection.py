@@ -23,6 +23,13 @@ class LazyBase(object):
     def __del__(self):
         self.close()
 
+    @require_open
+    def __enter__(self):
+        yield self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     @property
     def is_open(self):
         return self.real is not None and self.real.is_open
