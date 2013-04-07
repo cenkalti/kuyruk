@@ -21,3 +21,4 @@ logging.getLogger(__name__).addHandler(NullHandler())
 # TODO coverage
 # TODO test disconnect and reconnect
 # TODO model extension
+# TODO support python 3
