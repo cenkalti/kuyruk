@@ -57,7 +57,8 @@ def run_kuyruk(
 
 def kill_kuyruk(signum=signal.SIGTERM):
     pids = get_pids('kuyruk.__main__')
-    kill_pids(pids, signum=signum)
+    pid = min(pids)  # select master
+    kill_pid(pid, signum=signum)
 
 
 def get_pids(pattern):
@@ -69,12 +70,9 @@ def get_pids(pattern):
     return map(int, pids)
 
 
-def kill_pids(pids, signum=signal.SIGTERM):
-    logger.debug('kill_pids: %s', pids)
-    for pid in pids:
-        logger.info("pid %s is alive, sending %s", pid, signum)
-        try:
-            logger.debug('killing %s', pid)
-            os.kill(pid, signum)
-        except OSError:
-            traceback.print_exc()
+def kill_pid(pid, signum=signal.SIGTERM):
+    try:
+        logger.debug('killing %s', pid)
+        os.kill(pid, signum)
+    except OSError:
+        traceback.print_exc()

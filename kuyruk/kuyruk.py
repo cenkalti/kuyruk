@@ -77,7 +77,7 @@ class Kuyruk(object):
         self._wait_for_workers()
         self.state = self.STATE_STOPPED
 
-    def stop(self, _from_signal=False):
+    def stop(self):
         """Stop all running workers. Wait until their job is finished.
         If called second time, kill workers immediately.
 
@@ -86,13 +86,8 @@ class Kuyruk(object):
         if self.state == self.STATE_STARTED:
             logger.warning("Warm shutdown")
             self.state = self.STATE_STOPPING
-            if _from_signal:
-                # no need to stop each worker here because signals are
-                # passed to the children automatically
-                pass
-            else:
-                for worker in self.workers:
-                    worker.stop()
+            for worker in self.workers:
+                worker.stop()
         elif self.state == self.STATE_STOPPING:
             logger.warning("Cold shutdown")
             for worker in self.workers:
@@ -150,7 +145,7 @@ class Kuyruk(object):
         signal.signal(signal.SIGTERM, self._signal_handler)
 
     def _signal_handler(self, signum, frame):
-        self.stop(_from_signal=True)
+        self.stop()
 
 
 def parse_queues_str(s):
