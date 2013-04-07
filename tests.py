@@ -41,8 +41,8 @@ def run_kuyruk(queues='kuyruk'):
             sys.executable,
             '-m', 'kuyruk',
             '--queues', queues,
-            cwd='/Users/cenk/projects/kuyruk',
-            expect_stderr=True
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+            expect_stderr=True  # logging output goes to stderr
         )
         out.put(result)
     t = threading.Thread(target=target)
