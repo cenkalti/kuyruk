@@ -20,18 +20,30 @@ class Worker(multiprocessing.Process):
     RESULT_REJECT = 2
 
     def __init__(self, number, queue_name, config):
+        """
+        :param number: Worker number. This is used for displaying purposes.
+        :param queue_name: Qeueu name that this worker gets the messages from
+        :param config: Configuration object
+        """
         super(Worker, self).__init__(name="Worker-%i" % number)
         self.config = config
         self.connection = LazyConnection(
             self.config.RABBIT_HOST, self.config.RABBIT_PORT,
             self.config.RABBIT_USER, self.config.RABBIT_PASSWORD)
         self.channel = self.connection.channel()
-        self.queue = Queue(
-            queue_name, self.channel, local=queue_name.startswith('@'))
+        self.queue_name = queue_name
+        is_local = queue_name.startswith('@')
+        self.queue = Queue(queue_name, self.channel, local=is_local)
         self._stop = multiprocessing.Event()
         self.num_tasks = 0
 
     def run(self):
+        """Run worker until stop flag is set.
+
+        Since Worker class is derived from multiprocessing.Process,
+        it will be invoked when worker.start() is called.
+
+        """
         self._register_signals()
         self.started = time.time()
         while self._runnable():
@@ -48,6 +60,16 @@ class Worker(multiprocessing.Process):
 
             self.work(message)
             self.num_tasks += 1
+
+    def stop(self):
+        """Set stop flag.
+
+        Worker will be stopped after current task is processed. If the task is
+        stuck (i.e. in infinite loop) it may never be stopped.
+
+        """
+        logger.warning("Stopping %s...", self)
+        self._stop.set()
 
     def work(self, message):
         tag, task_description = message
@@ -67,6 +89,10 @@ class Worker(multiprocessing.Process):
             self.queue.discard(tag)
 
     def process_task(self, task_description):
+        """Call task function.
+        This is the method where user modules are loaded.
+
+        """
         fname, args, kwargs = (task_description['f'],
                                task_description['args'],
                                task_description['kwargs'])
@@ -99,13 +125,10 @@ class Worker(multiprocessing.Process):
         self._max_tasks()
         return not self._stop.is_set()
 
-    def stop(self):
-        logger.warning("Stopping %s...", self)
-        self._stop.set()
-
     def _register_signals(self):
-        def handler(signum, frame):
-            logger.warning("Catched %s" % signum)
-            self.stop()
-        signal.signal(signal.SIGTERM, handler)
-        signal.signal(signal.SIGINT, handler)
+        signal.signal(signal.SIGINT, self._signal_handler)
+        signal.signal(signal.SIGTERM, self._signal_handler)
+
+    def _signal_handler(self, signum, frame):
+        logger.warning("Catched %s" % signum)
+        self.stop()
