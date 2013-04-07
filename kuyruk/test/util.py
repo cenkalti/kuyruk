@@ -1,10 +1,36 @@
 import os
+import sys
 import signal
 import logging
 import traceback
+import threading
 import subprocess
+from time import sleep
+from Queue import Queue
+
+from scripttest import TestFileEnvironment
 
 logger = logging.getLogger(__name__)
+
+
+def run_kuyruk(queues='kuyruk', signum=signal.SIGTERM, expect_error=False):
+    def target():
+        result = env.run(
+            sys.executable,
+            '-m', 'kuyruk.__main__',  # run main module
+            '--queues', queues,
+            expect_stderr=True,  # logging output goes to stderr
+            expect_error=expect_error,
+            )
+        out.put(result)
+    env = TestFileEnvironment()
+    out = Queue()
+    t = threading.Thread(target=target)
+    t.start()
+    sleep(1)
+    kill_cmd('kuyruk.__main__', signum=signum)
+    sleep(1)
+    return out.get()
 
 
 def kill_cmd(cmd, signum=signal.SIGTERM):
