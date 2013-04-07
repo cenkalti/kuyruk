@@ -1,4 +1,3 @@
-import time
 import logging
 from functools import wraps
 
@@ -34,9 +33,10 @@ class LazyBase(object):
             raise NotImplementedError
 
     def close(self):
-        if self.is_open and not self.real.is_closing:
-            self.real.close()
-            logger.info('%r closed', self)
+        if self.real is not None:
+            if not (self.real.is_closing or self.real.is_closed):
+                self.real.close()
+                logger.info('%r closed', self)
 
 
 class LazyConnection(LazyBase):
