@@ -23,7 +23,6 @@ class LazyBase(object):
     def __del__(self):
         self.close()
 
-    @require_open
     def __enter__(self):
         yield self
 

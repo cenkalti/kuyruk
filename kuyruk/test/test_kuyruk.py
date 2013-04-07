@@ -52,11 +52,9 @@ def run_kuyruk(queues='kuyruk'):
 class KuyrukTestCase(unittest.TestCase):
 
     def clear_queue(self, queue_name):
-        conn = LazyConnection()
-        ch = LazyChannel(conn)
-        Queue(queue_name, ch).delete()
-        ch.close()
-        conn.close()
+        with LazyConnection() as conn:
+            with LazyChannel(conn) as ch:
+                Queue(queue_name, ch).delete()
 
     def test_task_decorator(self):
         # Decorator without args
