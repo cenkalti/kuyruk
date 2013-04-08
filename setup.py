@@ -1,3 +1,4 @@
+# coding=utf-8
 from setuptools import setup
 
 install_requires = ['pika>=0.9.9,<1']
@@ -9,13 +10,19 @@ except ImportError:
 
 setup(
     name='Kuyruk',
-    version='0.1',
+    version='0.1.0',
+    author=u'Cenk Altı',
+    license='Apache License 2.0',
+    keywords='rabbitmq distributed task queue',
+    url='http://github.com/cenkalti/kuyruk',
     packages=['kuyruk'],
     install_requires=install_requires,
     tests_require=['scripttest'],
+    test_suite='kuyruk.test',
+    zip_safe=True,
     entry_points={
         'console_scripts': [
             'kuyruk = kuyruk.__main__:main'
         ],
-    }
+    },
 )
