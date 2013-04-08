@@ -11,7 +11,7 @@ from functools import wraps
 
 from scripttest import TestFileEnvironment
 
-from ..connection import LazyConnection, LazyChannel
+from ..connection import LazyConnection
 from ..queue import Queue as RabbitQueue
 
 logger = logging.getLogger(__name__)
@@ -66,11 +66,14 @@ def kill_kuyruk(signum=signal.SIGTERM):
 
 def get_pids(pattern):
     logger.debug('get_pids: %s', pattern)
-    cmd = "pgrep -f '%s'" % pattern
+    cmd = "pgrep -fl '%s'" % pattern
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    pids = p.communicate()[0].split()
+    out = p.communicate()[0]
+    logger.debug("\n%s", out)
+    lines = out.splitlines()
+    pids = [int(l.split()[0]) for l in lines]  # take first column
     logger.debug('pids: %s', pids)
-    return map(int, pids)
+    return pids
 
 
 def kill_pid(pid, signum=signal.SIGTERM):
