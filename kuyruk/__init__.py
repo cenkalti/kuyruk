@@ -13,9 +13,13 @@ from .worker import Worker
 from .queue import Queue
 from .exceptions import Reject
 
+# Add NullHandler to prevent logging warnings on startup
 logging.getLogger(__name__).addHandler(NullHandler())
 
+# TODO test reject from task
+# TODO class tasks
 # TODO add timestamp to tasks
+# TODO retry count for tasks
 # TODO packaging test code
 # TODO set kuyruk log level
 # TODO set application log level

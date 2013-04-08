@@ -15,6 +15,12 @@ logger = logging.getLogger(__name__)
 
 
 class Kuyruk(object):
+    """
+    Main class for Kuyruk distributed task queue. It holds the configuration
+    values and provides a task decorator for user application and run method
+    for workers.
+
+    """
 
     STATE_INIT = 0
     STATE_STARTING = 1
@@ -23,14 +29,19 @@ class Kuyruk(object):
     STATE_STOPPED = 4
 
     def __init__(self, config_object={}):
+        """
+        :param config_object: See config.py for default values.
+
+        """
         self.config = Config(config_object)
         self.workers = []
         self.last_worker_number = 0
         self.state = self.STATE_INIT
 
     def task(self, queue='kuyruk', eager=False):
-        """Wrap functions with this decorator to convert them
-        to background tasks.
+        """Wrap functions with this decorator to convert them to background
+        tasks. After wrapping, normal calls will send a message to queue
+        instead of running the actual function.
 
         :param queue: Queue name for the tasks
         :param eager: Run task in process, do not use RabbitMQ

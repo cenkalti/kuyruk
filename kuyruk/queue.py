@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 def require_declare(f):
+    """Declare queue before running the wrapping function."""
+    # TODO call the function first, if got an exception declare and call again
     @wraps(f)
     def inner(self, *args, **kwargs):
         if not self.declared:
@@ -46,10 +48,12 @@ class Queue(object):
 
     @require_declare
     def reject(self, delivery_tag):
+        """Reject the message. Message will be delivered to another worker."""
         self.channel.basic_reject(delivery_tag=delivery_tag, requeue=True)
 
     @require_declare
     def discard(self, delivery_tag):
+        """Discard the message. Discarded messages will be lost."""
         self.channel.basic_reject(delivery_tag=delivery_tag, requeue=False)
 
     @require_declare
@@ -58,6 +62,8 @@ class Queue(object):
 
     @require_declare
     def receive(self):
+        """Get a single message from queue. If not any message is available
+        returns None."""
         method_frame, header_frame, body = self.channel.basic_get(self.name)
         if body is None:
             return None
@@ -69,6 +75,7 @@ class Queue(object):
 
     @require_declare
     def send(self, obj):
+        """Send a single message to the queue. obj should be pickleable."""
         logger.info('sending to queue: %s message: %r', self.name, obj)
         properties = pika.BasicProperties(
             content_type='application/python-pickle',

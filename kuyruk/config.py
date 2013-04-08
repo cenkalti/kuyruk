@@ -1,4 +1,5 @@
 class Config(object):
+    """Kuyruk configuration object"""
 
     DEFAULTS = {
         'KUYRUK_RABBIT_HOST': 'localhost',
@@ -14,6 +15,11 @@ class Config(object):
     }
 
     def __init__(self, obj):
+        """Populate from obj.
+        If the key is not found in obj, set from DEFAULTS.
+        "KUYRUK_" prefix is stripped in attributes.
+
+        """
         for k, v in self.DEFAULTS.iteritems():
             value = getattr(obj, k, v)
             setattr(self, k[7:], value)

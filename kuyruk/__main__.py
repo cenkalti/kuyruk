@@ -20,7 +20,7 @@ def main():
     parser.add_option('--max-load', type='int')
     options, args = parser.parse_args()
 
-    if options.config:
+    if options.config is not None:
         config = imp.load_source('config', options.config)
     else:
         config = imp.new_module('config')

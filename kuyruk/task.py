@@ -39,8 +39,10 @@ class Task(object):
         assert self.is_reachable(fname, self.f)
         logger.debug('fname: %s', fname)
         if self.kuyruk.config.EAGER or self.eager:
+            # Run wrapped function
             self.f(*args, **kwargs)
         else:
+            # send a message to queue
             connection = LazyConnection(
                 self.kuyruk.config.RABBIT_HOST,
                 self.kuyruk.config.RABBIT_PORT,

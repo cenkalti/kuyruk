@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 def require_open(f):
+    """Decorator for calling open() before invoking the wrapped function"""
     @wraps(f)
     def inner(self, *args, **kwargs):
         if not self.is_open:
