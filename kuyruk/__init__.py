@@ -16,7 +16,6 @@ from .exceptions import Reject
 # Add NullHandler to prevent logging warnings on startup
 logging.getLogger(__name__).addHandler(NullHandler())
 
-# TODO test reject from task
 # TODO class tasks
 # TODO add timestamp to tasks
 # TODO retry count for tasks

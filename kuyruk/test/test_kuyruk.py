@@ -1,7 +1,7 @@
 import logging
 import unittest
 
-from kuyruk import Kuyruk, Task
+from kuyruk import Kuyruk, Task, Reject
 from kuyruk.task import TaskResult
 from util import run_kuyruk, clear
 
@@ -36,9 +36,7 @@ class KuyrukTestCase(unittest.TestCase):
         """Errored tasks must be retried every second"""
         raise_exception()
         result = run_kuyruk(seconds=2)
-        assert 'ZeroDivisionError' in result.stdout
-        count = len(result.stdout.split('ZeroDivisionError')) - 1
-        assert count == 2
+        self.assertEqual(result.stdout.count('ZeroDivisionError'), 2)
 
     @clear('kuyruk')
     def test_cold_shutdown(self):
@@ -52,6 +50,13 @@ class KuyrukTestCase(unittest.TestCase):
         """Test eager mode for using in test environments"""
         result = add(1, 2)
         assert isinstance(result, TaskResult)
+
+    @clear('kuyruk')
+    def test_reject(self):
+        """Rejected tasks must be requeued again"""
+        rejecting_task()
+        result = run_kuyruk(seconds=2)
+        self.assertEqual(result.stderr.count('Task is rejected'), 2)
 
 
 kuyruk = Kuyruk()
@@ -83,3 +88,8 @@ def loop_forever():
 @kuyruk.task(eager=True)
 def add(a, b):
     return a + b
+
+
+@kuyruk.task
+def rejecting_task():
+    raise Reject
