@@ -8,7 +8,7 @@ install:
   # Deal with issue on Travis builders re: multiprocessing.Queue :(
   - "sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm"
 script:
-  - nosetests --where=kuyruk/test --debug=kuyruk --logging-config=kuyruk/test/logging.ini
+  - python setup.py nosetests
 services:
   - rabbitmq
 branches:
