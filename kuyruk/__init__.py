@@ -15,10 +15,12 @@ from .exceptions import Reject
 
 logging.getLogger(__name__).addHandler(NullHandler())
 
+# TODO add timestamp to tasks
+# TODO packaging test code
 # TODO set kuyruk log level
 # TODO set application log level
 # TODO requeue failed tasks
 # TODO coverage
-# TODO test disconnect and reconnect
+# TODO test disconnect and reconnect (vaurien)
 # TODO model extension
 # TODO support python 3

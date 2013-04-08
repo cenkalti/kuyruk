@@ -2,6 +2,7 @@ import logging
 import unittest
 
 from kuyruk import Kuyruk, Task
+from kuyruk.task import TaskResult
 from util import run_kuyruk, clear
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,10 @@ class KuyrukTestCase(unittest.TestCase):
         result = run_kuyruk(cold_shutdown=True, expect_error=True)
         assert 'Cold shutdown' in result.stderr
 
+    def test_eager(self):
+        result = add(1, 2)
+        assert isinstance(result, TaskResult)
+
 
 # These 2 functions below needs to be at module level in order that Kuyruk
 # to determine their fully qualified name.
@@ -66,3 +71,8 @@ def raise_exception():
 def loop_forever():
     while 1:
         pass
+
+
+@kuyruk.task(eager=True)
+def add(a, b):
+    return a + b

@@ -24,11 +24,12 @@ class TaskResult(object):
 
 class Task(object):
 
-    def __init__(self, f, kuyruk, queue='kuyruk', local=False):
+    def __init__(self, f, kuyruk, queue='kuyruk', local=False, eager=False):
         self.f = f
         self.kuyruk = kuyruk
         self.queue = queue
         self.local = local
+        self.eager = eager
 
     def __repr__(self):
         return "<Task %s>" % self.fully_qualified_name
@@ -37,7 +38,7 @@ class Task(object):
         fname = self.fully_qualified_name
         assert self.is_reachable(fname, self.f)
         logger.debug('fname: %s', fname)
-        if self.kuyruk.config.EAGER:
+        if self.kuyruk.config.EAGER or self.eager:
             self.f(*args, **kwargs)
         else:
             connection = LazyConnection(
