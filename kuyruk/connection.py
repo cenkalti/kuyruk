@@ -116,3 +116,15 @@ class LazyChannel(LazyBase):
             routing_key=routing_key,
             body=body,
             properties=properties)
+
+    @require_open
+    def tx_commit(self):
+        return self.real.tx_commit()
+
+    @require_open
+    def tx_rollback(self):
+        return self.real.tx_rollback()
+
+    @require_open
+    def tx_select(self):
+        return self.real.tx_select()

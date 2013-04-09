@@ -42,6 +42,7 @@ class Worker(multiprocessing.Process):
         """
         self._register_signals()
         self.started = time.time()
+        self.channel.tx_select()
         while self._runnable():
             if self._max_load():
                 logger.debug('Load is over %s. Sleeping 10 seconds...')
@@ -55,6 +56,7 @@ class Worker(multiprocessing.Process):
                 continue
 
             self.work(message)
+            self.channel.tx_commit()
             self.num_tasks += 1
 
     def stop(self):
