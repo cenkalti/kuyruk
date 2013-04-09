@@ -75,6 +75,11 @@ class LazyChannel(LazyBase):
         super(LazyChannel, self).__init__()
         self.connection = connection
 
+    def __getattr__(self, item):
+        if not self.is_open:
+            self.open()
+        return getattr(self.real, item)
+
     def open(self):
         super(LazyChannel, self).open()
         if not self.connection.is_open:
@@ -82,49 +87,3 @@ class LazyChannel(LazyBase):
 
         self.real = self.connection.real.channel()
         logger.info('Connected to channel')
-
-    @require_open
-    def queue_declare(self, queue, durable, exclusive, auto_delete):
-        return self.real.queue_declare(
-            queue=queue, durable=durable,
-            exclusive=exclusive, auto_delete=auto_delete)
-
-    @require_open
-    def queue_delete(self, queue):
-        self.real.queue_delete(queue=queue)
-
-    @require_open
-    def basic_ack(self, delivery_tag):
-        self.real.basic_ack(delivery_tag=delivery_tag)
-
-    @require_open
-    def basic_reject(self, delivery_tag, requeue):
-        self.real.basic_reject(delivery_tag=delivery_tag, requeue=requeue)
-
-    @require_open
-    def basic_recover(self, requeue):
-        self.real.basic_recover(requeue=requeue)
-
-    @require_open
-    def basic_get(self, queue):
-        return self.real.basic_get(queue=queue)
-
-    @require_open
-    def basic_publish(self, exchange, routing_key, body, properties):
-        self.real.basic_publish(
-            exchange=exchange,
-            routing_key=routing_key,
-            body=body,
-            properties=properties)
-
-    @require_open
-    def tx_commit(self):
-        return self.real.tx_commit()
-
-    @require_open
-    def tx_rollback(self):
-        return self.real.tx_rollback()
-
-    @require_open
-    def tx_select(self):
-        return self.real.tx_select()
