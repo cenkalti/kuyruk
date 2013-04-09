@@ -15,10 +15,6 @@ logger = logging.getLogger(__name__)
 
 class Worker(multiprocessing.Process):
 
-    RESULT_OK = 0
-    RESULT_ERROR = 1
-    RESULT_REJECT = 2
-
     def __init__(self, number, queue_name, config):
         """
         :param number: Worker number. This is used for displaying purposes.
