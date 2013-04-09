@@ -17,7 +17,6 @@ from .exceptions import Reject
 logging.getLogger(__name__).addHandler(NullHandler())
 
 # TODO class tasks
-# TODO add timestamp to tasks
 # TODO retry count for tasks
 # TODO packaging test code
 # TODO set kuyruk log level

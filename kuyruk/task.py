@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from .queue import Queue
 from . import loader
@@ -42,19 +43,22 @@ class Task(object):
             # Run wrapped function
             self.f(*args, **kwargs)
         else:
-            # send a message to queue
-            connection = LazyConnection(
-                self.kuyruk.config.RABBIT_HOST,
-                self.kuyruk.config.RABBIT_PORT,
-                self.kuyruk.config.RABBIT_USER,
-                self.kuyruk.config.RABBIT_PASSWORD)
-            channel = connection.channel()
-            with connection:
-                with channel:
-                    queue = Queue(self.queue, channel, self.local)
-                    queue.send({'f': fname, 'args': args, 'kwargs': kwargs})
+            self._send_task({
+                'f': fname,
+                'args': args, 'kwargs': kwargs,
+                'timestamp': str(datetime.utcnow())})
 
         return TaskResult()
+
+    def _send_task(self, task_description):
+        connection = LazyConnection(
+            self.kuyruk.config.RABBIT_HOST, self.kuyruk.config.RABBIT_PORT,
+            self.kuyruk.config.RABBIT_USER, self.kuyruk.config.RABBIT_PASSWORD)
+        channel = connection.channel()
+        with connection:
+            with channel:
+                queue = Queue(self.queue, channel, self.local)
+                queue.send(task_description)
 
     @property
     def fully_qualified_name(self):
