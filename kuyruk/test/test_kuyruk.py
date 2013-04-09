@@ -48,8 +48,9 @@ class KuyrukTestCase(unittest.TestCase):
 
     def test_eager(self):
         """Test eager mode for using in test environments"""
-        result = add(1, 2)
+        result = eager_task()
         assert isinstance(result, TaskResult)
+        self.assertTrue(eager_called)
 
     @clear('kuyruk')
     def test_reject(self):
@@ -86,8 +87,10 @@ def loop_forever():
 
 
 @kuyruk.task(eager=True)
-def add(a, b):
-    return a + b
+def eager_task():
+    eager_called.append(1)
+
+eager_called = []
 
 
 @kuyruk.task
