@@ -46,9 +46,12 @@ class Queue(object):
         if self.local:
             self.name = "%s_%s" % (self.name, socket.gethostname())
 
+    def __len__(self):
+        return self.declare().method.message_count
+
     def declare(self):
         logger.warning('Declaring queue: %s', self.name)
-        self.channel.queue_declare(
+        return self.channel.queue_declare(
             queue=self.name, durable=True,
             exclusive=False, auto_delete=False)
 

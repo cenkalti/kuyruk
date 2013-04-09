@@ -77,6 +77,7 @@ class Worker(multiprocessing.Process):
             self.process_task(task_description)
             logger.debug('Task is successful')
             self.queue.ack(tag)
+        # sleep() calls below prevent cpu burning
         except Reject:
             logger.info('Task is rejected')
             time.sleep(1)
@@ -84,12 +85,22 @@ class Worker(multiprocessing.Process):
         except Exception:
             logger.error('Task raised an exception')
             logger.error(traceback.format_exc())
+            time.sleep(1)
+            self.handle_exception(tag, task_description)
+
+    def handle_exception(self, tag, task_description):
+        retry_count = task_description.get('retry', 0)
+        if retry_count:
+            self.queue.discard(tag)
+            task_description['retry'] = retry_count - 1
+            self.queue.send(task_description)
+        else:
             if self.config.SAVE_FAILED_TASKS:
-                raise NotImplementedError
-                self.queue.discard(tag)
-            else:
-                time.sleep(1)
-                self.queue.recover()
+                self.save_failed_task(task_description)
+            self.queue.discard(tag)
+
+    def save_failed_task(self, task_description):
+        raise NotImplementedError
 
     def process_task(self, task_description):
         """Call task function.

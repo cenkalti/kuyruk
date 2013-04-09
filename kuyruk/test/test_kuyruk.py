@@ -3,7 +3,8 @@ import unittest
 import threading
 from time import sleep
 
-from kuyruk import Kuyruk, Task, Reject
+from kuyruk import Kuyruk, Task, Reject, Queue
+from kuyruk.connection import LazyConnection
 from kuyruk.task import TaskResult
 from util import run_kuyruk, clear, delete_queue
 
@@ -35,10 +36,13 @@ class KuyrukTestCase(unittest.TestCase):
 
     @clear('kuyruk')
     def test_exception(self):
-        """Errored tasks must be retried every second"""
+        """Errored task message is discarded"""
         raise_exception()
-        result = run_kuyruk(seconds=2)
-        self.assertEqual(result.stderr.count('ZeroDivisionError'), 2)
+        result = run_kuyruk()
+        assert 'ZeroDivisionError' in result.stderr
+        # Message must be discarded
+        queue = Queue('kuyruk', LazyConnection().channel())
+        self.assertEqual(len(queue), 0)
 
     @clear('kuyruk')
     def test_cold_shutdown(self):
