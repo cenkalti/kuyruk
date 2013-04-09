@@ -60,7 +60,9 @@ def run_kuyruk(
     kill_kuyruk(signum=signum)
     if cold_shutdown:
         kill_kuyruk(signum=signum)
-    return out.get(timeout=2)
+    result = out.get(timeout=2)
+    logger.info(result)
+    return result
 
 
 def kill_kuyruk(signum=signal.SIGTERM):
