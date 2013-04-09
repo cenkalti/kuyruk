@@ -81,8 +81,8 @@ class Worker(multiprocessing.Process):
             self.queue.ack(tag)
         except Reject:
             logger.info('Task is rejected')
-            self.queue.reject(tag)
             time.sleep(1)
+            self.queue.reject(tag)
         except Exception:
             logger.error('Task raised an exception')
             print '*' * 80
