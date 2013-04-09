@@ -64,7 +64,6 @@ class LazyConnection(LazyBase):
         self.real = pika.BlockingConnection(parameters)
         logger.info('Connected to RabbitMQ')
 
-    @require_open
     def channel(self):
         return LazyChannel(self)
 

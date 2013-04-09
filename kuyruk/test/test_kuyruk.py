@@ -1,12 +1,14 @@
+import signal
 import logging
 import unittest
 import threading
 from time import sleep
+from Queue import deque
 
 from kuyruk import Kuyruk, Task, Reject, Queue
 from kuyruk.connection import LazyConnection
 from kuyruk.task import TaskResult
-from util import run_kuyruk, clear, delete_queue
+from util import run_kuyruk, kill_kuyruk, clear, delete_queue, get_pids
 
 logger = logging.getLogger(__name__)
 
@@ -80,8 +82,34 @@ class KuyrukTestCase(unittest.TestCase):
         t = threading.Thread(target=delete_after, args=(1, ))
         t.start()
         result = run_kuyruk(seconds=2)
-        print result
         self.assertEqual(result.stderr.count('Declaring queue'), 2)
+
+    def test_respawn(self):
+        """Respawn a new worker if dead
+
+        This test also covers the broker disconnect case because when the
+        connection drops the child worker will raise an unhandled exception.
+        This exception will cause the worker to exit. After exiting, master
+        worker will spawn a new child worker.
+
+        """
+        def kill_worker():
+            sleep(1)
+            pid_worker = get_pids('kuyruk: worker')[0]
+            pids.append(pid_worker)
+            kill_kuyruk(signal.SIGKILL, worker='worker')
+
+        def get_worker_pid():
+            sleep(2)
+            pid_worker = get_pids('kuyruk: worker')[0]
+            pids.append(pid_worker)
+
+        pids = deque()
+        threading.Thread(target=kill_worker).start()
+        threading.Thread(target=get_worker_pid).start()
+        result = run_kuyruk(seconds=3)
+        assert 'Spawning new worker' in result.stderr
+        assert pids[1] > pids[0]
 
     def assert_empty(self, queue):
         queue = Queue(queue, LazyConnection().channel())

@@ -1,12 +1,16 @@
 # coding=utf-8
 from setuptools import setup
 
-install_requires = ['pika>=0.9.9,<1']
+install_requires = [
+    'pika>=0.9.9, <1',
+    'setproctitle>=1.1.7, <2',
+]
+
 try:
     # not available in python 2.6
     import importlib
 except ImportError:
-    install_requires.append('importlib>=1.0.2,<2')
+    install_requires.append('importlib>=1.0.2, <2')
 
 setup(
     name='Kuyruk',

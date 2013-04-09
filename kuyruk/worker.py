@@ -5,6 +5,8 @@ import logging
 import traceback
 import multiprocessing
 
+from setproctitle import setproctitle
+
 from . import loader
 from .queue import Queue
 from .exceptions import Reject
@@ -41,6 +43,7 @@ class Worker(multiprocessing.Process):
 
         """
         self._register_signals()
+        setproctitle('kuyruk: worker')
         self.started = time.time()
         self.channel.tx_select()
         while self._runnable():

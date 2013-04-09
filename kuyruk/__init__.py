@@ -21,6 +21,5 @@ logging.getLogger(__name__).addHandler(NullHandler())
 # TODO set application log level
 # TODO write a script for requeueing failed tasks
 # TODO coverage
-# TODO test disconnect and reconnect (vaurien)
 # TODO model extension
 # TODO support python 3

@@ -7,6 +7,8 @@ import logging
 import itertools
 import multiprocessing
 
+from setproctitle import setproctitle
+
 from .task import Task
 from .worker import Worker
 from .config import Config
@@ -72,6 +74,7 @@ class Kuyruk(object):
         """
         self.state = self.STATE_STARTING
         self._register_signals()
+        setproctitle('kuyruk: master')
 
         if self.config.MAX_LOAD is None:
             self.config.MAX_LOAD = multiprocessing.cpu_count()
@@ -120,6 +123,7 @@ class Kuyruk(object):
         logger.debug("Spawning new worker")
         num = self._get_next_worker_number()
         new_worker = Worker(num, worker.queue_name, self.config)
+        new_worker.start()
         self.workers.append(new_worker)
         self.workers.remove(worker)
 

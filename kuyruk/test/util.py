@@ -65,10 +65,10 @@ def run_kuyruk(
     return result
 
 
-def kill_kuyruk(signum=signal.SIGTERM):
-    pids = get_pids('kuyruk.__main__')
-    pid = min(pids)  # select master
-    kill_pid(pid, signum=signum)
+def kill_kuyruk(signum=signal.SIGTERM, worker='master'):
+    pids = get_pids('kuyruk: %s' % worker)
+    assert len(pids) == 1
+    kill_pid(pids[0], signum=signum)
 
 
 def get_pids(pattern):
