@@ -121,21 +121,18 @@ class Kuyruk(object):
 
         """
         start = time.time()
-        alive = True  # is any worker alive?
-        while alive:
+        any_alive = True
+        while any_alive:
+            any_alive = False
             for worker in list(self.workers):
                 if worker.is_alive():
-                    alive = True
-                    break
+                    any_alive = True
                 else:
                     if not self.stopping:
                         self._spawn_new_worker(worker)
-                        alive = True
-                        break
-            else:
-                alive = False
+                        any_alive = True
 
-            if alive:
+            if any_alive:
                 logger.debug("Waiting for workers... "
                              "%i seconds passed" % (time.time() - start))
                 time.sleep(1)
