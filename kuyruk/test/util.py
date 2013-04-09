@@ -67,7 +67,7 @@ def run_kuyruk(
 
 def kill_kuyruk(signum=signal.SIGTERM, worker='master'):
     pids = get_pids('kuyruk: %s' % worker)
-    assert len(pids) == 1
+    assert len(pids) == 1, pids
     kill_pid(pids[0], signum=signum)
 
 
