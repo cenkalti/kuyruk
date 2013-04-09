@@ -17,8 +17,6 @@ setup(
     url='http://github.com/cenkalti/kuyruk',
     packages=['kuyruk'],
     install_requires=install_requires,
-    tests_require=['scripttest'],
-    test_suite='kuyruk.test',
     zip_safe=True,
     entry_points={
         'console_scripts': [
