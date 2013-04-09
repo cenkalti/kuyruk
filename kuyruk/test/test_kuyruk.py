@@ -38,7 +38,7 @@ class KuyrukTestCase(unittest.TestCase):
         """Errored tasks must be retried every second"""
         raise_exception()
         result = run_kuyruk(seconds=2)
-        self.assertEqual(result.stdout.count('ZeroDivisionError'), 2)
+        self.assertEqual(result.stderr.count('ZeroDivisionError'), 2)
 
     @clear('kuyruk')
     def test_cold_shutdown(self):
