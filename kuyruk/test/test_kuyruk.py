@@ -1,9 +1,11 @@
 import logging
 import unittest
+import threading
+from time import sleep
 
 from kuyruk import Kuyruk, Task, Reject
 from kuyruk.task import TaskResult
-from util import run_kuyruk, clear
+from util import run_kuyruk, clear, delete_queue
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +60,18 @@ class KuyrukTestCase(unittest.TestCase):
         rejecting_task()
         result = run_kuyruk(seconds=2)
         self.assertEqual(result.stderr.count('Task is rejected'), 2)
+
+    @clear('kuyruk')
+    def test_delete_queue(self):
+        """Delete queue while worker is running"""
+        def delete_after(seconds):
+            sleep(seconds)
+            delete_queue('kuyruk')
+        t = threading.Thread(target=delete_after, args=(1, ))
+        t.start()
+        result = run_kuyruk(seconds=2)
+        print result
+        self.assertEqual(result.stderr.count('Declaring queue'), 2)
 
 
 kuyruk = Kuyruk()

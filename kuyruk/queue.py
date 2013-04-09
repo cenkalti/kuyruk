@@ -10,8 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 def require_declare(f):
-    """Declare queue before running the wrapping function."""
-    # TODO call the function first, if got an exception declare and call again
+    """Declare queue before running the wrapping function.
+    Also, if queue is deleted while worker is running, declare again.
+
+    """
     @wraps(f)
     def inner(self, *args, **kwargs):
         try:
@@ -24,6 +26,7 @@ def require_declare(f):
             return f(self, *args, **kwargs)
         except pika.exceptions.ChannelClosed as e:
             # If queue is not found, declare queue and try again
+            # Queue migth be deleted while working on this queue.
             if e.args[0] == 404:
                 logger.warning("Queue(%r) is not found", self.name)
                 self.declare()
@@ -44,7 +47,7 @@ class Queue(object):
             self.name = "%s_%s" % (self.name, socket.gethostname())
 
     def declare(self):
-        logger.warning('Decaring queue: %s', self.name)
+        logger.warning('Declaring queue: %s', self.name)
         self.channel.queue_declare(
             queue=self.name, durable=True,
             exclusive=False, auto_delete=False)
