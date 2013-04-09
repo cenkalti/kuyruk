@@ -4,6 +4,7 @@ import logging
 from functools import wraps
 
 import pika
+import pika.exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -13,12 +14,19 @@ def require_declare(f):
     # TODO call the function first, if got an exception declare and call again
     @wraps(f)
     def inner(self, *args, **kwargs):
-        if not self.declared:
-            self.channel.queue_declare(
-                queue=self.name, durable=True,
-                exclusive=False, auto_delete=False)
-            self.declared = True
-        return f(self, *args, **kwargs)
+        try:
+            if not self.declared:
+                # Runs only once
+                self.declare()
+                self.declared = True
+            return f(self, *args, **kwargs)
+        except pika.exceptions.ChannelClosed as e:
+            # If queue is not found, declare queue and try again
+            if e.args[0] == 404:
+                logger.warning("Queue(%r) is not found", self.name)
+                self.declare()
+                return f(self, *args, **kwargs)
+            raise
     return inner
 
 
@@ -33,13 +41,19 @@ class Queue(object):
         if self.local:
             self.name = "%s_%s" % (self.name, socket.gethostname())
 
+    def declare(self):
+        logger.warning('Decaring queue: %s', self.name)
+        self.channel.queue_declare(
+            queue=self.name, durable=True,
+            exclusive=False, auto_delete=False)
+
     @require_declare
     def delete(self):
         try:
             self.channel.queue_delete(queue=self.name)
-        except Exception as e:
+        except pika.exceptions.ChannelClosed as e:
             # do not raise exceptions if queue is not found
-            if e[0] != 404:
+            if e.args[0] != 404:
                 raise
 
     @require_declare
