@@ -40,9 +40,15 @@ class KuyrukTestCase(unittest.TestCase):
         raise_exception()
         result = run_kuyruk()
         assert 'ZeroDivisionError' in result.stderr
-        # Message must be discarded
-        queue = Queue('kuyruk', LazyConnection().channel())
-        self.assertEqual(len(queue), 0)
+        self.assert_empty('kuyruk')
+
+    @clear('kuyruk')
+    def test_retry(self):
+        """Errored tasks must be retried"""
+        retry_task()
+        result = run_kuyruk(seconds=2)
+        self.assertEqual(result.stderr.count('ZeroDivisionError'), 2)
+        self.assert_empty('kuyruk')
 
     @clear('kuyruk')
     def test_cold_shutdown(self):
@@ -77,6 +83,10 @@ class KuyrukTestCase(unittest.TestCase):
         print result
         self.assertEqual(result.stderr.count('Declaring queue'), 2)
 
+    def assert_empty(self, queue):
+        queue = Queue(queue, LazyConnection().channel())
+        self.assertEqual(len(queue), 0)
+
 
 kuyruk = Kuyruk()
 # These functions below needs to be at module level in order that
@@ -95,6 +105,11 @@ def print_task2(message):
 
 @kuyruk.task
 def raise_exception():
+    return 1 / 0
+
+
+@kuyruk.task(retry=1)
+def retry_task():
     return 1 / 0
 
 
