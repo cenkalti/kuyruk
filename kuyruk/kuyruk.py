@@ -38,19 +38,20 @@ class Kuyruk(object):
         self.last_worker_number = 0
         self.state = self.STATE_INIT
 
-    def task(self, queue='kuyruk', eager=False):
+    def task(self, queue='kuyruk', eager=False, retry=0):
         """Wrap functions with this decorator to convert them to background
         tasks. After wrapping, normal calls will send a message to queue
         instead of running the actual function.
 
         :param queue: Queue name for the tasks
         :param eager: Run task in process, do not use RabbitMQ
+        :param retry: Retry this times before give up
         :return: Callable Task object wrapping the original function
         """
         def decorator():
             def inner(f):
                 queue_ = 'kuyruk' if callable(queue) else queue
-                return Task(f, self, queue=queue_, eager=eager)
+                return Task(f, self, queue=queue_, eager=eager, retry=retry)
             return inner
 
         if callable(queue):

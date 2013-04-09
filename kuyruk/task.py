@@ -25,12 +25,14 @@ class TaskResult(object):
 
 class Task(object):
 
-    def __init__(self, f, kuyruk, queue='kuyruk', local=False, eager=False):
+    def __init__(self, f, kuyruk, queue='kuyruk',
+                 local=False, eager=False, retry=0):
         self.f = f
         self.kuyruk = kuyruk
         self.queue = queue
         self.local = local
         self.eager = eager
+        self.retry = retry
 
     def __repr__(self):
         return "<Task %s>" % self.fully_qualified_name
@@ -43,10 +45,14 @@ class Task(object):
             # Run wrapped function
             self.f(*args, **kwargs)
         else:
-            self._send_task({
+            task_description = {
                 'f': fname,
                 'args': args, 'kwargs': kwargs,
-                'timestamp': str(datetime.utcnow())})
+                'timestamp': str(datetime.utcnow())
+            }
+            if self.retry:
+                task_description['retry'] = self.retry
+            self._send_task(task_description)
 
         return TaskResult()
 
