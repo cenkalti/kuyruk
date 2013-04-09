@@ -2,7 +2,6 @@ import os
 import sys
 import signal
 import logging
-import traceback
 import threading
 import subprocess
 from time import sleep
