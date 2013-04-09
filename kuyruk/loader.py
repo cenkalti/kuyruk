@@ -6,7 +6,7 @@ from contextlib import contextmanager
 
 
 def get_fully_qualified_function_name(f):
-    """For a give function return it's fully qualified name as str."""
+    """For a given function return it's fully qualified name as str."""
     module_name = f.__module__
     if module_name == '__main__':
         module_name = get_main_module()[1]
