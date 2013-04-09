@@ -79,10 +79,11 @@ class KuyrukTestCase(unittest.TestCase):
         def delete_after(seconds):
             sleep(seconds)
             delete_queue('kuyruk')
-        t = threading.Thread(target=delete_after, args=(1, ))
+        t = threading.Thread(target=delete_after, args=(1.5, ))
         t.start()
-        result = run_kuyruk(seconds=2)
-        self.assertEqual(result.stderr.count('Declaring queue'), 2)
+        result = run_kuyruk(seconds=2.5)
+        count = result.stderr.count('Declaring queue')
+        assert count == 2
 
     def test_respawn(self):
         """Respawn a new worker if dead
@@ -94,20 +95,17 @@ class KuyrukTestCase(unittest.TestCase):
 
         """
         def kill_worker():
-            sleep(1)
+            sleep(1.5)
             pid_worker = get_pids('kuyruk: worker')[0]
             pids.append(pid_worker)
             kill_kuyruk(signal.SIGKILL, worker='worker')
-
-        def get_worker_pid():
-            sleep(2)
+            sleep(1.5)
             pid_worker = get_pids('kuyruk: worker')[0]
             pids.append(pid_worker)
 
         pids = deque()
         threading.Thread(target=kill_worker).start()
-        threading.Thread(target=get_worker_pid).start()
-        result = run_kuyruk(seconds=3)
+        result = run_kuyruk(seconds=3.5)
         assert 'Spawning new worker' in result.stderr
         assert pids[1] > pids[0]
 
