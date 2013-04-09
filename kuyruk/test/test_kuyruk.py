@@ -5,10 +5,10 @@ import threading
 from time import sleep
 from Queue import deque
 
-from kuyruk import Kuyruk, Task, Reject, Queue
-from kuyruk.connection import LazyConnection
+from kuyruk import Kuyruk, Task, Reject
 from kuyruk.task import TaskResult
 from util import run_kuyruk, kill_kuyruk, clear, delete_queue, get_pids
+from util import is_empty
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class KuyrukTestCase(unittest.TestCase):
         raise_exception()
         result = run_kuyruk()
         assert 'ZeroDivisionError' in result.stderr
-        self.assert_empty('kuyruk')
+        assert is_empty('kuyruk')
 
     @clear('kuyruk')
     def test_retry(self):
@@ -50,7 +50,7 @@ class KuyrukTestCase(unittest.TestCase):
         retry_task()
         result = run_kuyruk(seconds=3)
         self.assertEqual(result.stderr.count('ZeroDivisionError'), 2)
-        self.assert_empty('kuyruk')
+        assert is_empty('kuyruk')
 
     @clear('kuyruk')
     def test_cold_shutdown(self):
@@ -71,7 +71,8 @@ class KuyrukTestCase(unittest.TestCase):
         """Rejected tasks must be requeued again"""
         rejecting_task()
         result = run_kuyruk(seconds=3)
-        self.assertEqual(result.stderr.count('Task is rejected'), 2)
+        assert result.stderr.count('Task is rejected') > 1
+        assert not is_empty('kuyruk')
 
     @clear('kuyruk')
     def test_delete_queue(self):
@@ -108,10 +109,6 @@ class KuyrukTestCase(unittest.TestCase):
         result = run_kuyruk(seconds=4)
         assert 'Spawning new worker' in result.stderr
         assert pids[1] > pids[0]
-
-    def assert_empty(self, queue):
-        queue = Queue(queue, LazyConnection().channel())
-        self.assertEqual(len(queue), 0)
 
 
 kuyruk = Kuyruk()

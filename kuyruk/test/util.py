@@ -37,6 +37,11 @@ def delete_queue(*queues):
                 RabbitQueue(name, ch).delete()
 
 
+def is_empty(queue):
+    queue = RabbitQueue(queue, LazyConnection().channel())
+    return len(queue) == 0
+
+
 def run_kuyruk(
         queues='kuyruk',
         signum=signal.SIGINT,
