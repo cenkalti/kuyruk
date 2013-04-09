@@ -96,5 +96,6 @@ def kill_pid(pid, signum=signal.SIGTERM):
     try:
         logger.debug('killing %s', pid)
         os.kill(pid, signum)
-    except OSError:
-        traceback.print_exc()
+    except OSError as e:
+        if e.errno != 3:  # No such process
+            raise
