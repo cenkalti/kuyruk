@@ -19,7 +19,7 @@ class Worker(multiprocessing.Process):
     RESULT_ERROR = 1
     RESULT_REJECT = 2
 
-    def __init__(self, number, queue_name, config):
+    def __init__(self, number, queue_name, config, master_pid):
         """
         :param number: Worker number. This is used for displaying purposes.
         :param queue_name: Qeueu name that this worker gets the messages from
@@ -27,6 +27,7 @@ class Worker(multiprocessing.Process):
         """
         super(Worker, self).__init__(name="Worker-%i" % number)
         self.config = config
+        self.master_pid = master_pid
         self.connection = LazyConnection(
             self.config.RABBIT_HOST, self.config.RABBIT_PORT,
             self.config.RABBIT_USER, self.config.RABBIT_PASSWORD)

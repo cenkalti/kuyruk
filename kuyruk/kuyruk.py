@@ -37,6 +37,7 @@ class Kuyruk(object):
         self.workers = []
         self.last_worker_number = 0
         self.state = self.STATE_INIT
+        self.pid = None
 
     def task(self, queue='kuyruk', eager=False):
         """Wrap functions with this decorator to convert them to background
@@ -70,6 +71,7 @@ class Kuyruk(object):
 
         """
         self.state = self.STATE_STARTING
+        self.pid = os.getpid()
         self._register_signals()
 
         if self.config.MAX_LOAD is None:
@@ -110,7 +112,7 @@ class Kuyruk(object):
         """Start a new worker for each queue name"""
         logger.info('Starting to work on queues: %s', queues)
         for i, queue in enumerate(queues):
-            worker = Worker(i, queue, self.config)
+            worker = Worker(i, queue, self.config, self.pid)
             worker.start()
             self.workers.append(worker)
 
