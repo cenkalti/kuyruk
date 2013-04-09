@@ -16,6 +16,8 @@ from .exceptions import Reject
 # Add NullHandler to prevent logging warnings on startup
 logging.getLogger(__name__).addHandler(NullHandler())
 
+# TODO test delete queue while worker is running
+# TODO transactions
 # TODO class tasks
 # TODO retry count for tasks
 # TODO packaging test code
