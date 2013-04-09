@@ -52,6 +52,7 @@ def run_kuyruk(
             expect_stderr=True,  # logging output goes to stderr
             expect_error=expect_error)
         out.put(result)
+    ensure_not_running('kuyruk:')
     env = TestFileEnvironment()
     out = Queue()
     t = threading.Thread(target=target)
@@ -63,6 +64,14 @@ def run_kuyruk(
     result = out.get(timeout=2)
     logger.info(result)
     return result
+
+
+def ensure_not_running(pattern):
+    pids = get_pids(pattern)
+    for pid in pids:
+        kill_pid(pid, signum=signal.SIGKILL)
+    sleep(0.1)
+    assert get_pids(pattern) == []
 
 
 def kill_kuyruk(signum=signal.SIGTERM, worker='master'):
