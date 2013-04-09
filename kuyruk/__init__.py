@@ -16,7 +16,6 @@ from .exceptions import Reject
 # Add NullHandler to prevent logging warnings on startup
 logging.getLogger(__name__).addHandler(NullHandler())
 
-# TODO fix signals
 # TODO orphan childs should finish their last task and exit
 # TODO fix retry issue
 # TODO class tasks

@@ -61,6 +61,7 @@ class Worker(multiprocessing.Process):
 
             self.work(message)
             self.num_tasks += 1
+        logger.debug("End run")
 
     def stop(self):
         """Set stop flag.
@@ -111,6 +112,18 @@ class Worker(multiprocessing.Process):
         result = task.f(*args, **kwargs)
         logger.debug('Result: %r', result)
 
+    def _runnable(self):
+        self._check_master()
+        self._max_run_time()
+        self._max_tasks()
+        return not self._stop.is_set()
+
+    def _check_master(self):
+        try:
+            os.kill(self.master_pid, 0)
+        except OSError:
+            self.stop()
+
     def _max_run_time(self):
         if self.config.MAX_RUN_TIME is not None:
             passed_seconds = time.time() - self.started
@@ -126,11 +139,6 @@ class Worker(multiprocessing.Process):
 
     def _max_load(self):
         return os.getloadavg()[0] > self.config.MAX_LOAD
-
-    def _runnable(self):
-        self._max_run_time()
-        self._max_tasks()
-        return not self._stop.is_set()
 
     def _register_signals(self):
         signal.signal(signal.SIGINT, self._signal_handler)
