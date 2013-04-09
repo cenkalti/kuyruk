@@ -48,7 +48,7 @@ class KuyrukTestCase(unittest.TestCase):
     def test_retry(self):
         """Errored tasks must be retried"""
         retry_task()
-        result = run_kuyruk(seconds=2)
+        result = run_kuyruk(seconds=3)
         self.assertEqual(result.stderr.count('ZeroDivisionError'), 2)
         self.assert_empty('kuyruk')
 
@@ -70,7 +70,7 @@ class KuyrukTestCase(unittest.TestCase):
     def test_reject(self):
         """Rejected tasks must be requeued again"""
         rejecting_task()
-        result = run_kuyruk(seconds=2)
+        result = run_kuyruk(seconds=3)
         self.assertEqual(result.stderr.count('Task is rejected'), 2)
 
     @clear('kuyruk')
@@ -105,7 +105,7 @@ class KuyrukTestCase(unittest.TestCase):
 
         pids = deque()
         threading.Thread(target=kill_worker).start()
-        result = run_kuyruk(seconds=3.5)
+        result = run_kuyruk(seconds=4)
         assert 'Spawning new worker' in result.stderr
         assert pids[1] > pids[0]
 
