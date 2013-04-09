@@ -22,15 +22,20 @@ def clear(*queues):
     def decorator(f):
         @wraps(f)
         def inner(*args, **kwargs):
-            conn = LazyConnection()
-            ch = conn.channel()
-            with conn:
-                with ch:
-                    for name in queues:
-                        RabbitQueue(name, ch).delete()
+            delete_queue(*queues)
             return f(*args, **kwargs)
         return inner
     return decorator
+
+
+def delete_queue(*queues):
+    """Delete queues from RabbitMQ"""
+    conn = LazyConnection()
+    ch = conn.channel()
+    with conn:
+        with ch:
+            for name in queues:
+                RabbitQueue(name, ch).delete()
 
 
 def run_kuyruk(
