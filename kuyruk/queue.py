@@ -16,7 +16,9 @@ def require_declare(f):
     def inner(self, *args, **kwargs):
         try:
             if not self.declared:
-                # Runs only once
+                # This declare() here is runs only once when the first function
+                # is called on the queue. Queue needs to be declared before
+                # doing anything with the queue.
                 self.declare()
                 self.declared = True
             return f(self, *args, **kwargs)
@@ -47,7 +49,6 @@ class Queue(object):
             queue=self.name, durable=True,
             exclusive=False, auto_delete=False)
 
-    @require_declare
     def delete(self):
         try:
             self.channel.queue_delete(queue=self.name)
