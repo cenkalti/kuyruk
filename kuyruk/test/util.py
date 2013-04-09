@@ -67,11 +67,15 @@ def run_kuyruk(
 
 
 def ensure_not_running(pattern):
+    logger.debug('Ensuring cmd pattern: "%s" is not running', pattern)
     pids = get_pids(pattern)
+    logger.debug("pids: %s", pids)
     for pid in pids:
         kill_pid(pid, signum=signal.SIGKILL)
-    sleep(0.1)
-    assert get_pids(pattern) == []
+    sleep(1)
+    pids = get_pids(pattern)
+    logger.debug("pids after kill: %s", pids)
+    assert not pids
 
 
 def kill_kuyruk(signum=signal.SIGTERM, worker='master'):
