@@ -24,12 +24,6 @@ class Kuyruk(object):
 
     """
 
-    STATE_INIT = 0
-    STATE_STARTING = 1
-    STATE_STARTED = 2
-    STATE_STOPPING = 3
-    STATE_STOPPED = 4
-
     def __init__(self, config_object={}):
         """
         :param config_object: See config.py for default values.
@@ -38,7 +32,8 @@ class Kuyruk(object):
         self.config = Config(config_object)
         self.workers = []
         self.last_worker_number = 0
-        self.state = self.STATE_INIT
+        self.pid = None
+        self.stopping = False
 
     def task(self, queue='kuyruk', eager=False, retry=0):
         """Wrap functions with this decorator to convert them to background
@@ -72,7 +67,7 @@ class Kuyruk(object):
         received.
 
         """
-        self.state = self.STATE_STARTING
+        self.pid = os.getpid()
         self._register_signals()
         setproctitle('kuyruk: master')
 
@@ -89,32 +84,24 @@ class Kuyruk(object):
 
         queues = parse_queues_str(queues)
         self._start_workers(queues)
-        self.state = self.STATE_STARTED
         self._wait_for_workers()
-        self.state = self.STATE_STOPPED
 
-    def stop(self):
-        """Stop all running workers. Wait until their job is finished.
-        If called second time, kill workers immediately.
+    def stop_workers(self):
+        """Stop all running workers and exit."""
+        self.stopping = True
+        for worker in self.workers:
+            worker.stop()
 
-        """
-        logger.debug('Current state: %s', self.state)
-        if self.state == self.STATE_STARTED:
-            logger.warning("Warm shutdown")
-            self.state = self.STATE_STOPPING
-            for worker in self.workers:
-                worker.stop()
-        elif self.state == self.STATE_STOPPING:
-            logger.warning("Cold shutdown")
-            for worker in self.workers:
-                os.kill(worker.pid, signal.SIGKILL)
-            sys.exit(1)
+    def kill_workers(self):
+        """Kill workers without waiting their tasks to finish."""
+        for worker in self.workers:
+            os.kill(worker.pid, signal.SIGKILL)
 
     def _start_workers(self, queues):
         """Start a new worker for each queue name"""
         logger.info('Starting to work on queues: %s', queues)
         for i, queue in enumerate(queues):
-            worker = Worker(i, queue, self.config)
+            worker = Worker(i, queue, self.config, self.pid)
             worker.start()
             self.workers.append(worker)
 
@@ -122,10 +109,11 @@ class Kuyruk(object):
         """Spawn a new process with parameters same as the old worker."""
         logger.debug("Spawning new worker")
         num = self._get_next_worker_number()
-        new_worker = Worker(num, worker.queue_name, self.config)
+        new_worker = Worker(num, worker.queue_name, self.config, self.pid)
         new_worker.start()
         self.workers.append(new_worker)
         self.workers.remove(worker)
+        logger.debug(self.workers)
 
     def _wait_for_workers(self):
         """Loop until any of the self.workers is alive.
@@ -140,7 +128,7 @@ class Kuyruk(object):
                     alive = True
                     break
                 else:
-                    if self.state == self.STATE_STARTED:
+                    if not self.stopping:
                         self._spawn_new_worker(worker)
                         alive = True
                         break
@@ -158,11 +146,20 @@ class Kuyruk(object):
         return n
 
     def _register_signals(self):
-        signal.signal(signal.SIGINT, self._signal_handler)
-        signal.signal(signal.SIGTERM, self._signal_handler)
+        signal.signal(signal.SIGINT, self._handle_sigint)
+        signal.signal(signal.SIGTERM, self._handle_sigterm)
 
-    def _signal_handler(self, signum, frame):
-        self.stop()
+    def _handle_sigint(self, signum, frame):
+        if self.stopping:
+            logger.warning("Cold shutdown")
+            self.kill_workers()
+            sys.exit(1)
+        else:
+            logger.warning("Warm shutdown")
+            self.stop_workers()
+
+    def _handle_sigterm(self, signum, frame):
+        self.stop_workers()
 
 
 def parse_queues_str(s):

@@ -40,7 +40,7 @@ def delete_queue(*queues):
 
 def run_kuyruk(
         queues='kuyruk',
-        signum=signal.SIGTERM,
+        signum=signal.SIGINT,
         expect_error=False,
         seconds=1,
         cold_shutdown=False):
