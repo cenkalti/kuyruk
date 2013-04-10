@@ -9,7 +9,7 @@ $ pip install -e git+https://github.com/cenkalti/kuyruk.git#egg=kuyruk
 
 ## How to run the tests?
 ```bash
-$ pip install nose
+$ pip install nose pexpect
 $ nosetests
 ```
 
