@@ -43,6 +43,10 @@ def run_kuyruk(queues=None, save_failed_tasks=False):
     sleep_while(partial(get_pids, 'kuyruk:'))
 
 
+def run_requeue():
+    pexpect.run('%s -m kuyruk.requeue' % sys.executable)
+
+
 def kill_worker():
     pexpect.run("pkill -9 -f 'kuyruk: worker'")
 

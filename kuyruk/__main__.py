@@ -7,9 +7,13 @@ from kuyruk import Kuyruk
 logger = logging.getLogger(__name__)
 
 
-def main():
+def configure_logging():
     logging.getLogger('pika').level = logging.WARNING
     logging.basicConfig(level=logging.DEBUG)
+
+
+def main():
+    configure_logging()
 
     parser = optparse.OptionParser()
     parser.add_option('--config')

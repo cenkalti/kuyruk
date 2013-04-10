@@ -3,7 +3,7 @@ import unittest
 
 from kuyruk import Kuyruk, Task, Reject
 from kuyruk.task import TaskResult
-from util import run_kuyruk, kill_worker, delete_queue, get_pid
+from util import run_kuyruk, kill_worker, delete_queue, get_pid, run_requeue
 from util import is_empty
 
 logger = logging.getLogger(__name__)
@@ -111,6 +111,10 @@ class KuyrukTestCase(unittest.TestCase):
             child.expect('Saving failed task')
         assert is_empty('kuyruk')
         assert not is_empty('kuyruk_failed')
+
+        run_requeue()
+        assert is_empty('kuyruk_failed')
+        assert not is_empty('kuyruk')
 
 
 kuyruk = Kuyruk()

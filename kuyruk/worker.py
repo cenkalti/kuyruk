@@ -108,6 +108,7 @@ class Worker(multiprocessing.Process):
 
     def save_failed_task(self, task_description):
         logger.info('Saving failed task')
+        task_description['queue'] = self.queue_name
         failed_queue = Queue('kuyruk_failed', self.channel)
         failed_queue.send(task_description)
 
