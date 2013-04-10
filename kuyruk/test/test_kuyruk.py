@@ -3,13 +3,16 @@ import unittest
 
 from kuyruk import Kuyruk, Task, Reject
 from kuyruk.task import TaskResult
-from util import run_kuyruk, kill_worker, clear, delete_queue, get_pid
+from util import run_kuyruk, kill_worker, delete_queue, get_pid
 from util import is_empty
 
 logger = logging.getLogger(__name__)
 
 
 class KuyrukTestCase(unittest.TestCase):
+
+    def setUp(self):
+        delete_queue('kuyruk')
 
     def test_task_decorator(self):
         """Does task decorator works correctly?"""
@@ -18,21 +21,18 @@ class KuyrukTestCase(unittest.TestCase):
         # Decorator with args
         self.assertTrue(isinstance(print_task2, Task))
 
-    @clear('kuyruk')
     def test_simple_task(self):
         """Run a task on default queue"""
         print_task('hello world')
         with run_kuyruk() as child:
             child.expect('hello world')
 
-    @clear('another_queue')
     def test_another_queue(self):
         """Run a task on different queue"""
         print_task2('hello another')
         with run_kuyruk(queues='another_queue') as child:
             child.expect('hello another')
 
-    @clear('kuyruk')
     def test_exception(self):
         """Errored task message is discarded"""
         raise_exception()
@@ -40,7 +40,6 @@ class KuyrukTestCase(unittest.TestCase):
             child.expect('ZeroDivisionError')
         assert is_empty('kuyruk')
 
-    @clear('kuyruk')
     def test_retry(self):
         """Errored tasks must be retried"""
         retry_task()
@@ -49,7 +48,6 @@ class KuyrukTestCase(unittest.TestCase):
             child.expect('ZeroDivisionError')
         assert is_empty('kuyruk')
 
-    @clear('kuyruk')
     def test_cold_shutdown(self):
         """If the worker is stuck on the task it can be stopped by
         invoking cold shutdown"""
@@ -67,7 +65,6 @@ class KuyrukTestCase(unittest.TestCase):
         assert isinstance(result, TaskResult)
         self.assertTrue(eager_called)
 
-    @clear('kuyruk')
     def test_reject(self):
         """Rejected tasks must be requeued again"""
         rejecting_task()
@@ -78,7 +75,6 @@ class KuyrukTestCase(unittest.TestCase):
             child.wait()
         assert not is_empty('kuyruk')
 
-    @clear('kuyruk')
     def test_delete_queue(self):
         """Delete queue while worker is running"""
         with run_kuyruk() as child:
@@ -86,7 +82,6 @@ class KuyrukTestCase(unittest.TestCase):
             delete_queue('kuyruk')
             child.expect('Declaring queue')
 
-    @clear('kuyruk')
     def test_respawn(self):
         """Respawn a new worker if dead
 

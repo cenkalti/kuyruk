@@ -2,7 +2,7 @@ import sys
 import logging
 import subprocess
 from time import sleep
-from functools import wraps, partial
+from functools import partial
 from contextlib import contextmanager
 
 import pexpect
@@ -11,17 +11,6 @@ from ..connection import LazyConnection
 from ..queue import Queue as RabbitQueue
 
 logger = logging.getLogger(__name__)
-
-
-def clear(*queues):
-    """Decorator for deleting queue from RabbitMQ"""
-    def decorator(f):
-        @wraps(f)
-        def inner(*args, **kwargs):
-            delete_queue(*queues)
-            return f(*args, **kwargs)
-        return inner
-    return decorator
 
 
 def delete_queue(*queues):
