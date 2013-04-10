@@ -1,9 +1,6 @@
 import signal
 import logging
 import unittest
-import threading
-from time import sleep
-from Queue import deque
 
 from kuyruk import Kuyruk, Task, Reject
 from kuyruk.task import TaskResult
@@ -26,30 +23,31 @@ class KuyrukTestCase(unittest.TestCase):
     def test_simple_task(self):
         """Run a task on default queue"""
         print_task('hello world')
-        result = run_kuyruk()
-        assert 'hello world' in result.stdout
+        with run_kuyruk() as child:
+            child.expect('hello world')
 
     @clear('another_queue')
     def test_another_queue(self):
         """Run a task on different queue"""
         print_task2('hello another')
-        result = run_kuyruk(queues='another_queue')
-        assert 'hello another' in result.stdout
+        with run_kuyruk(queues='another_queue') as child:
+            child.expect('hello another')
 
     @clear('kuyruk')
     def test_exception(self):
         """Errored task message is discarded"""
         raise_exception()
-        result = run_kuyruk()
-        assert 'ZeroDivisionError' in result.stderr
+        with run_kuyruk() as child:
+            child.expect('ZeroDivisionError')
         assert is_empty('kuyruk')
 
     @clear('kuyruk')
     def test_retry(self):
         """Errored tasks must be retried"""
         retry_task()
-        result = run_kuyruk(seconds=3)
-        self.assertEqual(result.stderr.count('ZeroDivisionError'), 2)
+        with run_kuyruk() as child:
+            child.expect('ZeroDivisionError')
+            child.expect('ZeroDivisionError')
         assert is_empty('kuyruk')
 
     @clear('kuyruk')
@@ -57,8 +55,11 @@ class KuyrukTestCase(unittest.TestCase):
         """If the worker is stuck on the task it can be stopped by
         invoking cold shutdown"""
         loop_forever()
-        result = run_kuyruk(cold_shutdown=True, expect_error=True)
-        assert 'Cold shutdown' in result.stderr
+        with run_kuyruk() as child:
+            child.expect('looping forever')
+            child.sendintr()
+            child.sendintr()
+            child.expect('Cold shutdown')
 
     def test_eager(self):
         """Test eager mode for using in test environments"""
@@ -70,22 +71,22 @@ class KuyrukTestCase(unittest.TestCase):
     def test_reject(self):
         """Rejected tasks must be requeued again"""
         rejecting_task()
-        result = run_kuyruk(seconds=3)
-        assert result.stderr.count('Task is rejected') > 1
+        with run_kuyruk() as child:
+            child.expect('Task is rejected')
+            child.expect('Task is rejected')
+            child.sendintr()
+            child.wait()
         assert not is_empty('kuyruk')
 
     @clear('kuyruk')
     def test_delete_queue(self):
         """Delete queue while worker is running"""
-        def delete_after(seconds):
-            sleep(seconds)
+        with run_kuyruk() as child:
+            child.expect('No task')
             delete_queue('kuyruk')
-        t = threading.Thread(target=delete_after, args=(1.5, ))
-        t.start()
-        result = run_kuyruk(seconds=2.5)
-        count = result.stderr.count('Declaring queue')
-        assert count == 2
+            child.expect('Declaring queue')
 
+    @clear('kuyruk')
     def test_respawn(self):
         """Respawn a new worker if dead
 
@@ -95,20 +96,15 @@ class KuyrukTestCase(unittest.TestCase):
         worker will spawn a new child worker.
 
         """
-        def kill_worker():
-            sleep(1.5)
-            pid_worker = get_pids('kuyruk: worker')[0]
-            pids.append(pid_worker)
+        get_pid = lambda: get_pids('kuyruk: worker')[0]
+        with run_kuyruk() as child:
+            child.expect('No task')
+            pid1 = get_pid()
             kill_kuyruk(signal.SIGKILL, worker='worker')
-            sleep(1.5)
-            pid_worker = get_pids('kuyruk: worker')[0]
-            pids.append(pid_worker)
-
-        pids = deque()
-        threading.Thread(target=kill_worker).start()
-        result = run_kuyruk(seconds=4)
-        assert 'Spawning new worker' in result.stderr
-        assert pids[1] > pids[0]
+            child.expect('Spawning new worker')
+            child.expect('No task')
+            pid2 = get_pid()
+        assert pid2 > pid1
 
 
 kuyruk = Kuyruk()
@@ -139,7 +135,7 @@ def retry_task():
 @kuyruk.task
 def loop_forever():
     while 1:
-        pass
+        print 'looping forever'
 
 
 @kuyruk.task(eager=True)

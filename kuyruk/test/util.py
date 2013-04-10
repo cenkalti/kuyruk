@@ -2,13 +2,12 @@ import os
 import sys
 import signal
 import logging
-import threading
 import subprocess
 from time import sleep
-from Queue import Queue
 from functools import wraps
+from contextlib import contextmanager
 
-from scripttest import TestFileEnvironment
+import pexpect
 
 from ..connection import LazyConnection
 from ..queue import Queue as RabbitQueue
@@ -42,32 +41,15 @@ def is_empty(queue):
     return len(queue) == 0
 
 
-def run_kuyruk(
-        queues='kuyruk',
-        signum=signal.SIGINT,
-        expect_error=False,
-        seconds=1,
-        cold_shutdown=False):
-    def target():
-        result = env.run(
-            sys.executable,
-            '-m', 'kuyruk.__main__',  # run main module
-            '--queues', queues,
-            expect_stderr=True,  # logging output goes to stderr
-            expect_error=expect_error)
-        out.put(result)
-    ensure_not_running('kuyruk:')
-    env = TestFileEnvironment()
-    out = Queue()
-    t = threading.Thread(target=target)
-    t.start()
-    sleep(seconds)
-    kill_kuyruk(signum=signum)
-    if cold_shutdown:
-        kill_kuyruk(signum=signum)
-    result = out.get(timeout=2)
-    logger.info(result)
-    return result
+@contextmanager
+def run_kuyruk(queues='kuyruk'):
+    # ensure_not_running('kuyruk:')
+    child = pexpect.spawn(sys.executable, [
+        '-m', 'kuyruk.__main__',  # run main module
+        '--queues', queues,
+    ], timeout=10)
+    yield child
+    child.close(force=True)
 
 
 def ensure_not_running(pattern):
@@ -76,7 +58,7 @@ def ensure_not_running(pattern):
     logger.debug("pids: %s", pids)
     for pid in pids:
         kill_pid(pid, signum=signal.SIGKILL)
-    sleep(1)
+    sleep(0.1)
     pids = get_pids(pattern)
     logger.debug("pids after kill: %s", pids)
     assert not pids

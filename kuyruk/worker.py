@@ -55,7 +55,7 @@ class Worker(multiprocessing.Process):
 
             message = self.queue.receive()
             if message is None:
-                logger.debug('No tasks. Sleeping 1 second...')
+                logger.debug('No task. Sleeping 1 second...')
                 time.sleep(1)
                 continue
 
