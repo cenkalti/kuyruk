@@ -15,11 +15,3 @@ from .exceptions import Reject
 
 # Add NullHandler to prevent logging warnings on startup
 logging.getLogger(__name__).addHandler(NullHandler())
-
-# TODO class tasks (resolver)
-# TODO set kuyruk log level
-# TODO set application log level
-# TODO write a script for requeueing failed tasks
-# TODO coverage
-# TODO model extension
-# TODO support python 3
