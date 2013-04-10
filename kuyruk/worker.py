@@ -96,16 +96,20 @@ class Worker(multiprocessing.Process):
     def handle_exception(self, tag, task_description):
         retry_count = task_description.get('retry', 0)
         if retry_count:
+            logger.debug('Retry count: %s', retry_count)
             self.queue.discard(tag)
             task_description['retry'] = retry_count - 1
             self.queue.send(task_description)
         else:
+            logger.debug('No retry left')
+            self.queue.discard(tag)
             if self.config.SAVE_FAILED_TASKS:
                 self.save_failed_task(task_description)
-            self.queue.discard(tag)
 
     def save_failed_task(self, task_description):
-        raise NotImplementedError
+        logger.info('Saving failed task')
+        failed_queue = Queue('kuyruk_failed', self.channel)
+        failed_queue.send(task_description)
 
     def process_task(self, task_description):
         """Call task function.

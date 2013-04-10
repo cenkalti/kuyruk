@@ -101,6 +101,17 @@ class KuyrukTestCase(unittest.TestCase):
             pid2 = _pid()
         assert pid2 > pid1
 
+    def test_save_failed(self):
+        """Failed tasks are saved to another queue"""
+        delete_queue('kuyruk_failed')
+        raise_exception()
+        with run_kuyruk(save_failed_tasks=True) as child:
+            child.expect('ZeroDivisionError')
+            child.expect('No retry left')
+            child.expect('Saving failed task')
+        assert is_empty('kuyruk')
+        assert not is_empty('kuyruk_failed')
+
 
 kuyruk = Kuyruk()
 # These functions below needs to be at module level in order that

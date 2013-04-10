@@ -29,11 +29,15 @@ def is_empty(queue):
 
 
 @contextmanager
-def run_kuyruk(queues='kuyruk'):
-    child = pexpect.spawn(sys.executable, [
-        '-m', 'kuyruk.__main__',  # run main module
-        '--queues', queues,
-    ], timeout=10)
+def run_kuyruk(queues=None, save_failed_tasks=False):
+    args = ['-m', 'kuyruk.__main__']  # run main module
+    if queues:
+        args.extend(['--queues', queues])
+
+    if save_failed_tasks:
+        args.append('--save-failed-tasks')
+
+    child = pexpect.spawn(sys.executable, args, timeout=10)
     yield child
     child.terminate(force=True)
     sleep_while(partial(get_pids, 'kuyruk:'))
