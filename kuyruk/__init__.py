@@ -16,7 +16,6 @@ from .exceptions import Reject
 # Add NullHandler to prevent logging warnings on startup
 logging.getLogger(__name__).addHandler(NullHandler())
 
-# TODO use exit codes from child workers to indicate success or fail
 # TODO class tasks (resolver)
 # TODO set kuyruk log level
 # TODO set application log level
