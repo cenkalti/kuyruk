@@ -1,10 +1,8 @@
-import os
 import sys
-import signal
 import logging
 import subprocess
 from time import sleep
-from functools import wraps
+from functools import wraps, partial
 from contextlib import contextmanager
 
 import pexpect
@@ -43,31 +41,17 @@ def is_empty(queue):
 
 @contextmanager
 def run_kuyruk(queues='kuyruk'):
-    # ensure_not_running('kuyruk:')
     child = pexpect.spawn(sys.executable, [
         '-m', 'kuyruk.__main__',  # run main module
         '--queues', queues,
     ], timeout=10)
     yield child
-    child.close(force=True)
+    child.terminate(force=True)
+    sleep_while(partial(get_pids, 'kuyruk:'))
 
 
-def ensure_not_running(pattern):
-    logger.debug('Ensuring cmd pattern: "%s" is not running', pattern)
-    pids = get_pids(pattern)
-    logger.debug("pids: %s", pids)
-    for pid in pids:
-        kill_pid(pid, signum=signal.SIGKILL)
-    sleep(0.1)
-    pids = get_pids(pattern)
-    logger.debug("pids after kill: %s", pids)
-    assert not pids
-
-
-def kill_kuyruk(signum=signal.SIGTERM, worker='master'):
-    pids = get_pids('kuyruk: %s' % worker)
-    assert len(pids) == 1, pids
-    kill_pid(pids[0], signum=signum)
+def kill_worker():
+    pexpect.run("pkill -9 -f 'kuyruk: worker'")
 
 
 def get_pids(pattern):
@@ -84,10 +68,12 @@ def get_pids(pattern):
     return pids
 
 
-def kill_pid(pid, signum=signal.SIGTERM):
-    try:
-        logger.debug('killing %s', pid)
-        os.kill(pid, signum)
-    except OSError as e:
-        if e.errno != 3:  # No such process
-            raise
+def get_pid(pattern):
+    pids = get_pids(pattern)
+    assert len(pids) == 1
+    return pids[0]
+
+
+def sleep_while(f):
+    while f():
+        sleep(0.1)

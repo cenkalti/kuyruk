@@ -1,10 +1,9 @@
-import signal
 import logging
 import unittest
 
 from kuyruk import Kuyruk, Task, Reject
 from kuyruk.task import TaskResult
-from util import run_kuyruk, kill_kuyruk, clear, delete_queue, get_pids
+from util import run_kuyruk, kill_worker, clear, delete_queue, get_pid
 from util import is_empty
 
 logger = logging.getLogger(__name__)
@@ -58,6 +57,7 @@ class KuyrukTestCase(unittest.TestCase):
         with run_kuyruk() as child:
             child.expect('looping forever')
             child.sendintr()
+            child.expect('Warm shutdown')
             child.sendintr()
             child.expect('Cold shutdown')
 
@@ -96,14 +96,14 @@ class KuyrukTestCase(unittest.TestCase):
         worker will spawn a new child worker.
 
         """
-        get_pid = lambda: get_pids('kuyruk: worker')[0]
+        _pid = lambda: get_pid('kuyruk: worker')
         with run_kuyruk() as child:
             child.expect('No task')
-            pid1 = get_pid()
-            kill_kuyruk(signal.SIGKILL, worker='worker')
+            pid1 = _pid()
+            kill_worker()
             child.expect('Spawning new worker')
             child.expect('No task')
-            pid2 = get_pid()
+            pid2 = _pid()
         assert pid2 > pid1
 
 
