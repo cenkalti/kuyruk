@@ -1,8 +1,10 @@
 import os
 import sys
-import inspect
+import logging
 import importlib
 from contextlib import contextmanager
+
+logger = logging.getLogger(__name__)
 
 
 def get_fully_qualified_function_name(f):
@@ -11,14 +13,12 @@ def get_fully_qualified_function_name(f):
     if module_name == '__main__':
         module_name = get_main_module()[1]
 
-    if inspect.ismethod(f):
-        return module_name + '.' + f.__self__.__name__ + '.' + f.__name__
-    else:
-        return module_name + '.' + f.__name__
+    return module_name + '.' + f.__name__
 
 
 def import_task(fully_qualified_function_name):
     """Find and return the function for given function name."""
+    logger.debug('fq name: %s', fully_qualified_function_name)
     module_name, func_name = fully_qualified_function_name.rsplit('.', 1)
     module = import_task_module(module_name)
     return getattr(module, func_name)
