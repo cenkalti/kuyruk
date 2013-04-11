@@ -19,17 +19,9 @@ def get_fully_qualified_function_name(f):
 
 def import_task(fully_qualified_function_name):
     """Find and return the function for given function name."""
-    module_name, func_name = split_function_name(fully_qualified_function_name)
+    module_name, func_name = fully_qualified_function_name.rsplit('.', 1)
     module = import_task_module(module_name)
     return getattr(module, func_name)
-
-
-def split_function_name(name):
-    """Split given fully qualified function name into module name and
-    function name pair."""
-    reverse_str = lambda s: s[::-1]
-    func_name, module_name = map(reverse_str, reverse_str(name).split('.', 1))
-    return module_name, func_name
 
 
 def import_task_module(module_name):
