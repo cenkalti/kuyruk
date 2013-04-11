@@ -59,6 +59,9 @@ def cwd_in_path():
 def get_main_module():
     """:return main module and module name pair"""
     main_module = sys.modules['__main__']
+    if not hasattr(main_module, '__file__'):
+        # if run from interactive shell
+        return None, None
     filename = os.path.basename(main_module.__file__)
     module_name = os.path.splitext(filename)[0]
     return main_module, module_name
