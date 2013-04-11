@@ -10,17 +10,20 @@ logger = logging.getLogger(__name__)
 
 class TaskResult(object):
 
-    def __getattribute__(self, item):
-        raise Exception
+    def __getattr__(self, item):
+        raise Exception(item)
 
     def __getitem__(self, item):
-        raise Exception
+        raise Exception(item)
 
     def __setattr__(self, key, value):
-        raise Exception
+        raise Exception(key, value)
 
     def __setitem__(self, key, value):
-        raise Exception
+        raise Exception(key, value)
+
+    def __repr__(self):
+        return 'TaskResult()'
 
 
 class Task(object):
