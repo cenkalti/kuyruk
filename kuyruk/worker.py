@@ -19,7 +19,6 @@ class Worker(multiprocessing.Process):
 
     def __init__(self, queue_name, config, master_pid):
         """
-        :param number: Worker number. This is used for displaying purposes.
         :param queue_name: Qeueu name that this worker gets the messages from
         :param config: Configuration object
         """
@@ -62,7 +61,7 @@ class Worker(multiprocessing.Process):
             self.work(*message)
             self.channel.tx_commit()
             self.num_tasks += 1
-        
+
         logger.debug("End run")
 
     def stop(self):
