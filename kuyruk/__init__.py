@@ -13,5 +13,7 @@ from .worker import Worker
 from .queue import Queue
 from .exceptions import Reject
 
+__version__ = '0.1.0'
+
 # Add NullHandler to prevent logging warnings on startup
 logging.getLogger(__name__).addHandler(NullHandler())
