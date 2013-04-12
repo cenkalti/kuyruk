@@ -17,13 +17,13 @@ logger = logging.getLogger(__name__)
 
 class Worker(multiprocessing.Process):
 
-    def __init__(self, number, queue_name, config, master_pid):
+    def __init__(self, queue_name, config, master_pid):
         """
         :param number: Worker number. This is used for displaying purposes.
         :param queue_name: Qeueu name that this worker gets the messages from
         :param config: Configuration object
         """
-        super(Worker, self).__init__(name="Worker-%i" % number)
+        super(Worker, self).__init__()
         self.config = config
         self.master_pid = master_pid
         self.connection = LazyConnection(

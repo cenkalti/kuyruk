@@ -31,7 +31,6 @@ class Kuyruk(object):
         """
         self.config = Config(config_object)
         self.workers = []
-        self.last_worker_number = 0
         self.pid = None
         self.stopping = False
 
@@ -100,16 +99,15 @@ class Kuyruk(object):
     def _start_workers(self, queues):
         """Start a new worker for each queue name"""
         logger.info('Starting to work on queues: %s', queues)
-        for i, queue in enumerate(queues):
-            worker = Worker(i, queue, self.config, self.pid)
+        for queue in queues:
+            worker = Worker(queue, self.config, self.pid)
             worker.start()
             self.workers.append(worker)
 
     def _spawn_new_worker(self, worker):
         """Spawn a new process with parameters same as the old worker."""
         logger.debug("Spawning new worker")
-        num = self._get_next_worker_number()
-        new_worker = Worker(num, worker.queue_name, self.config, self.pid)
+        new_worker = Worker(worker.queue_name, self.config, self.pid)
         new_worker.start()
         self.workers.append(new_worker)
         self.workers.remove(worker)
@@ -136,11 +134,6 @@ class Kuyruk(object):
                 logger.debug("Waiting for workers... "
                              "%i seconds passed" % (time.time() - start))
                 time.sleep(1)
-
-    def _get_next_worker_number(self):
-        n = self.last_worker_number
-        self.last_worker_number += 1
-        return n
 
     def _register_signals(self):
         signal.signal(signal.SIGINT, self._handle_sigint)
