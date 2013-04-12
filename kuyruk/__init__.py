@@ -14,4 +14,6 @@ from .queue import Queue
 from .exceptions import Reject
 
 # Add NullHandler to prevent logging warnings on startup
-logging.getLogger(__name__).addHandler(NullHandler())
+null_handler = NullHandler()
+logging.getLogger('kuyruk').addHandler(null_handler)
+logging.getLogger('pika').addHandler(null_handler)
