@@ -10,20 +10,23 @@ logger = logging.getLogger(__name__)
 
 class TaskResult(object):
 
+    def __init__(self, task):
+        self.task = task
+
     def __getattr__(self, item):
         raise Exception(item)
 
     def __getitem__(self, item):
         raise Exception(item)
 
-    def __setattr__(self, key, value):
-        raise Exception(key, value)
-
     def __setitem__(self, key, value):
         raise Exception(key, value)
 
     def __repr__(self):
-        return 'TaskResult()'
+        return '<TaskResult of %s>' % self.task.fully_qualified_name
+
+    def __str__(self):
+        return self.__repr__()
 
 
 class Task(object):
@@ -57,7 +60,7 @@ class Task(object):
                 task_description['retry'] = self.retry
             self._send_task(task_description)
 
-        return TaskResult()
+        return TaskResult(self)
 
     def _send_task(self, task_description):
         connection = LazyConnection(
