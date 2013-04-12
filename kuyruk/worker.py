@@ -62,6 +62,7 @@ class Worker(multiprocessing.Process):
             self.work(*message)
             self.channel.tx_commit()
             self.num_tasks += 1
+        
         logger.debug("End run")
 
     def stop(self):
