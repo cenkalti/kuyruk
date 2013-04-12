@@ -80,8 +80,6 @@ class Worker(multiprocessing.Process):
 
         try:
             self.process_task(task_description)
-            logger.debug('Task is successful')
-            self.queue.ack(tag)
         # sleep() calls below prevent cpu burning
         except Reject:
             logger.info('Task is rejected')
@@ -92,6 +90,9 @@ class Worker(multiprocessing.Process):
             logger.error(traceback.format_exc())
             time.sleep(1)
             self.handle_exception(tag, task_description)
+        else:
+            logger.debug('Task is successful')
+            self.queue.ack(tag)
 
     def handle_exception(self, tag, task_description):
         retry_count = task_description.get('retry', 0)
