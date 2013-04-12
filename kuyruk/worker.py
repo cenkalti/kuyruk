@@ -59,7 +59,7 @@ class Worker(multiprocessing.Process):
                 time.sleep(1)
                 continue
 
-            self.work(message)
+            self.work(*message)
             self.channel.tx_commit()
             self.num_tasks += 1
         logger.debug("End run")
@@ -74,8 +74,7 @@ class Worker(multiprocessing.Process):
         logger.warning("Stopping %s...", self)
         self._stop.set()
 
-    def work(self, message):
-        tag, task_description = message
+    def work(self, tag, task_description):
         logger.info('got message: %s', task_description)
 
         try:
