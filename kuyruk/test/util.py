@@ -1,4 +1,6 @@
+import os
 import sys
+import signal
 import logging
 import subprocess
 from time import sleep
@@ -39,7 +41,11 @@ def run_kuyruk(queues=None, save_failed_tasks=False):
 
     child = pexpect.spawn(sys.executable, args, timeout=10)
     yield child
-    child.terminate(force=True)
+    try:
+        os.killpg(child.pid, signal.SIGKILL)
+    except OSError as e:
+        if e.errno != 3:  # No such process
+            raise
     sleep_while(partial(get_pids, 'kuyruk:'))
 
 
