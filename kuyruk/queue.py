@@ -57,7 +57,7 @@ class Queue(object):
 
     def delete(self):
         try:
-            self.channel.queue_delete(queue=self.name)
+            return self.channel.queue_delete(queue=self.name)
         except pika.exceptions.ChannelClosed as e:
             # do not raise exceptions if queue is not found
             if e.args[0] != 404:
@@ -65,21 +65,45 @@ class Queue(object):
 
     @require_declare
     def ack(self, delivery_tag):
-        self.channel.basic_ack(delivery_tag=delivery_tag)
+        return self.channel.basic_ack(delivery_tag=delivery_tag)
 
     @require_declare
     def reject(self, delivery_tag):
         """Reject the message. Message will be delivered to another worker."""
-        self.channel.basic_reject(delivery_tag=delivery_tag, requeue=True)
+        return self.channel.basic_reject(
+            delivery_tag=delivery_tag, requeue=True)
 
     @require_declare
     def discard(self, delivery_tag):
         """Discard the message. Discarded messages will be lost."""
-        self.channel.basic_reject(delivery_tag=delivery_tag, requeue=False)
+        return self.channel.basic_reject(
+            delivery_tag=delivery_tag, requeue=False)
 
     @require_declare
     def recover(self):
-        self.channel.basic_recover(requeue=True)
+        return self.channel.basic_recover(requeue=True)
+
+    @require_declare
+    def basic_consume(self, callback):
+        return self.channel.basic_consume(callback, self.name)
+
+    @require_declare
+    def consume(self):
+        for method, properies, body in self.channel.consume(self.name):
+            obj = pickle.loads(body)
+            logger.debug(
+                'Message received in queue: %s message: %s', self.name, obj)
+            yield method.delivery_tag, obj
+
+    @require_declare
+    def consume_one(self):
+        message = next(self.consume())
+        self.cancel()
+        return message
+
+    @require_declare
+    def cancel(self):
+        return self.channel.cancel()
 
     @require_declare
     def receive(self):
@@ -101,7 +125,7 @@ class Queue(object):
         properties = pika.BasicProperties(
             content_type='application/python-pickle',
             delivery_mode=2)
-        self.channel.basic_publish(
+        return self.channel.basic_publish(
             exchange='',
             routing_key=self.name,
             body=pickle.dumps(obj),
