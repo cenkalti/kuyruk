@@ -52,11 +52,13 @@ class Worker(multiprocessing.Process):
                 time.sleep(10)
                 continue
 
-            message = self.queue.receive()
-            if message is None:
-                logger.debug('No task. Sleeping 1 second...')
-                time.sleep(1)
-                continue
+            try:
+                message = self.queue.consume_one()
+            except Exception as e:
+                if e.args[0] == 4:  # Interrupted system call
+                    break
+                else:
+                    raise
 
             self.work(*message)
             self.channel.tx_commit()
