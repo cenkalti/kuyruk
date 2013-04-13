@@ -2,7 +2,7 @@
 from setuptools import setup
 
 install_requires = [
-    'pika>=0.9.9, <1',
+    'pika>=0.9.12, <1',
     'setproctitle>=1.1.7, <2',
 ]
 
