@@ -1,5 +1,6 @@
 import os
 import time
+import pickle
 import signal
 import logging
 import traceback
@@ -45,26 +46,29 @@ class Worker(multiprocessing.Process):
         self._register_signals()
         setproctitle('kuyruk: worker')
         self.started = time.time()
+        self.queue.declare()
+        self.channel.basic_qos(prefetch_count=1)
         self.channel.tx_select()
-        while self._runnable():
-            if self._max_load():
-                logger.debug('Load is over %s. Sleeping 10 seconds...')
-                time.sleep(10)
-                continue
 
-            try:
-                message = self.queue.consume_one()
-            except Exception as e:
-                if e.args[0] == 4:  # Interrupted system call
-                    break
-                else:
-                    raise
+        logger.info('Starting consume')
+        for message in self.channel.consume(self.queue_name):
+            self.on_message(None, *message)
+            if not self._runnable():
+                break
 
-            self.work(*message)
-            self.channel.tx_commit()
-            self.num_tasks += 1
+        #     if self._max_load():
+        #         logger.debug('Load is over %s. Sleeping 10 seconds...')
+        #         time.sleep(10)
+        #         continue
 
-        logger.debug("End run")
+        logger.debug("End run worker")
+
+    def on_message(self, channel, method, properties, body):
+        obj = pickle.loads(body)
+        logger.debug(
+            'Message received in queue: %s message: %s', self.name, obj)
+        self.work(method.delivery_tag, obj)
+        self.channel.tx_commit()
 
     def stop(self):
         """Set stop flag.
@@ -75,6 +79,7 @@ class Worker(multiprocessing.Process):
         """
         logger.warning("Stopping %s...", self)
         self._stop.set()
+        self.channel.cancel()
 
     def work(self, tag, task_description):
         logger.info('got message: %s', task_description)
@@ -113,6 +118,7 @@ class Worker(multiprocessing.Process):
         task_description['queue'] = self.queue_name
         failed_queue = Queue('kuyruk_failed', self.channel)
         failed_queue.send(task_description)
+        logger.debug('Saved')
 
     def process_task(self, task_description):
         """Call task function.
@@ -159,9 +165,9 @@ class Worker(multiprocessing.Process):
         return os.getloadavg()[0] > self.config.MAX_LOAD
 
     def _register_signals(self):
-        signal.signal(signal.SIGINT, self._signal_handler)
-        signal.signal(signal.SIGTERM, self._signal_handler)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        signal.signal(signal.SIGTERM, self._sitterm_handler)
 
-    def _signal_handler(self, signum, frame):
-        logger.warning("Catched %s" % signum)
+    def _sitterm_handler(self, signum, frame):
+        logger.warning("Catched SIGTERM")
         self.stop()

@@ -4,13 +4,14 @@ import signal
 import logging
 import subprocess
 from time import sleep
-from functools import partial
 from contextlib import contextmanager
 
 import pexpect
 
 from ..connection import LazyConnection
 from ..queue import Queue as RabbitQueue
+
+TIMEOUT = 5
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ def is_empty(queue):
 
 
 @contextmanager
-def run_kuyruk(queues=None, save_failed_tasks=False):
+def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
     args = ['-m', 'kuyruk.__main__']  # run main module
     if queues:
         args.extend(['--queues', queues])
@@ -39,14 +40,25 @@ def run_kuyruk(queues=None, save_failed_tasks=False):
     if save_failed_tasks:
         args.append('--save-failed-tasks')
 
-    child = pexpect.spawn(sys.executable, args, timeout=10)
+    child = pexpect.spawn(sys.executable, args, timeout=TIMEOUT)
     yield child
+    if terminate:
+        child.kill(signal.SIGTERM)
+        child.expect('End run master', timeout=TIMEOUT)
     try:
         os.killpg(child.pid, signal.SIGKILL)
     except OSError as e:
-        if e.errno != 3:  # No such process
+        if e.errno not in (1, 3):  # No such process
             raise
-    sleep_while(partial(get_pids, 'kuyruk:'))
+    sleep_until(not_running, timeout=TIMEOUT)
+
+
+def not_running():
+    return not is_running()
+
+
+def is_running():
+    return get_pids('kuyruk:')
 
 
 def run_requeue():
@@ -77,6 +89,17 @@ def get_pid(pattern):
     return pids[0]
 
 
-def sleep_while(f):
-    while f():
+def sleep_until(f, timeout=None):
+    return sleep_while(lambda: not f(), timeout)
+
+
+def sleep_while(f, timeout=None):
+    def wait():
+        if timeout and timeout < 0:
+            raise Exception('Timeout')
+        return f()
+
+    while wait():
         sleep(0.1)
+        if timeout:
+            timeout -= 0.1

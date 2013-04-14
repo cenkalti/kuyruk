@@ -1,10 +1,11 @@
 import logging
 import unittest
+from time import sleep
 
 from kuyruk import Kuyruk, Task, Reject
 from kuyruk.task import TaskResult
 from util import run_kuyruk, kill_worker, delete_queue, get_pid, run_requeue
-from util import is_empty
+from util import is_empty, sleep_until, not_running, TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -52,12 +53,13 @@ class KuyrukTestCase(unittest.TestCase):
         """If the worker is stuck on the task it can be stopped by
         invoking cold shutdown"""
         loop_forever()
-        with run_kuyruk() as child:
+        with run_kuyruk(terminate=False) as child:
             child.expect('looping forever')
             child.sendintr()
             child.expect('Warm shutdown')
             child.sendintr()
             child.expect('Cold shutdown')
+            sleep_until(not_running, timeout=TIMEOUT)
 
     def test_eager(self):
         """Test eager mode for using in test environments"""
@@ -71,16 +73,7 @@ class KuyrukTestCase(unittest.TestCase):
         with run_kuyruk() as child:
             child.expect('Task is rejected')
             child.expect('Task is rejected')
-            child.sendintr()
-            child.wait()
         assert not is_empty('kuyruk')
-
-    def test_delete_queue(self):
-        """Delete queue while worker is running"""
-        with run_kuyruk() as child:
-            child.expect('No task')
-            delete_queue('kuyruk')
-            child.expect('Declaring queue')
 
     def test_respawn(self):
         """Respawn a new worker if dead
@@ -93,11 +86,11 @@ class KuyrukTestCase(unittest.TestCase):
         """
         _pid = lambda: get_pid('kuyruk: worker')
         with run_kuyruk() as child:
-            child.expect('No task')
+            child.expect('Starting consume')
             pid1 = _pid()
             kill_worker()
             child.expect('Spawning new worker')
-            child.expect('No task')
+            child.expect('Starting consume')
             pid2 = _pid()
         assert pid2 > pid1
 
@@ -109,6 +102,7 @@ class KuyrukTestCase(unittest.TestCase):
             child.expect('ZeroDivisionError')
             child.expect('No retry left')
             child.expect('Saving failed task')
+            child.expect('Saved')
         assert is_empty('kuyruk')
         assert not is_empty('kuyruk_failed')
 
@@ -158,3 +152,8 @@ eager_called = []
 @kuyruk.task
 def rejecting_task():
     raise Reject
+
+
+@kuyruk.task
+def sleeping_task(seconds):
+    sleep(seconds)

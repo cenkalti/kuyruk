@@ -84,12 +84,13 @@ class Kuyruk(object):
         queues = parse_queues_str(queues)
         self._start_workers(queues)
         self._wait_for_workers()
+        logger.info('End run master')
 
     def stop_workers(self):
         """Stop all running workers and exit."""
         self.stopping = True
         for worker in self.workers:
-            worker.stop()
+            os.kill(worker.pid, signal.SIGTERM)
 
     def kill_workers(self):
         """Kill workers without waiting their tasks to finish."""

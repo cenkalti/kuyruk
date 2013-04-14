@@ -63,29 +63,21 @@ class Queue(object):
             if e.args[0] != 404:
                 raise
 
-    @require_declare
     def ack(self, delivery_tag):
         return self.channel.basic_ack(delivery_tag=delivery_tag)
 
-    @require_declare
     def reject(self, delivery_tag):
         """Reject the message. Message will be delivered to another worker."""
         return self.channel.basic_reject(
             delivery_tag=delivery_tag, requeue=True)
 
-    @require_declare
     def discard(self, delivery_tag):
         """Discard the message. Discarded messages will be lost."""
         return self.channel.basic_reject(
             delivery_tag=delivery_tag, requeue=False)
 
-    @require_declare
     def recover(self):
         return self.channel.basic_recover(requeue=True)
-
-    @require_declare
-    def basic_consume(self, callback):
-        return self.channel.basic_consume(callback, self.name)
 
     @require_declare
     def consume(self):
@@ -95,13 +87,6 @@ class Queue(object):
                 'Message received in queue: %s message: %s', self.name, obj)
             yield method.delivery_tag, obj
 
-    @require_declare
-    def consume_one(self):
-        message = next(self.consume())
-        self.cancel()
-        return message
-
-    @require_declare
     def cancel(self):
         return self.channel.cancel()
 
