@@ -1,3 +1,4 @@
+import os
 import sys
 import signal
 import logging
@@ -52,8 +53,21 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
     finally:
         # Kill all running kuyruk processes
         def kill():
+            try:
+                os.killpg(child.pid, signal.SIGKILL)
+                sleep(0.1)
+            except Exception as e:
+                logger.error(e)
+
+            try:
+                os.kill(child.pid, signal.SIGKILL)
+                sleep(0.1)
+            except Exception as e:
+                logger.error(e)
+
             kill_all(signal.SIGKILL)
             sleep(0.1)
+
         do_until(kill, not_running, timeout=TIMEOUT)
 
 
