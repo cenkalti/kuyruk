@@ -50,10 +50,13 @@ class Worker(multiprocessing.Process):
         self.channel.tx_select()
 
         logger.info('Starting consume')
-        for message in self.channel.consume(self.queue_name):
-            self.on_message(None, *message)
+        for tag, task_description in self.queue.consume():
+            self.process_task(tag, task_description)
+            self.channel.tx_commit()
             if not self._runnable():
                 break
+
+        self.queue.cancel()
 
         #     if self._max_load():
         #         logger.debug('Load is over %s. Sleeping 10 seconds...')
@@ -61,13 +64,6 @@ class Worker(multiprocessing.Process):
         #         continue
 
         logger.debug("End run worker")
-
-    def on_message(self, channel, method, properties, body):
-        obj = pickle.loads(body)
-        logger.debug(
-            'Message received in queue: %s message: %s', self.name, obj)
-        self.work(method.delivery_tag, obj)
-        self.channel.tx_commit()
 
     def stop(self):
         """Set stop flag.
@@ -80,11 +76,11 @@ class Worker(multiprocessing.Process):
         self._stop.set()
         self.channel.cancel()
 
-    def work(self, tag, task_description):
+    def process_task(self, tag, task_description):
         logger.info('got message: %s', task_description)
 
         try:
-            self.process_task(task_description)
+            self.import_and_call_task(task_description)
         # sleep() calls below prevent cpu burning
         except Reject:
             logger.info('Task is rejected')
@@ -119,7 +115,7 @@ class Worker(multiprocessing.Process):
         failed_queue.send(task_description)
         logger.debug('Saved')
 
-    def process_task(self, task_description):
+    def import_and_call_task(self, task_description):
         """Call task function.
         This is the method where user modules are loaded.
 

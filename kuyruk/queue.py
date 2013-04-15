@@ -55,13 +55,32 @@ class Queue(object):
             queue=self.name, durable=True,
             exclusive=False, auto_delete=False)
 
-    def delete(self):
-        try:
-            return self.channel.queue_delete(queue=self.name)
-        except pika.exceptions.ChannelClosed as e:
-            # do not raise exceptions if queue is not found
-            if e.args[0] != 404:
-                raise
+    @require_declare
+    def receive(self):
+        """Get a single message from queue."""
+        message = self.channel.basic_get(self.name)
+        return self._decode(message)
+
+    @require_declare
+    def send(self, obj):
+        """Send a single message to the queue. obj should be pickleable."""
+        logger.info('sending to queue: %s message: %r', self.name, obj)
+        properties = pika.BasicProperties(
+            content_type='application/python-pickle',
+            delivery_mode=2)
+        return self.channel.basic_publish(
+            exchange='',
+            routing_key=self.name,
+            body=pickle.dumps(obj),
+            properties=properties)
+
+    @require_declare
+    def consume(self):
+        for message in self.channel.consume(self.name):
+            yield self._decode(message)
+
+    def cancel(self):
+        return self.channel.cancel()
 
     def ack(self, delivery_tag):
         return self.channel.basic_ack(delivery_tag=delivery_tag)
@@ -79,39 +98,20 @@ class Queue(object):
     def recover(self):
         return self.channel.basic_recover(requeue=True)
 
-    @require_declare
-    def consume(self):
-        for method, properies, body in self.channel.consume(self.name):
-            obj = pickle.loads(body)
-            logger.debug(
-                'Message received in queue: %s message: %s', self.name, obj)
-            yield method.delivery_tag, obj
+    def delete(self):
+        try:
+            return self.channel.queue_delete(queue=self.name)
+        except pika.exceptions.ChannelClosed as e:
+            # do not raise exceptions if queue is not found
+            if e.args[0] != 404:
+                raise
 
-    def cancel(self):
-        return self.channel.cancel()
-
-    @require_declare
-    def receive(self):
-        """Get a single message from queue. If not any message is available
-        returns None."""
-        method_frame, header_frame, body = self.channel.basic_get(self.name)
+    def _decode(self, message):
+        method, properies, body = message
         if body is None:
-            return None
+            return None, None
 
         obj = pickle.loads(body)
         logger.debug(
             'Message received in queue: %s message: %s', self.name, obj)
-        return method_frame.delivery_tag, obj
-
-    @require_declare
-    def send(self, obj):
-        """Send a single message to the queue. obj should be pickleable."""
-        logger.info('sending to queue: %s message: %r', self.name, obj)
-        properties = pika.BasicProperties(
-            content_type='application/python-pickle',
-            delivery_mode=2)
-        return self.channel.basic_publish(
-            exchange='',
-            routing_key=self.name,
-            body=pickle.dumps(obj),
-            properties=properties)
+        return method.delivery_tag, obj
