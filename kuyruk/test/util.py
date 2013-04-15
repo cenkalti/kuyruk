@@ -45,11 +45,6 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
     if terminate:
         child.kill(signal.SIGTERM)
         child.expect('End run master', timeout=TIMEOUT)
-    try:
-        os.killpg(child.pid, signal.SIGKILL)
-    except OSError as e:
-        if e.errno not in (1, 3):  # No such process
-            raise
     sleep_until(not_running, timeout=TIMEOUT)
 
 
