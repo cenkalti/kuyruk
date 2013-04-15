@@ -88,7 +88,6 @@ class Kuyruk(object):
 
     def stop_workers(self):
         """Stop all running workers and exit."""
-        self.stopping = True
         for worker in self.workers:
             os.kill(worker.pid, signal.SIGTERM)
 
@@ -139,6 +138,7 @@ class Kuyruk(object):
     def _register_signals(self):
         signal.signal(signal.SIGINT, self._handle_sigint)
         signal.signal(signal.SIGTERM, self._handle_sigterm)
+        signal.signal(signal.SIGHUP, self._handle_sighup)
 
     def _handle_sigint(self, signum, frame):
         if self.stopping:
@@ -147,9 +147,13 @@ class Kuyruk(object):
             sys.exit(1)
         else:
             logger.warning("Warm shutdown")
-            self.stop_workers()
+            self._handle_sigterm(None, None)
 
     def _handle_sigterm(self, signum, frame):
+        self.stop_workers()
+        self.stopping = True
+
+    def _handle_sighup(self, signum, frame):
         self.stop_workers()
 
 
