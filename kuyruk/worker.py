@@ -32,7 +32,6 @@ class Worker(multiprocessing.Process):
         self.queue_name = queue_name
         is_local = queue_name.startswith('@')
         self.queue = Queue(queue_name, self.channel, local=is_local)
-        self._stop = multiprocessing.Event()
 
     def run(self):
         """Run worker until stop flag is set.
@@ -41,7 +40,7 @@ class Worker(multiprocessing.Process):
         it will be invoked when worker.start() is called.
 
         """
-        self._register_signals()
+        self.register_signals()
         setproctitle('kuyruk: worker')
         self.started = time.time()
         self.queue.declare()
@@ -50,26 +49,14 @@ class Worker(multiprocessing.Process):
 
         logger.info('Starting consume')
         for tag, task_description in self.queue:
-            self.on_task(tag, task_description)
-            if not self._runnable():
+            if self.should_quit():
                 break
+            self.on_task(tag, task_description)
 
-        self.queue.cancel()
         logger.debug("End run worker")
 
-    def stop(self):
-        """Set stop flag.
-
-        Worker will be stopped after current task is processed. If the task is
-        stuck (i.e. in infinite loop) it may never be stopped.
-
-        """
-        logger.warning("Stopping %s...", self)
-        self._stop.set()
-        self.queue.cancel()
-
     def on_task(self, tag, task_description):
-        if self._max_load():
+        if self.is_load_high():
             logger.warning('Load is high, rejecting task')
             self.queue.reject(tag)
             # self.channel.tx_commit()
@@ -133,31 +120,37 @@ class Worker(multiprocessing.Process):
         result = task.f(*args, **kwargs)
         logger.debug('Result: %r', result)
 
-    def _runnable(self):
-        self._check_master()
-        self._max_run_time()
-        return not self._stop.is_set()
+    def should_quit(self):
+        def checks():
+            CHECKS = [
+                self.is_run_time_exceeded,
+                self.is_master_dead,
+            ]
+            for check in CHECKS:
+                yield check()
+        return any(checks())
 
-    def _check_master(self):
+    def is_master_dead(self):
         try:
             os.kill(self.master_pid, 0)
         except OSError:
-            self.stop()
+            return True
 
-    def _max_run_time(self):
+    def is_run_time_exceeded(self):
         if self.config.MAX_RUN_TIME is not None:
             passed_seconds = time.time() - self.started
             if passed_seconds >= self.config.MAX_RUN_TIME:
                 logger.warning('Kuyruk run for %s seconds', passed_seconds)
-                self.stop()
+                return True
 
-    def _max_load(self):
+    def is_load_high(self):
         return os.getloadavg()[0] > self.config.MAX_LOAD
 
-    def _register_signals(self):
+    def register_signals(self):
         signal.signal(signal.SIGINT, signal.SIG_IGN)
-        signal.signal(signal.SIGTERM, self._sitterm_handler)
+        signal.signal(signal.SIGTERM, self.sigterm_handler)
 
-    def _sitterm_handler(self, signum, frame):
+    def sigterm_handler(self, signum, frame):
         logger.warning("Catched SIGTERM")
-        self.stop()
+        logger.warning("Stopping %s...", self)
+        self.queue.cancel()
