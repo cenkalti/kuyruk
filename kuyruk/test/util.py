@@ -1,9 +1,9 @@
-import os
 import sys
 import signal
 import logging
 import subprocess
-from time import sleep
+from time import time, sleep
+from functools import partial
 from contextlib import contextmanager
 
 import pexpect
@@ -45,8 +45,12 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
     if terminate:
         child.kill(signal.SIGTERM)
         child.expect('End run master', timeout=TIMEOUT)
-    kill_all(signal.SIGKILL)
-    sleep_until(not_running, timeout=TIMEOUT)
+
+    def kill():
+        kill_all(signal.SIGKILL)
+        sleep(0.1)
+
+    do_until(kill, not_running, timeout=TIMEOUT)
 
 
 def not_running():
@@ -102,12 +106,26 @@ def sleep_until(f, timeout=None):
 
 
 def sleep_while(f, timeout=None):
-    def wait():
-        if timeout and timeout < 0:
-            raise Exception('Timeout')
-        return f()
+    do_while(partial(sleep, 0.1), f, timeout)
 
-    while wait():
-        sleep(0.1)
+
+def do_until(f_do, f_cond, timeout=None):
+    do_while(f_do, lambda: not f_cond(), timeout)
+
+
+def do_while(f_do, f_condition, timeout=None):
+    def should_do():
+        if timeout and timeout < 0:
+            raise Timeout
+        return f_condition()
+
+    start = time()
+    while should_do():
+        f_do()
         if timeout:
-            timeout -= 0.1
+            passed = time() - start
+            timeout -= passed
+
+
+class Timeout(Exception):
+    pass
