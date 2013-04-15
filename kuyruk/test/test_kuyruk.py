@@ -1,3 +1,4 @@
+import os
 import logging
 import unittest
 
@@ -6,6 +7,8 @@ from kuyruk import Task
 from kuyruk.task import TaskResult
 from util import run_kuyruk, kill_worker, delete_queue, get_pid, run_requeue
 from util import is_empty, sleep_until, not_running, TIMEOUT
+
+TRAVIS = os.environ.get('TRAVIS') == 'true'
 
 logger = logging.getLogger(__name__)
 
@@ -53,15 +56,15 @@ class KuyrukTestCase(unittest.TestCase):
         """If the worker is stuck on the task it can be stopped by
         invoking cold shutdown"""
         tasks.loop_forever()
-        with run_kuyruk(terminate=False) as child:
+        with run_kuyruk(terminate=TRAVIS) as child:
             child.expect('looping forever')
             child.sendintr()
             child.expect('Warm shutdown')
             child.expect('Handled SIGINT')
             child.sendintr()
             child.expect('Cold shutdown')
-            child.read()
-            sleep_until(not_running, timeout=TIMEOUT)
+            if not TRAVIS:
+                sleep_until(not_running, timeout=TIMEOUT)
 
     def test_eager(self):
         """Test eager mode for using in test environments"""

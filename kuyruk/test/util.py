@@ -33,26 +33,28 @@ def is_empty(queue):
 
 @contextmanager
 def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
-    args = ['-m', 'kuyruk.__main__']  # run main module
-    if queues:
-        args.extend(['--queues', queues])
+    try:
+        args = ['-m', 'kuyruk.__main__']  # run main module
+        if queues:
+            args.extend(['--queues', queues])
 
-    if save_failed_tasks:
-        args.append('--save-failed-tasks')
+        if save_failed_tasks:
+            args.append('--save-failed-tasks')
 
-    child = pexpect.spawn(sys.executable, args, timeout=TIMEOUT)
-    yield child
-    if terminate:
-        child.kill(signal.SIGTERM)
-        child.expect('End run master', timeout=TIMEOUT)
+        child = pexpect.spawn(sys.executable, args, timeout=TIMEOUT)
+        yield child
 
-    child.close(force=True)
-
-    def kill():
-        kill_all(signal.SIGKILL)
-        sleep(0.1)
-
-    do_until(kill, not_running, timeout=TIMEOUT)
+        # Master and workers should exit normally after SIGTERM
+        if terminate:
+            child.kill(signal.SIGTERM)
+            child.expect('End run master', timeout=TIMEOUT)
+        sleep_until(not_running, timeout=TIMEOUT)
+    finally:
+        # Kill all running kuyruk processes
+        def kill():
+            kill_all(signal.SIGKILL)
+            sleep(0.1)
+        do_until(kill, not_running, timeout=TIMEOUT)
 
 
 def not_running():
