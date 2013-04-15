@@ -11,7 +11,7 @@ import pexpect
 from ..connection import LazyConnection
 from ..queue import Queue as RabbitQueue
 
-TIMEOUT = 10
+TIMEOUT = 20
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +80,7 @@ def kill_all(signum=signal.SIGTERM):
 
 
 def pkill(pattern, signum=signal.SIGTERM):
+    logger.info("Killing pattern: '%s' with signal: %s" % (pattern, signum))
     pexpect.run("pkill -%i -f '%s'" % (signum, pattern))
 
 
