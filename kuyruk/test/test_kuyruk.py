@@ -60,6 +60,7 @@ class KuyrukTestCase(unittest.TestCase):
             child.expect('Handled SIGINT')
             child.sendintr()
             child.expect('Cold shutdown')
+            child.read()
             sleep_until(not_running, timeout=TIMEOUT)
 
     def test_eager(self):
