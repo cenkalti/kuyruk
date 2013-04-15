@@ -45,6 +45,7 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
     if terminate:
         child.kill(signal.SIGTERM)
         child.expect('End run master', timeout=TIMEOUT)
+    kill_all(signal.SIGKILL)
     sleep_until(not_running, timeout=TIMEOUT)
 
 
@@ -60,8 +61,20 @@ def run_requeue():
     pexpect.run('%s -m kuyruk.requeue' % sys.executable)
 
 
-def kill_worker():
-    pexpect.run("pkill -9 -f 'kuyruk: worker'")
+def kill_worker(signum=signal.SIGTERM):
+    pkill('kuyruk: worker', signum)
+
+
+def kill_master(signum=signal.SIGTERM):
+    pkill('kuyruk: master', signum)
+
+
+def kill_all(signum=signal.SIGTERM):
+    pkill('kuyruk:', signum)
+
+
+def pkill(pattern, signum=signal.SIGTERM):
+    pexpect.run("pkill -%i -f '%s'" % (signum, pattern))
 
 
 def get_pids(pattern):
