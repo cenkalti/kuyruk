@@ -46,6 +46,8 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
         child.kill(signal.SIGTERM)
         child.expect('End run master', timeout=TIMEOUT)
 
+    child.close(force=True)
+
     def kill():
         kill_all(signal.SIGKILL)
         sleep(0.1)
