@@ -2,6 +2,8 @@ import os
 import logging
 import unittest
 
+from nose.plugins.skip import SkipTest
+
 import tasks
 from kuyruk import Task
 from kuyruk.task import TaskResult
@@ -55,6 +57,9 @@ class KuyrukTestCase(unittest.TestCase):
     def test_cold_shutdown(self):
         """If the worker is stuck on the task it can be stopped by
         invoking cold shutdown"""
+        if TRAVIS:
+            raise SkipTest
+        
         tasks.loop_forever()
         with run_kuyruk(terminate=TRAVIS) as child:
             child.expect('looping forever')
