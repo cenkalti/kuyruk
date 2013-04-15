@@ -11,7 +11,7 @@ import pexpect
 from ..connection import LazyConnection
 from ..queue import Queue as RabbitQueue
 
-TIMEOUT = 5
+TIMEOUT = 10
 
 logger = logging.getLogger(__name__)
 
