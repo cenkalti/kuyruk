@@ -61,15 +61,14 @@ class KuyrukTestCase(unittest.TestCase):
             raise SkipTest
         
         tasks.loop_forever()
-        with run_kuyruk(terminate=TRAVIS) as child:
+        with run_kuyruk(terminate=False) as child:
             child.expect('looping forever')
             child.sendintr()
             child.expect('Warm shutdown')
             child.expect('Handled SIGINT')
             child.sendintr()
             child.expect('Cold shutdown')
-            if not TRAVIS:
-                sleep_until(not_running, timeout=TIMEOUT)
+            sleep_until(not_running, timeout=TIMEOUT)
 
     def test_eager(self):
         """Test eager mode for using in test environments"""
