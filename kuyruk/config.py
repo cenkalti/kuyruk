@@ -8,6 +8,7 @@ class Config(object):
     RABBIT_PASSWORD = 'guest'
     EAGER = False
     MAX_LOAD = None
+    MAX_RUN_TIME = None
     SAVE_FAILED_TASKS = False
     WORKERS = {}
 

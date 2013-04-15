@@ -20,7 +20,6 @@ def main():
     # These options below override the options from config module
     parser.add_option('--queues')
     parser.add_option('--max-run-time', type='int')
-    parser.add_option('--max-tasks', type='int')
     parser.add_option('--max-load', type='int')
     parser.add_option('--save-failed-tasks', action='store_true')
     options, args = parser.parse_args()
@@ -32,9 +31,6 @@ def main():
 
     if options.max_run_time is not None:
         config.KUYRUK_MAX_RUN_TIME = options.max_run_time
-
-    if options.max_tasks is not None:
-        config.KUYRUK_MAX_TASKS = options.max_tasks
 
     if options.max_load is not None:
         config.KUYRUK_MAX_LOAD = options.max_load

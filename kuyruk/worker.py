@@ -34,7 +34,6 @@ class Worker(multiprocessing.Process):
         is_local = queue_name.startswith('@')
         self.queue = Queue(queue_name, self.channel, local=is_local)
         self._stop = multiprocessing.Event()
-        self.num_tasks = 0
 
     def run(self):
         """Run worker until stop flag is set.
@@ -139,7 +138,6 @@ class Worker(multiprocessing.Process):
     def _runnable(self):
         self._check_master()
         self._max_run_time()
-        self._max_tasks()
         return not self._stop.is_set()
 
     def _check_master(self):
@@ -154,12 +152,6 @@ class Worker(multiprocessing.Process):
             if passed_seconds >= self.config.MAX_RUN_TIME:
                 logger.warning('Kuyruk run for %s seconds', passed_seconds)
                 self.stop()
-
-    def _max_tasks(self):
-        if self.num_tasks == self.config.MAX_TASKS:
-            logger.warning('Kuyruk has processed %s tasks',
-                           self.config.MAX_TASKS)
-            self.stop()
 
     def _max_load(self):
         return os.getloadavg()[0] > self.config.MAX_LOAD
