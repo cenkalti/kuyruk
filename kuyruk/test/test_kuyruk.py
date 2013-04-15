@@ -57,6 +57,7 @@ class KuyrukTestCase(unittest.TestCase):
             child.expect('looping forever')
             child.sendintr()
             child.expect('Warm shutdown')
+            child.expect('Handled SIGINT')
             child.sendintr()
             child.expect('Cold shutdown')
             sleep_until(not_running, timeout=TIMEOUT)

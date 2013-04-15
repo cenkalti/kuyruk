@@ -148,6 +148,7 @@ class Kuyruk(object):
         else:
             logger.warning("Warm shutdown")
             self._handle_sigterm(None, None)
+        logger.debug("Handled SIGINT")
 
     def _handle_sigterm(self, signum, frame):
         self.stop_workers()
