@@ -1,6 +1,5 @@
 import os
 import time
-import pickle
 import signal
 import logging
 import traceback
@@ -47,22 +46,15 @@ class Worker(multiprocessing.Process):
         self.started = time.time()
         self.queue.declare()
         self.channel.basic_qos(prefetch_count=1)
-        self.channel.tx_select()
+        # self.channel.tx_select()
 
         logger.info('Starting consume')
-        for tag, task_description in self.queue.consume():
-            self.process_task(tag, task_description)
-            self.channel.tx_commit()
+        for tag, task_description in self.queue:
+            self.on_task(tag, task_description)
             if not self._runnable():
                 break
 
         self.queue.cancel()
-
-        #     if self._max_load():
-        #         logger.debug('Load is over %s. Sleeping 10 seconds...')
-        #         time.sleep(10)
-        #         continue
-
         logger.debug("End run worker")
 
     def stop(self):
@@ -74,7 +66,17 @@ class Worker(multiprocessing.Process):
         """
         logger.warning("Stopping %s...", self)
         self._stop.set()
-        self.channel.cancel()
+        self.queue.cancel()
+
+    def on_task(self, tag, task_description):
+        if self._max_load():
+            logger.warning('Load is high, rejecting task')
+            self.queue.reject(tag)
+            # self.channel.tx_commit()
+            self.queue.pause(30)
+        else:
+            self.process_task(tag, task_description)
+            # self.channel.tx_commit()
 
     def process_task(self, tag, task_description):
         logger.info('got message: %s', task_description)

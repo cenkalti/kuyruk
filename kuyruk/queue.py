@@ -1,6 +1,7 @@
 import socket
 import pickle
 import logging
+from time import sleep
 from functools import wraps
 
 import pika
@@ -42,6 +43,7 @@ class Queue(object):
         self.channel = channel
         self.local = local
         self.declared = False
+        self.canceling = False
 
         if self.local:
             self.name = "%s_%s" % (self.name, socket.gethostname())
@@ -74,13 +76,35 @@ class Queue(object):
             body=pickle.dumps(obj),
             properties=properties)
 
-    @require_declare
-    def consume(self):
-        for message in self.channel.consume(self.name):
-            yield self._decode(message)
+    def __iter__(self):
+        self.generator = self.channel.consume(self.name)
+        return self
+
+    def next(self):
+        if self.canceling:
+            self.canceling = False
+            raise StopIteration
+        else:
+            try:
+                message = next(self.generator)
+            except Exception as e:
+                if e.args[0] == 4:  # Interrupted system call
+                    raise StopIteration
+                raise
+            return self._decode(message)
 
     def cancel(self):
+        self.canceling = True
         return self.channel.cancel()
+
+    def pause(self, seconds):
+        logger.info('Pausing')
+        channel = self.channel
+        channel.basic_cancel(channel._generator)
+        sleep(seconds)
+        channel._generator = channel.basic_consume(
+            channel._generator_callback, self.name)
+        logger.info('Resuming')
 
     def ack(self, delivery_tag):
         return self.channel.basic_ack(delivery_tag=delivery_tag)

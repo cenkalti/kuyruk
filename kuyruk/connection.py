@@ -1,25 +1,19 @@
 import logging
-from functools import wraps
 
 import pika
 
 logger = logging.getLogger(__name__)
 
 
-def require_open(f):
-    """Decorator for calling open() before invoking the wrapped function"""
-    @wraps(f)
-    def inner(self, *args, **kwargs):
-        if not self.is_open:
-            self.open()
-        return f(self, *args, **kwargs)
-    return inner
-
-
 class LazyBase(object):
 
     def __init__(self):
         self.real = None
+
+    def __getattr__(self, item):
+        if not self.is_open:
+            self.open()
+        return getattr(self.real, item)
 
     def __del__(self):
         self.close()
@@ -73,11 +67,6 @@ class LazyChannel(LazyBase):
     def __init__(self, connection):
         super(LazyChannel, self).__init__()
         self.connection = connection
-
-    def __getattr__(self, item):
-        if not self.is_open:
-            self.open()
-        return getattr(self.real, item)
 
     def open(self):
         super(LazyChannel, self).open()
