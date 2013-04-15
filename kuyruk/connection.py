@@ -54,7 +54,8 @@ class LazyConnection(LazyBase):
         super(LazyConnection, self).open()
         credentials = pika.PlainCredentials(self.user, self.password)
         parameters = pika.ConnectionParameters(
-            host=self.host, port=self.port, credentials=credentials)
+            host=self.host, port=self.port, credentials=credentials,
+            heartbeat_interval=24 * 60 * 60)
         self.real = pika.BlockingConnection(parameters)
         logger.info('Connected to RabbitMQ')
 
