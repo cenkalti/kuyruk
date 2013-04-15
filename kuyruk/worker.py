@@ -40,8 +40,8 @@ class Worker(multiprocessing.Process):
         it will be invoked when worker.start() is called.
 
         """
-        self.register_signals()
         setproctitle('kuyruk: worker')
+        self.register_signals()
         self.started = time.time()
         self.queue.declare()
         self.channel.basic_qos(prefetch_count=1)
