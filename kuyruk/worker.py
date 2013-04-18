@@ -17,14 +17,13 @@ logger = logging.getLogger(__name__)
 
 class Worker(multiprocessing.Process):
 
-    def __init__(self, queue_name, config, master_pid):
+    def __init__(self, queue_name, config):
         """
         :param queue_name: Qeueu name that this worker gets the messages from
         :param config: Configuration object
         """
         super(Worker, self).__init__()
         self.config = config
-        self.master_pid = master_pid
         self.connection = LazyConnection(
             self.config.RABBIT_HOST, self.config.RABBIT_PORT,
             self.config.RABBIT_USER, self.config.RABBIT_PASSWORD)
@@ -132,7 +131,7 @@ class Worker(multiprocessing.Process):
 
     def is_master_dead(self):
         try:
-            os.kill(self.master_pid, 0)
+            os.kill(os.getppid(), 0)
         except OSError:
             return True
 

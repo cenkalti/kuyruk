@@ -31,7 +31,6 @@ class Kuyruk(object):
         """
         self.config = Config(config_object)
         self.workers = []
-        self.pid = None
         self.stopping = False
 
     def task(self, queue='kuyruk', eager=False, retry=0):
@@ -66,7 +65,6 @@ class Kuyruk(object):
         received.
 
         """
-        self.pid = os.getpid()
         self._register_signals()
         setproctitle('kuyruk: master')
 
@@ -100,14 +98,14 @@ class Kuyruk(object):
         """Start a new worker for each queue name"""
         logger.info('Starting to work on queues: %s', queues)
         for queue in queues:
-            worker = Worker(queue, self.config, self.pid)
+            worker = Worker(queue, self.config)
             worker.start()
             self.workers.append(worker)
 
     def _spawn_new_worker(self, worker):
         """Spawn a new process with parameters same as the old worker."""
         logger.debug("Spawning new worker")
-        new_worker = Worker(worker.queue_name, self.config, self.pid)
+        new_worker = Worker(worker.queue_name, self.config)
         new_worker.start()
         self.workers.append(new_worker)
         self.workers.remove(worker)
