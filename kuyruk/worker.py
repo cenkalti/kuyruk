@@ -2,6 +2,7 @@ import os
 import signal
 import logging
 import traceback
+import threading
 import multiprocessing
 from time import time, sleep
 
@@ -40,6 +41,7 @@ class Worker(multiprocessing.Process):
 
         """
         setproctitle('kuyruk: worker')
+        self.start_wathcing_master()
         self.register_signals()
         self.started = time()
         self.queue.declare()
@@ -134,6 +136,26 @@ class Worker(multiprocessing.Process):
             os.kill(os.getppid(), 0)
         except OSError:
             return True
+
+    def start_wathcing_master(self):
+        """
+        Start a Thread that watches the master and send itself SIGTERM
+        when master is dead.
+
+        """
+        def watch():
+            while True:
+                if self.is_master_dead():
+                    logger.critical('Master is dead')
+                    # We do not call the handler directly here because
+                    # pika is not thread safe.
+                    os.kill(os.getpid(), signal.SIGTERM)
+                    break
+                else:
+                    sleep(1)
+        t = threading.Thread(target=watch)
+        t.daemon = True
+        t.start()
 
     def is_run_time_exceeded(self):
         if self.config.MAX_RUN_TIME is not None:
