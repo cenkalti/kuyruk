@@ -1,9 +1,9 @@
 import os
-import time
 import signal
 import logging
 import traceback
 import multiprocessing
+from time import time, sleep
 
 from setproctitle import setproctitle
 
@@ -41,7 +41,7 @@ class Worker(multiprocessing.Process):
         """
         setproctitle('kuyruk: worker')
         self.register_signals()
-        self.started = time.time()
+        self.started = time()
         self.queue.declare()
         self.channel.basic_qos(prefetch_count=1)
         # self.channel.tx_select()
@@ -72,12 +72,12 @@ class Worker(multiprocessing.Process):
         # sleep() calls below prevent cpu burning
         except Reject:
             logger.info('Task is rejected')
-            time.sleep(1)
+            sleep(1)
             self.queue.reject(tag)
         except Exception:
             logger.error('Task raised an exception')
             logger.error(traceback.format_exc())
-            time.sleep(1)
+            sleep(1)
             self.handle_exception(tag, task_description)
         else:
             logger.debug('Task is successful')
@@ -137,7 +137,7 @@ class Worker(multiprocessing.Process):
 
     def is_run_time_exceeded(self):
         if self.config.MAX_RUN_TIME is not None:
-            passed_seconds = time.time() - self.started
+            passed_seconds = time() - self.started
             if passed_seconds >= self.config.MAX_RUN_TIME:
                 logger.warning('Kuyruk run for %s seconds', passed_seconds)
                 return True
