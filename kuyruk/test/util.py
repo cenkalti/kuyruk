@@ -35,6 +35,7 @@ def is_empty(queue):
 def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
     assert not_running()
     args = ['-m', 'kuyruk.__main__']  # run main module
+    args.extend(['--logging-level=DEBUG'])
     if queues:
         args.extend(['--queues', queues])
 

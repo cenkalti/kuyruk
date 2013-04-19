@@ -2,7 +2,6 @@ import imp
 import logging
 import optparse
 
-from .__main__ import configure_logging
 from .connection import LazyConnection
 from .queue import Queue
 from .config import Config
@@ -11,13 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    configure_logging()
+    logging.basicConfig(level=logging.INFO)
 
     parser = optparse.OptionParser()
     parser.add_option('--config')
     options, args = parser.parse_args()
 
-    if options.config is not None:
+    if options.config:
         config = imp.load_source('config', options.config)
     else:
         config = imp.new_module('config')
