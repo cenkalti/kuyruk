@@ -40,7 +40,7 @@ class Worker(multiprocessing.Process):
         it will be invoked when worker.start() is called.
 
         """
-        setproctitle('kuyruk: worker')
+        setproctitle("kuyruk: worker on %s" % self.queue_name)
         self.start_wathcing_master()
         self.register_signals()
         self.started = time()
