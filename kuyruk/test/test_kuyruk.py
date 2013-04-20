@@ -1,4 +1,5 @@
 import os
+import signal
 import logging
 import unittest
 
@@ -8,7 +9,7 @@ import tasks
 from kuyruk import Task
 from kuyruk.task import TaskResult
 from util import run_kuyruk, kill_worker, delete_queue, get_pid, run_requeue
-from util import is_empty, sleep_until, not_running, TIMEOUT
+from util import is_empty, sleep_until, not_running, TIMEOUT, kill_master
 
 TRAVIS = os.environ.get('TRAVIS') == 'true'
 
@@ -118,3 +119,11 @@ class KuyrukTestCase(unittest.TestCase):
         run_requeue()
         assert is_empty('kuyruk_failed')
         assert not is_empty('kuyruk')
+
+    def test_dead_master(self):
+        """If master is dead worker should exit gracefully"""
+        tasks.print_task('hello world')
+        with run_kuyruk(terminate=False) as child:
+            child.expect('hello world')
+            kill_master(signal.SIGKILL)
+            sleep_until(not_running, timeout=TIMEOUT)
