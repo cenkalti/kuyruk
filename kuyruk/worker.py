@@ -20,7 +20,7 @@ class Worker(multiprocessing.Process):
 
     def __init__(self, queue_name, config):
         """
-        :param queue_name: Qeueu name that this worker gets the messages from
+        :param queue_name: Queue name that this worker gets the messages from
         :param config: Configuration object
         """
         super(Worker, self).__init__()
