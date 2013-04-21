@@ -1,3 +1,4 @@
+import json
 import socket
 import pickle
 import logging
@@ -65,15 +66,15 @@ class Queue(object):
 
     @require_declare
     def send(self, obj):
-        """Send a single message to the queue. obj should be pickleable."""
+        """Send a single message to the queue. obj must be JSON serializable."""
         logger.info('sending to queue: %s message: %r', self.name, obj)
         properties = pika.BasicProperties(
-            content_type='application/python-pickle',
+            content_type='application/json',
             delivery_mode=2)
         return self.channel.basic_publish(
             exchange='',
             routing_key=self.name,
-            body=pickle.dumps(obj),
+            body=json.dumps(obj),
             properties=properties)
 
     def __iter__(self):
@@ -131,11 +132,17 @@ class Queue(object):
                 raise
 
     def _decode(self, message):
-        method, properies, body = message
+        method, properties, body = message
         if body is None:
             return None, None
 
-        obj = pickle.loads(body)
+        if properties.content_type == 'application/json':
+            obj = json.loads(body)
+        elif properties.content_type == 'application/python-pickle':
+            obj = pickle.loads(body)
+        else:
+            raise ValueError('Unknown content type')
+
         logger.debug(
             'Message received in queue: %s message: %s', self.name, obj)
         return method.delivery_tag, obj
