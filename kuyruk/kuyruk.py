@@ -1,6 +1,4 @@
-import socket
 import logging
-import itertools
 
 from .task import Task
 from .master import Master

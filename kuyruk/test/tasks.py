@@ -1,7 +1,7 @@
 from time import sleep
 
-from ..kuyruk import Kuyruk
-from ..exceptions import Reject
+from kuyruk.kuyruk import Kuyruk
+from kuyruk.exceptions import Reject
 
 
 kuyruk = Kuyruk()
@@ -49,3 +49,18 @@ def rejecting_task():
 @kuyruk.task
 def sleeping_task(seconds):
     sleep(seconds)
+
+
+@kuyruk.task
+def task_with_before_and_after_task_functions(message):
+    print message
+
+
+@task_with_before_and_after_task_functions.before_task
+def before_task_handler():
+    print 'print from before task handler'
+
+
+@task_with_before_and_after_task_functions.after_task
+def after_task_handler():
+    print 'print from after task handler'

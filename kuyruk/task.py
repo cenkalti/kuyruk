@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from functools import wraps
 
 from .queue import Queue
 from . import loader
@@ -39,6 +40,8 @@ class Task(object):
         self.local = local
         self.eager = eager
         self.retry = retry
+        self.before_task_function = None
+        self.after_task_function = None
 
     def __repr__(self):
         return "<Task %s>" % self.fully_qualified_name
@@ -48,8 +51,7 @@ class Task(object):
         assert self.is_reachable(fname, self.f)
         logger.debug('fname: %s', fname)
         if self.kuyruk.config.EAGER or self.eager:
-            # Run wrapped function
-            self.f(*args, **kwargs)
+            self.run(args, kwargs)
         else:
             self.send_to_queue(args, kwargs)
 
@@ -71,7 +73,7 @@ class Task(object):
         }
         if self.retry:
             task_description['retry'] = self.retry
-            
+
         connection = LazyConnection(
             self.kuyruk.config.RABBIT_HOST, self.kuyruk.config.RABBIT_PORT,
             self.kuyruk.config.RABBIT_USER, self.kuyruk.config.RABBIT_PASSWORD)
@@ -81,6 +83,17 @@ class Task(object):
                 queue = Queue(self.queue, channel, self.local)
                 queue.send(task_description)
 
+    def run(self, args, kwargs):
+        """Run the task function with before and after task functions."""
+        if self.before_task_function:
+            self.before_task_function()
+
+        # Run wrapped function
+        self.f(*args, **kwargs)
+
+        if self.after_task_function:
+            self.after_task_function()
+
     @property
     def fully_qualified_name(self):
         return loader.get_fully_qualified_function_name(self.f)
@@ -88,3 +101,11 @@ class Task(object):
     def is_reachable(self, fname, f):
         imported = loader.import_task(fname)
         return imported.f is f
+
+    def before_task(self, f):
+        self.before_task_function = f
+        return f
+
+    def after_task(self, f):
+        self.after_task_function = f
+        return f

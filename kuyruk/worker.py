@@ -118,7 +118,7 @@ class Worker(multiprocessing.Process):
             'Task %r will be executed with args=%r and kwargs=%r',
             task, args, kwargs)
 
-        result = task.f(*args, **kwargs)
+        result = task.run(args, kwargs)
         logger.debug('Result: %r', result)
 
     def should_quit(self):
