@@ -122,6 +122,9 @@ class KuyrukTestCase(unittest.TestCase):
 
     def test_dead_master(self):
         """If master is dead worker should exit gracefully"""
+        if TRAVIS:
+            raise SkipTest
+
         tasks.print_task('hello world')
         with run_kuyruk(terminate=False) as child:
             child.expect('hello world')
