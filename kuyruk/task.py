@@ -1,5 +1,4 @@
 import logging
-from itertools import chain
 from datetime import datetime
 
 from .queue import Queue
