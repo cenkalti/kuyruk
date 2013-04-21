@@ -1,4 +1,5 @@
 import logging
+from itertools import chain
 from datetime import datetime
 
 from .queue import Queue
@@ -39,8 +40,8 @@ class Task(object):
         self.local = local
         self.eager = eager
         self.retry = retry
-        self.before_task_function = None
-        self.after_task_function = None
+        self.before_task_functions = []
+        self.after_task_functions = []
 
     def __repr__(self):
         return "<Task %s>" % self.fully_qualified_name
@@ -84,20 +85,15 @@ class Task(object):
 
     def run(self, args, kwargs):
         """Run the task function with before and after task functions."""
-        if self.kuyruk.before_task_function:
-            self.kuyruk.before_task_function()
+        for f in chain(self.kuyruk.before_task_functions,
+                       self.before_task_functions):
+            f()
 
-        if self.before_task_function:
-            self.before_task_function()
+        self.f(*args, **kwargs)  # Run wrapped function
 
-        # Run wrapped function
-        self.f(*args, **kwargs)
-
-        if self.after_task_function:
-            self.after_task_function()
-
-        if self.kuyruk.after_task_function:
-            self.kuyruk.after_task_function()
+        for f in chain(self.after_task_functions,
+                       self.kuyruk.after_task_functions):
+            f()
 
     @property
     def fully_qualified_name(self):
@@ -108,9 +104,9 @@ class Task(object):
         return imported.f is f
 
     def before_task(self, f):
-        self.before_task_function = f
+        self.before_task_functions.append(f)
         return f
 
     def after_task(self, f):
-        self.after_task_function = f
+        self.after_task_functions.append(f)
         return f

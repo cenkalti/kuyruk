@@ -21,8 +21,8 @@ class Kuyruk(object):
 
         """
         self.config = Config(config_object)
-        self.before_task_function = None
-        self.after_task_function = None
+        self.before_task_functions = []
+        self.after_task_functions = []
 
     def task(self, queue='kuyruk', eager=False, retry=0):
         """Wrap functions with this decorator to convert them to background
@@ -59,9 +59,9 @@ class Kuyruk(object):
         Master(self.config).run(queues)
 
     def before_task(self, f):
-        self.before_task_function = f
+        self.before_task_functions.append(f)
         return f
 
     def after_task(self, f):
-        self.after_task_function = f
+        self.after_task_functions.append(f)
         return f
