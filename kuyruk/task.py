@@ -84,16 +84,15 @@ class Task(object):
                 queue.send(task_description)
 
     def run(self, args, kwargs):
-        """Run the task function with before and after task functions."""
-        for f in chain(self.kuyruk.before_task_functions,
-                       self.before_task_functions):
-            f()
+        """Run the wrapped function with before and after task functions."""
+        def run(functions):
+            [f() for f in functions]
 
+        run(self.kuyruk.before_task_functions)
+        run(self.before_task_functions)
         self.f(*args, **kwargs)  # Run wrapped function
-
-        for f in chain(self.after_task_functions,
-                       self.kuyruk.after_task_functions):
-            f()
+        run(self.after_task_functions)
+        run(self.kuyruk.after_task_functions)
 
     @property
     def fully_qualified_name(self):
