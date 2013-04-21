@@ -57,6 +57,7 @@ class Worker(multiprocessing.Process):
         logger.debug("End run worker")
 
     def on_task(self, tag, task_description):
+        logger.info('Task received: %s', task_description)
         if self.is_load_high():
             logger.warning('Load is high, rejecting task')
             self.queue.reject(tag)
@@ -67,13 +68,11 @@ class Worker(multiprocessing.Process):
             # self.channel.tx_commit()
 
     def process_task(self, tag, task_description):
-        logger.info('got message: %s', task_description)
-
         try:
             self.import_and_call_task(task_description)
         # sleep() calls below prevent cpu burning
         except Reject:
-            logger.info('Task is rejected')
+            logger.warning('Task is rejected')
             sleep(1)
             self.queue.reject(tag)
         except Exception:
@@ -82,7 +81,7 @@ class Worker(multiprocessing.Process):
             sleep(1)
             self.handle_exception(tag, task_description)
         else:
-            logger.debug('Task is successful')
+            logger.info('Task is successful')
             self.queue.ack(tag)
 
     def handle_exception(self, tag, task_description):
