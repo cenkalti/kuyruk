@@ -11,8 +11,6 @@ from kuyruk.task import TaskResult
 from util import run_kuyruk, kill_worker, delete_queue, get_pid, run_requeue
 from util import is_empty, sleep_until, not_running, TIMEOUT, kill_master
 
-TRAVIS = os.environ.get('TRAVIS') == 'true'
-
 logger = logging.getLogger(__name__)
 
 
@@ -20,6 +18,11 @@ class KuyrukTestCase(unittest.TestCase):
 
     def setUp(self):
         delete_queue('kuyruk')
+
+    def skip_on_travis(self):
+        """Some process related tests are failing on Travis-CI"""
+        if os.environ.get('TRAVIS') == 'true':
+            raise SkipTest
 
     def test_task_decorator(self):
         """Does task decorator works correctly?"""
@@ -58,9 +61,8 @@ class KuyrukTestCase(unittest.TestCase):
     def test_cold_shutdown(self):
         """If the worker is stuck on the task it can be stopped by
         invoking cold shutdown"""
-        if TRAVIS:
-            raise SkipTest
-        
+        self.skip_on_travis()
+
         tasks.loop_forever()
         with run_kuyruk(terminate=False) as child:
             child.expect('looping forever')
@@ -122,8 +124,7 @@ class KuyrukTestCase(unittest.TestCase):
 
     def test_dead_master(self):
         """If master is dead worker should exit gracefully"""
-        if TRAVIS:
-            raise SkipTest
+        self.skip_on_travis()
 
         tasks.print_task('hello world')
         with run_kuyruk(terminate=False) as child:

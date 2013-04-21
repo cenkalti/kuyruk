@@ -47,17 +47,17 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
         yield child
         # Master and workers should exit normally after SIGTERM
         if terminate:
+            # Try to terminate kuyruk gracefully
             child.kill(signal.SIGTERM)
             child.expect('End run master', timeout=TIMEOUT)
             child.close()
         sleep_until(not_running, timeout=TIMEOUT)
     finally:
-        child.close(force=True)
-
-        # Kill all running kuyruk processes
+        # We need to make sure that not any process of kuyruk running
         def kill():
             kill_all(signal.SIGKILL)
             sleep(0.25)
+        child.close(force=True)
         do_until(kill, not_running)
 
 
