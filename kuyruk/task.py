@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime
-from functools import wraps
 
 from .queue import Queue
 from . import loader
