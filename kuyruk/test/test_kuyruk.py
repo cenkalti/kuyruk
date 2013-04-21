@@ -132,7 +132,7 @@ class KuyrukTestCase(unittest.TestCase):
             sleep_until(not_running, timeout=TIMEOUT)
 
     def test_before_task(self):
-        """Before task function runs before task"""
+        """Before and after task functions are run"""
         tasks.task_with_before_and_after_task_functions('hello world')
         with run_kuyruk() as child:
             child.expect('print from before task handler')
