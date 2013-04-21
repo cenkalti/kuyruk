@@ -84,6 +84,9 @@ class Task(object):
 
     def run(self, args, kwargs):
         """Run the task function with before and after task functions."""
+        if self.kuyruk.before_task_function:
+            self.kuyruk.before_task_function()
+
         if self.before_task_function:
             self.before_task_function()
 
@@ -92,6 +95,9 @@ class Task(object):
 
         if self.after_task_function:
             self.after_task_function()
+
+        if self.kuyruk.after_task_function:
+            self.kuyruk.after_task_function()
 
     @property
     def fully_qualified_name(self):

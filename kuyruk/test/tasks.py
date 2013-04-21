@@ -51,16 +51,30 @@ def sleeping_task(seconds):
     sleep(seconds)
 
 
-@kuyruk.task
-def task_with_before_and_after_task_functions(message):
+# Another kuyruk instance for testing before and after task decorators
+kuyruk2 = Kuyruk()
+
+
+@kuyruk2.task
+def task_with_functions(message):
     print message
 
 
-@task_with_before_and_after_task_functions.before_task
-def before_task_handler():
-    print 'print from before task handler'
+@kuyruk2.before_task
+def function1():
+    print 'function1'
 
 
-@task_with_before_and_after_task_functions.after_task
-def after_task_handler():
-    print 'print from after task handler'
+@task_with_functions.before_task
+def function2():
+    print 'function2'
+
+
+@task_with_functions.after_task
+def function3():
+    print 'function3'
+
+
+@kuyruk2.after_task
+def function4():
+    print 'function4'

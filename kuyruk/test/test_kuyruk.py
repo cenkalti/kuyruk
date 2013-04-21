@@ -131,10 +131,12 @@ class KuyrukTestCase(unittest.TestCase):
             kill_master(signal.SIGKILL)
             sleep_until(not_running, timeout=TIMEOUT)
 
-    def test_before_task(self):
+    def test_before_after(self):
         """Before and after task functions are run"""
-        tasks.task_with_before_and_after_task_functions('hello world')
+        tasks.task_with_functions('hello world')
         with run_kuyruk() as child:
-            child.expect('print from before task handler')
+            child.expect('function1')
+            child.expect('function2')
             child.expect('hello world')
-            child.expect('print from after task handler')
+            child.expect('function3')
+            child.expect('function4')
