@@ -51,18 +51,27 @@ class Task(object):
             # Run wrapped function
             self.f(*args, **kwargs)
         else:
-            task_description = {
-                'f': fname,
-                'args': args, 'kwargs': kwargs,
-                'timestamp': str(datetime.utcnow())
-            }
-            if self.retry:
-                task_description['retry'] = self.retry
-            self._send_task(task_description)
+            self.send_to_queue(args, kwargs)
 
         return TaskResult(self)
 
-    def _send_task(self, task_description):
+    def send_to_queue(self, args=(), kwargs={}):
+        """
+        Send this task to queue
+
+        :param args: Arguments that will be passed to task on execution
+        :param kwargs: Keyword arguments that will be passed to task on execution
+        :return: None
+
+        """
+        task_description = {
+            'f': self.fully_qualified_name,
+            'args': args, 'kwargs': kwargs,
+            'timestamp': str(datetime.utcnow())
+        }
+        if self.retry:
+            task_description['retry'] = self.retry
+            
         connection = LazyConnection(
             self.kuyruk.config.RABBIT_HOST, self.kuyruk.config.RABBIT_PORT,
             self.kuyruk.config.RABBIT_USER, self.kuyruk.config.RABBIT_PASSWORD)
