@@ -1,12 +1,23 @@
 import logging
+from time import time
 from types import MethodType
 from datetime import datetime
 
-from .queue import Queue
 from . import loader
+from .queue import Queue
 from .connection import LazyConnection
 
 logger = logging.getLogger(__name__)
+
+
+def profile(f):
+    def inner(self, *args, **kwargs):
+        start = time()
+        result = f(self, *args, **kwargs)
+        end = time()
+        logger.info("%r finished in %i seconds." % (self, end - start))
+        return result
+    return inner
 
 
 class Task(object):
@@ -70,6 +81,7 @@ class Task(object):
                 queue = Queue(self.queue, channel, self.local)
                 queue.send(task_description)
 
+    @profile
     def run(self, args, kwargs):
         """Run the wrapped function with before and after task functions."""
         def run(functions):

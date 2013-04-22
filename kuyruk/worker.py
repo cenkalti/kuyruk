@@ -12,7 +12,6 @@ from . import loader
 from .queue import Queue
 from .exceptions import Reject
 from .connection import LazyConnection
-from .task import Task
 
 logger = logging.getLogger(__name__)
 
