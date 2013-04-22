@@ -52,6 +52,23 @@ class Queue(object):
     def __len__(self):
         return self.declare().method.message_count
 
+    def __iter__(self):
+        self.generator = self.channel.consume(self.name)
+        return self
+
+    def next(self):
+        if self.canceling:
+            self.canceling = False
+            raise StopIteration
+        else:
+            try:
+                message = next(self.generator)
+            except Exception as e:
+                if e.args[0] == 4:  # Interrupted system call
+                    raise StopIteration
+                raise
+            return self._decode(message)
+
     def declare(self):
         logger.warning('Declaring queue: %s', self.name)
         return self.channel.queue_declare(
@@ -76,23 +93,6 @@ class Queue(object):
             routing_key=self.name,
             body=json.dumps(obj),
             properties=properties)
-
-    def __iter__(self):
-        self.generator = self.channel.consume(self.name)
-        return self
-
-    def next(self):
-        if self.canceling:
-            self.canceling = False
-            raise StopIteration
-        else:
-            try:
-                message = next(self.generator)
-            except Exception as e:
-                if e.args[0] == 4:  # Interrupted system call
-                    raise StopIteration
-                raise
-            return self._decode(message)
 
     def cancel(self):
         self.canceling = True
