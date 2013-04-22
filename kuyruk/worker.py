@@ -12,6 +12,7 @@ from . import loader
 from .queue import Queue
 from .exceptions import Reject
 from .connection import LazyConnection
+from .task import Task
 
 logger = logging.getLogger(__name__)
 
@@ -109,13 +110,21 @@ class Worker(multiprocessing.Process):
         This is the method where user modules are loaded.
 
         """
-        fname, args, kwargs = (task_description['f'],
-                               task_description['args'],
-                               task_description['kwargs'])
-        task = loader.import_task(fname)
-        logger.debug(
-            'Task %r will be executed with args=%r and kwargs=%r',
-            task, args, kwargs)
+        module, function, cls, object_id, args, kwargs = (
+            task_description['module'],
+            task_description['function'],
+            task_description['class'],
+            task_description['object_id'],
+            task_description['args'],
+            task_description['kwargs'])
+        task, cls = loader.import_task(module, cls, function)
+        logger.debug('Task %r will be executed with args=%r and kwargs=%r',
+                     task, args, kwargs)
+
+        if cls:
+            obj = cls.get(object_id)
+            args = list(args)
+            args.insert(0, obj)
 
         result = task.run(args, kwargs)
         logger.debug('Result: %r', result)

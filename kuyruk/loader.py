@@ -2,26 +2,24 @@ import os
 import sys
 import logging
 import importlib
+from collections import namedtuple
 from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
 
 
-def get_fully_qualified_function_name(f):
-    """For a given function return it's fully qualified name as str."""
-    module_name = f.__module__
-    if module_name == '__main__':
-        module_name = get_main_module()[1]
-
-    return module_name + '.' + f.__name__
-
-
-def import_task(fully_qualified_function_name):
+def import_task(module_name, class_name, function_name):
     """Find and return the function for given function name."""
-    logger.debug('fq name: %s', fully_qualified_function_name)
-    module_name, func_name = fully_qualified_function_name.rsplit('.', 1)
-    module = import_task_module(module_name)
-    return getattr(module, func_name)
+    namespace = import_task_module(module_name)
+    if class_name:
+        cls = getattr(namespace, class_name)
+        namespace = cls
+    else:
+        cls = None
+
+    task = getattr(namespace, function_name)
+    ImportResult = namedtuple('ImportResult', ['task', 'cls'])
+    return ImportResult(task=task, cls=cls)
 
 
 def import_task_module(module_name):
@@ -63,5 +61,6 @@ def get_main_module():
         # if run from interactive shell
         return None, None
     filename = os.path.basename(main_module.__file__)
-    module_name = os.path.splitext(filename)[0]
-    return main_module, module_name
+    module_name, ext = os.path.splitext(filename)
+    MainModule = namedtuple('MainModule', ['module', 'name'])
+    return MainModule(module=main_module, name=module_name)

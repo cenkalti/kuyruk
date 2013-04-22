@@ -1,4 +1,5 @@
 import logging
+from types import MethodType
 from datetime import datetime
 
 from .queue import Queue
@@ -6,27 +7,6 @@ from . import loader
 from .connection import LazyConnection
 
 logger = logging.getLogger(__name__)
-
-
-class TaskResult(object):
-
-    def __init__(self, task):
-        self.task = task
-
-    def __getattr__(self, item):
-        raise Exception(item)
-
-    def __getitem__(self, item):
-        raise Exception(item)
-
-    def __setitem__(self, key, value):
-        raise Exception(key, value)
-
-    def __repr__(self):
-        return '<TaskResult of %s>' % self.task.fully_qualified_name
-
-    def __str__(self):
-        return self.__repr__()
 
 
 class Task(object):
@@ -39,22 +19,26 @@ class Task(object):
         self.local = local
         self.eager = eager
         self.retry = retry
+        self.cls = None
         self.before_task_functions = []
         self.after_task_functions = []
 
     def __repr__(self):
-        return "<Task %s>" % self.fully_qualified_name
+        return "<Task of %r>" % self.name
 
     def __call__(self, *args, **kwargs):
-        fname = self.fully_qualified_name
-        assert self.is_reachable(fname, self.f)
-        logger.debug('fname: %s', fname)
-        if self.kuyruk.config.EAGER or self.eager:
+        if self.eager or self.kuyruk.config.EAGER:
             self.run(args, kwargs)
         else:
             self.send_to_queue(args, kwargs)
 
         return TaskResult(self)
+
+    def __get__(self, obj, objtype):
+        if obj:
+            self.cls = objtype
+            return MethodType(self.__call__, obj, objtype)
+        return self
 
     def send_to_queue(self, args=(), kwargs={}):
         """
@@ -66,8 +50,12 @@ class Task(object):
 
         """
         task_description = {
-            'f': self.fully_qualified_name,
-            'args': args, 'kwargs': kwargs,
+            'module': self.module_name,
+            'function': self.f.__name__,
+            'class': self.class_name,
+            'object_id': args[0].id if self.cls else None,
+            'args': args[1:] if self.cls else args,
+            'kwargs': kwargs,
             'timestamp': str(datetime.utcnow())
         }
         if self.retry:
@@ -89,17 +77,36 @@ class Task(object):
 
         run(self.kuyruk.before_task_functions)
         run(self.before_task_functions)
-        self.f(*args, **kwargs)  # Run wrapped function
+        self.call_wrapped(args, kwargs)
         run(self.after_task_functions)
         run(self.kuyruk.after_task_functions)
 
-    @property
-    def fully_qualified_name(self):
-        return loader.get_fully_qualified_function_name(self.f)
+    def call_wrapped(self, args, kwargs):
+        if self.cls:
+            args = list(args)
+            obj = self.cls.get(args[0])
+            args.insert(0, obj)
 
-    def is_reachable(self, fname, f):
-        imported = loader.import_task(fname)
-        return imported.f is f
+        self.f(*args, **kwargs)
+
+    @property
+    def name(self):
+        if self.class_name:
+            return '.'.join([self.module_name, self.class_name, self.f.__name__])
+        else:
+            return '.'.join([self.module_name, self.f.__name__])
+
+    @property
+    def module_name(self):
+        name = self.f.__module__
+        if name == '__main__':
+            name = loader.get_main_module().name
+        return name
+
+    @property
+    def class_name(self):
+        if self.cls:
+            return self.cls.__name__
 
     def before_task(self, f):
         self.before_task_functions.append(f)
@@ -108,3 +115,24 @@ class Task(object):
     def after_task(self, f):
         self.after_task_functions.append(f)
         return f
+
+
+class TaskResult(object):
+
+    def __init__(self, task):
+        self.task = task
+
+    def __getattr__(self, item):
+        raise Exception(item)
+
+    def __getitem__(self, item):
+        raise Exception(item)
+
+    def __setitem__(self, key, value):
+        raise Exception(key, value)
+
+    def __repr__(self):
+        return "<TaskResult of %r>" % self.task.name
+
+    def __str__(self):
+        return self.__repr__()

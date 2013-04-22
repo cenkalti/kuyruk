@@ -78,3 +78,18 @@ def function3():
 @kuyruk2.after_task
 def function4():
     print 'function4'
+
+
+class Cat(object):
+
+    def __init__(self):
+        self.id = 1
+        self.name = 'Felix'
+
+    @classmethod
+    def get(cls, id):
+        return cls()
+
+    @kuyruk.task
+    def meow(self, message):
+        print "Felix says:", message

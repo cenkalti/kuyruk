@@ -1,5 +1,6 @@
 import os
 import signal
+import inspect
 import logging
 import unittest
 
@@ -141,3 +142,12 @@ class KuyrukTestCase(unittest.TestCase):
             child.expect('hello world')
             child.expect('function3')
             child.expect('function4')
+
+    def test_class_task(self):
+        cat = tasks.Cat()
+        self.assertTrue(isinstance(tasks.Cat.meow, Task))
+        self.assertTrue(inspect.ismethod(cat.meow))
+
+        cat.meow('hello')
+        with run_kuyruk() as child:
+            child.expect('Felix says: hello')
