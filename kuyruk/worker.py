@@ -122,6 +122,11 @@ class Worker(multiprocessing.Process):
 
         if cls:
             obj = cls.get(object_id)
+            if not obj:
+                logger.warning("<%s.%s id=%r> is not found",
+                               module, cls.__name__, object_id)
+                return
+
             args = list(args)
             args.insert(0, obj)
 
