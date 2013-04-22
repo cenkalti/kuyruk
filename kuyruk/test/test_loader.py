@@ -56,4 +56,5 @@ def get_name():
     ch = conn.channel()
     with conn:
         with ch:
-            return Queue('kuyruk', ch).receive()[1]['f']
+            desc = Queue('kuyruk', ch).receive()[1]
+            return '.'.join([desc['module'], desc['function']])
