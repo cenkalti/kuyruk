@@ -58,7 +58,6 @@ class Task(object):
         syntax.
 
         """
-        # TODO check memory leak for circular reference
         self.cls = objtype
         if obj:
             return MethodType(self.__call__, obj, objtype)
