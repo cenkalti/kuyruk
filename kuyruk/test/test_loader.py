@@ -5,7 +5,7 @@ import unittest
 import pexpect
 
 from ..queue import Queue
-from ..connection import LazyConnection
+from ..channel import LazyChannel
 from util import delete_queue
 
 
@@ -52,9 +52,7 @@ def assert_name(name):
 
 
 def get_name():
-    conn = LazyConnection()
-    ch = conn.channel()
-    with conn:
-        with ch:
-            desc = Queue('kuyruk', ch).receive()[1]
-            return '.'.join([desc['module'], desc['function']])
+    ch = LazyChannel()
+    with ch:
+        desc = Queue('kuyruk', ch).receive()[1]
+        return '.'.join([desc['module'], desc['function']])

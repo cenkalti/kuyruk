@@ -10,7 +10,7 @@ from setproctitle import setproctitle
 
 from . import loader
 from .queue import Queue
-from .connection import LazyConnection
+from .channel import LazyChannel
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +24,9 @@ class Worker(multiprocessing.Process):
         """
         super(Worker, self).__init__()
         self.config = config
-        self.connection = LazyConnection(
+        self.channel = LazyChannel(
             self.config.RABBIT_HOST, self.config.RABBIT_PORT,
             self.config.RABBIT_USER, self.config.RABBIT_PASSWORD)
-        self.channel = self.connection.channel()
         self.queue_name = queue_name
         is_local = queue_name.startswith('@')
         self.queue = Queue(queue_name, self.channel, local=is_local)

@@ -2,7 +2,7 @@ import imp
 import logging
 import optparse
 
-from .connection import LazyConnection
+from .channel import LazyChannel
 from .queue import Queue
 from .config import Config
 
@@ -22,10 +22,9 @@ def main():
         config = imp.new_module('config')
 
     config = Config(config)
-    connection = LazyConnection(
+    channel = LazyChannel(
         config.RABBIT_HOST, config.RABBIT_PORT,
         config.RABBIT_USER, config.RABBIT_PASSWORD)
-    channel = connection.channel()
     channel.tx_select()
     failed_queue = Queue('kuyruk_failed', channel)
 
