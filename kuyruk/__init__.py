@@ -6,7 +6,7 @@ from .worker import Worker
 from .queue import Queue
 from .exceptions import Reject
 
-__version__ = '0.3.5'
+__version__ = '0.4.0'
 
 
 try:
