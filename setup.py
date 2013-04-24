@@ -16,6 +16,7 @@ setup(
     name='Kuyruk',
     version='0.3.2',
     author=u'Cenk Altı',
+    author_email='cenkalti@gmail.com',
     license='Apache License 2.0',
     keywords='rabbitmq distributed task queue',
     url='http://github.com/cenkalti/kuyruk',
