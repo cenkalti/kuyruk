@@ -11,9 +11,10 @@ def read(*fname):
 
 def get_version():
     for line in read('kuyruk', '__init__.py').splitlines():
-        m = re.match(r'__version__\s*=(.*?)', line)
+        m = re.match(r"""__version__\s*=\s'(.*)'""", line)
         if m:
             return m.groups()[0].strip()
+    raise Exception('Cannot find version')
 
 
 install_requires = [
