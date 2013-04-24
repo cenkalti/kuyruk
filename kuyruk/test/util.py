@@ -1,12 +1,14 @@
+import os
 import sys
 import signal
 import logging
 import subprocess
 from time import time, sleep
-from functools import partial
+from functools import partial, wraps
 from contextlib import contextmanager
 
 import pexpect
+from nose.plugins.skip import SkipTest
 
 from ..connection import LazyConnection
 from ..queue import Queue as RabbitQueue
@@ -29,6 +31,16 @@ def delete_queue(*queues):
 def is_empty(queue):
     queue = RabbitQueue(queue, LazyConnection().channel())
     return len(queue) == 0
+
+
+def skip_on_travis(f):
+    """Some process related tests are failing on Travis-CI"""
+    @wraps(f)
+    def inner(*args, **kwargs):
+        if os.environ.get('TRAVIS') == 'true':
+            raise SkipTest
+        return f(*args, **kwargs)
+    return inner
 
 
 @contextmanager
