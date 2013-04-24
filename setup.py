@@ -22,11 +22,11 @@ setup(
     version='0.3.2',
     author=u'Cenk Altı',
     author_email='cenkalti@gmail.com',
-    license='Apache License 2.0',
     keywords='rabbitmq distributed task queue',
     url='http://github.com/cenkalti/kuyruk',
     packages=['kuyruk'],
     install_requires=install_requires,
+    description='A distributed task runner',
     long_description=read('README.rst'),
     zip_safe=True,
     entry_points={
@@ -35,4 +35,15 @@ setup(
             'kuyruk-requeue-failed-tasks = kuyruk.requeue:main',
         ],
     },
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: Apache Software License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Topic :: Software Development :: Object Brokering',
+        'Topic :: System :: Distributed Computing',
+    ],
 )
