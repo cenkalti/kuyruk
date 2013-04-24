@@ -20,16 +20,14 @@ logger = logging.getLogger(__name__)
 
 def delete_queue(*queues):
     """Delete queues from RabbitMQ"""
-    ch = LazyChannel()
-    with ch:
+    with LazyChannel() as channel:
         for name in queues:
-            RabbitQueue(name, ch).delete()
+            RabbitQueue(name, channel).delete()
 
 
 def is_empty(queue):
-    ch = LazyChannel()
-    with ch:
-        queue = RabbitQueue(queue, ch)
+    with LazyChannel() as channel:
+        queue = RabbitQueue(queue, channel)
         return len(queue) == 0
 
 

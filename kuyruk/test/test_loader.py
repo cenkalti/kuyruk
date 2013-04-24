@@ -52,7 +52,6 @@ def assert_name(name):
 
 
 def get_name():
-    ch = LazyChannel()
-    with ch:
-        desc = Queue('kuyruk', ch).receive()[1]
+    with LazyChannel() as channel:
+        desc = Queue('kuyruk', channel).receive()[1]
         return '.'.join([desc['module'], desc['function']])

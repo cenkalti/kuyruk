@@ -26,7 +26,7 @@ class LazyChannel(object):
             self.close()
 
     def __enter__(self):
-        yield
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
