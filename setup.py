@@ -1,5 +1,10 @@
 # coding=utf-8
+import os
 from setuptools import setup
+
+
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 install_requires = [
     'pika>=0.9.12, <1',
@@ -22,6 +27,7 @@ setup(
     url='http://github.com/cenkalti/kuyruk',
     packages=['kuyruk'],
     install_requires=install_requires,
+    long_description=read('README.rst'),
     zip_safe=True,
     entry_points={
         'console_scripts': [
