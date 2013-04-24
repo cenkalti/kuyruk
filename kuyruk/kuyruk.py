@@ -65,3 +65,11 @@ class Kuyruk(object):
     def after_task(self, f):
         self.after_task_functions.append(f)
         return f
+
+    class Reject(Exception):
+        """
+        The task should raise this if it does not want to process the message.
+        In this case message will be requeued and delivered to another worker.
+
+        """
+        pass

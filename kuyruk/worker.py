@@ -10,7 +10,6 @@ from setproctitle import setproctitle
 
 from . import loader
 from .queue import Queue
-from .exceptions import Reject
 from .connection import LazyConnection
 
 logger = logging.getLogger(__name__)
@@ -68,10 +67,11 @@ class Worker(multiprocessing.Process):
             # self.channel.tx_commit()
 
     def process_task(self, tag, task_description):
+        from kuyruk import Kuyruk
         try:
             self.import_and_call_task(task_description)
         # sleep() calls below prevent cpu burning
-        except Reject:
+        except Kuyruk.Reject:
             logger.warning('Task is rejected')
             sleep(1)
             self.queue.reject(tag)

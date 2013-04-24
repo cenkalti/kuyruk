@@ -1,7 +1,6 @@
 from time import sleep
 
 from kuyruk.kuyruk import Kuyruk
-from kuyruk.exceptions import Reject
 
 
 kuyruk = Kuyruk()
@@ -43,7 +42,7 @@ eager_called = []
 
 @kuyruk.task
 def rejecting_task():
-    raise Reject
+    raise kuyruk.Reject
 
 
 @kuyruk.task
