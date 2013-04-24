@@ -97,13 +97,15 @@ class Task(object):
     def run(self, args, kwargs):
         """Run the wrapped function with before and after task functions."""
         def run(functions):
-            [f() for f in functions]
+            [f(self, args, kwargs) for f in functions]
 
-        run(self.kuyruk.before_task_functions)
-        run(self.before_task_functions)
-        self.f(*args, **kwargs)  # call wrapped function
-        run(self.after_task_functions)
-        run(self.kuyruk.after_task_functions)
+        try:
+            run(self.kuyruk.before_task_functions)
+            run(self.before_task_functions)
+            self.f(*args, **kwargs)  # call wrapped function
+        finally:
+            run(self.after_task_functions)
+            run(self.kuyruk.after_task_functions)
 
     @property
     def name(self):
