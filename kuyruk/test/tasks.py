@@ -82,13 +82,17 @@ def function4():
 
 class Cat(object):
 
-    def __init__(self):
-        self.id = 1
-        self.name = 'Felix'
+    def __init__(self, id, name):
+        self.id = id
+        self.name = name
+
+    def __repr__(self):
+        return "Cat(%r, %r)" % (self.id, self.name)
 
     @classmethod
     def get(cls, id):
-        return cls()
+        if id == 1:
+            return cls(1, 'Felix')
 
     @kuyruk.task
     def meow(self, message):

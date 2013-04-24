@@ -117,8 +117,6 @@ class Worker(multiprocessing.Process):
             task_description['args'],
             task_description['kwargs'])
         task, cls = loader.import_task(module, cls, function)
-        logger.debug('Task %r will be executed with args=%r and kwargs=%r',
-                     task, args, kwargs)
 
         if cls:
             obj = cls.get(object_id)
@@ -130,6 +128,8 @@ class Worker(multiprocessing.Process):
             args = list(args)
             args.insert(0, obj)
 
+        logger.debug('Task %r will be executed with args=%s and kwargs=%s',
+                     task, args, kwargs)
         result = task.run(args, kwargs)
         logger.debug('Result: %r', result)
 

@@ -46,8 +46,8 @@ class Task(object):
         return TaskResult(self)
 
     def __get__(self, obj, objtype):
+        self.cls = objtype
         if obj:
-            self.cls = objtype
             return MethodType(self.__call__, obj, objtype)
         return self
 
@@ -89,24 +89,17 @@ class Task(object):
 
         run(self.kuyruk.before_task_functions)
         run(self.before_task_functions)
-        self.call_wrapped(args, kwargs)
+        self.f(*args, **kwargs)  # call wrapped function
         run(self.after_task_functions)
         run(self.kuyruk.after_task_functions)
-
-    def call_wrapped(self, args, kwargs):
-        if self.cls:
-            args = list(args)
-            obj = self.cls.get(args[0])
-            args.insert(0, obj)
-
-        self.f(*args, **kwargs)
 
     @property
     def name(self):
         if self.class_name:
-            return '.'.join([self.module_name, self.class_name, self.f.__name__])
+            return "%s:%s.%s" % (self.module_name, self.class_name,
+                                 self.f.__name__)
         else:
-            return '.'.join([self.module_name, self.f.__name__])
+            return "%s:%s" % (self.module_name, self.f.__name__)
 
     @property
     def module_name(self):
