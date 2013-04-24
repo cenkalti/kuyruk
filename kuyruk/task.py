@@ -46,6 +46,19 @@ class Task(object):
         return TaskResult(self)
 
     def __get__(self, obj, objtype):
+        """If the task is accessed from an instance via attribute syntax
+        return a function for sending the task to queue, otherwise
+        return the task itself.
+
+        This is done for allowing a method to be converted to task without
+        modifying the client code. When a function decorated inside a class
+        there is no way of accessing that class at that time because methods
+        are bounded at run time when they are accessed. The trick here is that
+        we set self.cls when the Task is accessed first time via attribute
+        syntax.
+
+        """
+        # TODO check memory leak for circular reference
         self.cls = objtype
         if obj:
             return MethodType(self.__call__, obj, objtype)
