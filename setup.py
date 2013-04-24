@@ -1,10 +1,20 @@
 # coding=utf-8
 import os
+import re
 from setuptools import setup
 
 
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+def read(*fname):
+    with open(os.path.join(os.path.dirname(__file__), *fname)) as f:
+        return f.read()
+
+
+def get_version():
+    for line in read('kuyruk', '__init__.py').splitlines():
+        m = re.match(r'__version__\s*=(.*?)', line)
+        if m:
+            return m.groups()[0].strip()
+
 
 install_requires = [
     'pika>=0.9.12, <1',
@@ -19,7 +29,7 @@ except ImportError:
 
 setup(
     name='Kuyruk',
-    version='0.3.2',
+    version=get_version(),
     author=u'Cenk Altı',
     author_email='cenkalti@gmail.com',
     keywords='rabbitmq distributed task queue',
