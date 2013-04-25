@@ -22,7 +22,7 @@ class Master(object):
     def __init__(self, config):
         self.config = config
         self.workers = []
-        self.stopping = False
+        self.shutdown_pending = False
 
     def run(self, queues=None):
         setproctitle('kuyruk: master')
@@ -84,7 +84,7 @@ class Master(object):
                 if worker.is_alive():
                     any_alive = True
                 else:
-                    if not self.stopping:
+                    if not self.shutdown_pending:
                         self._spawn_new_worker(worker)
                         any_alive = True
 
@@ -99,7 +99,7 @@ class Master(object):
         signal.signal(signal.SIGHUP, self._handle_sighup)
 
     def _handle_sigint(self, signum, frame):
-        if self.stopping:
+        if self.shutdown_pending:
             logger.warning("Cold shutdown")
             self.kill_workers()
             sys.exit(1)
@@ -110,7 +110,7 @@ class Master(object):
 
     def _handle_sigterm(self, signum, frame):
         self.stop_workers()
-        self.stopping = True
+        self.shutdown_pending = True
 
     def _handle_sighup(self, signum, frame):
         if self.config.path:
