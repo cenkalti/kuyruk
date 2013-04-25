@@ -15,12 +15,12 @@ class Kuyruk(object):
 
     """
 
-    def __init__(self, config_object={}):
+    def __init__(self, config=None):
         """
-        :param config_object: See config.py for default values.
+        :param config: See config.py for default values.
 
         """
-        self.config = Config(config_object)
+        self.config = Config(config)
         self.before_task_functions = []
         self.after_task_functions = []
 
@@ -65,3 +65,11 @@ class Kuyruk(object):
     def after_task(self, f):
         self.after_task_functions.append(f)
         return f
+
+    class Reject(Exception):
+        """
+        The task should raise this if it does not want to process the message.
+        In this case message will be requeued and delivered to another worker.
+
+        """
+        pass

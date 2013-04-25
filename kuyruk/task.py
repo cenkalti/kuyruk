@@ -5,7 +5,7 @@ from datetime import datetime
 
 from . import loader
 from .queue import Queue
-from .connection import LazyConnection
+from .channel import LazyChannel
 
 logger = logging.getLogger(__name__)
 
@@ -84,14 +84,12 @@ class Task(object):
         if self.retry:
             task_description['retry'] = self.retry
 
-        connection = LazyConnection(
+        channel = LazyChannel(
             self.kuyruk.config.RABBIT_HOST, self.kuyruk.config.RABBIT_PORT,
             self.kuyruk.config.RABBIT_USER, self.kuyruk.config.RABBIT_PASSWORD)
-        channel = connection.channel()
-        with connection:
-            with channel:
-                queue = Queue(self.queue, channel, self.local)
-                queue.send(task_description)
+        with channel:
+            queue = Queue(self.queue, channel, self.local)
+            queue.send(task_description)
 
     @profile
     def run(self, args, kwargs):

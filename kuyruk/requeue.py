@@ -1,8 +1,7 @@
-import imp
 import logging
 import optparse
 
-from .connection import LazyConnection
+from .channel import LazyChannel
 from .queue import Queue
 from .config import Config
 
@@ -16,16 +15,10 @@ def main():
     parser.add_option('--config')
     options, args = parser.parse_args()
 
-    if options.config:
-        config = imp.load_source('config', options.config)
-    else:
-        config = imp.new_module('config')
-
-    config = Config(config)
-    connection = LazyConnection(
+    config = Config(options.config)
+    channel = LazyChannel(
         config.RABBIT_HOST, config.RABBIT_PORT,
         config.RABBIT_USER, config.RABBIT_PASSWORD)
-    channel = connection.channel()
     channel.tx_select()
     failed_queue = Queue('kuyruk_failed', channel)
 

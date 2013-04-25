@@ -10,7 +10,7 @@ from contextlib import contextmanager
 import pexpect
 from nose.plugins.skip import SkipTest
 
-from ..connection import LazyConnection
+from ..channel import LazyChannel
 from ..queue import Queue as RabbitQueue
 
 TIMEOUT = 10
@@ -20,17 +20,15 @@ logger = logging.getLogger(__name__)
 
 def delete_queue(*queues):
     """Delete queues from RabbitMQ"""
-    conn = LazyConnection()
-    ch = conn.channel()
-    with conn:
-        with ch:
-            for name in queues:
-                RabbitQueue(name, ch).delete()
+    with LazyChannel() as channel:
+        for name in queues:
+            RabbitQueue(name, channel).delete()
 
 
 def is_empty(queue):
-    queue = RabbitQueue(queue, LazyConnection().channel())
-    return len(queue) == 0
+    with LazyChannel() as channel:
+        queue = RabbitQueue(queue, channel)
+        return len(queue) == 0
 
 
 def skip_on_travis(f):
@@ -140,12 +138,13 @@ def do_while(f_do, f_condition, timeout=None):
             raise Timeout
         return f_condition()
 
+    original_timeout = timeout
     start = time()
     while should_do():
         f_do()
         if timeout:
             passed = time() - start
-            timeout -= passed
+            timeout = original_timeout - passed
 
 
 class Timeout(Exception):

@@ -10,8 +10,7 @@ from setproctitle import setproctitle
 
 from . import loader
 from .queue import Queue
-from .exceptions import Reject
-from .connection import LazyConnection
+from .channel import LazyChannel
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +24,9 @@ class Worker(multiprocessing.Process):
         """
         super(Worker, self).__init__()
         self.config = config
-        self.connection = LazyConnection(
+        self.channel = LazyChannel(
             self.config.RABBIT_HOST, self.config.RABBIT_PORT,
             self.config.RABBIT_USER, self.config.RABBIT_PASSWORD)
-        self.channel = self.connection.channel()
         self.queue_name = queue_name
         is_local = queue_name.startswith('@')
         self.queue = Queue(queue_name, self.channel, local=is_local)
@@ -68,10 +66,11 @@ class Worker(multiprocessing.Process):
             # self.channel.tx_commit()
 
     def process_task(self, tag, task_description):
+        from kuyruk import Kuyruk
         try:
             self.import_and_call_task(task_description)
         # sleep() calls below prevent cpu burning
-        except Reject:
+        except Kuyruk.Reject:
             logger.warning('Task is rejected')
             sleep(1)
             self.queue.reject(tag)
@@ -180,6 +179,8 @@ class Worker(multiprocessing.Process):
         return os.getloadavg()[0] > self.config.MAX_LOAD
 
     def register_signals(self):
+        # SIGINT is ignored because when pressed Ctrl-C
+        # SIGINT sent to both master and workers while.
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         signal.signal(signal.SIGTERM, self.sigterm_handler)
 

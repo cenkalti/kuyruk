@@ -1,3 +1,9 @@
+import imp
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class Config(object):
     """Kuyruk configuration object"""
 
@@ -12,15 +18,40 @@ class Config(object):
     SAVE_FAILED_TASKS = False
     WORKERS = {}
 
-    def __init__(self, obj):
-        """Populate from obj.
-        If the key is not found in obj, default is used.
-        "KUYRUK_" prefix is stripped in attributes.
+    def __init__(self, obj=None):
+        """Populate from obj. obj may be a path to a module, a dict or
+        a dict. If the key is not found in obj, default is used. Config
+        keys must be prefixed with "KUYRUK_". They are stripped when
+        the Config object is initialized.
 
         """
-        if not isinstance(obj, dict):
-            obj = obj.__dict__
+        if obj:
+            if isinstance(obj, dict):
+                self._load_dict(obj)
+            elif isinstance(obj, basestring):
+                self._load_module(obj)
+            else:
+                self._load_object(obj)
 
-        for k, v in obj.iteritems():
+    def reload(self):
+        logger.warning("Reloading config from %s", self.path)
+        self._load_module(self.path)
+
+    def _load_dict(self, new_dict):
+        self.clear()
+        for k, v in new_dict.iteritems():
             if k.startswith('KUYRUK_'):
                 setattr(self, k[7:], v)
+
+    def _load_module(self, path):
+        module = imp.load_source('kuyruk_user_config', path)
+        self._load_object(module)
+        logger.info("Config is loaded from %s", path)
+        self.path = path  # Save for reloading later
+
+    def _load_object(self, obj):
+        self._load_dict(obj.__dict__)
+
+    def clear(self):
+        for k, v in self.__dict__.items():
+            delattr(self, k)
