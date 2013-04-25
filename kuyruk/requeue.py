@@ -1,4 +1,3 @@
-import imp
 import logging
 import optparse
 
@@ -16,12 +15,7 @@ def main():
     parser.add_option('--config')
     options, args = parser.parse_args()
 
-    if options.config:
-        config = imp.load_source('config', options.config)
-    else:
-        config = imp.new_module('config')
-
-    config = Config(config)
+    config = Config(options.config)
     channel = LazyChannel(
         config.RABBIT_HOST, config.RABBIT_PORT,
         config.RABBIT_USER, config.RABBIT_PASSWORD)
