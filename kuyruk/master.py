@@ -45,15 +45,10 @@ class Master(multiprocessing.Process):
         self._wait_for_workers()
         logger.info('End run master')
 
-    def stop_workers(self):
-        """Stop all running workers and exit."""
+    def stop_workers(self, kill=False):
+        """Send stop signal to all workers."""
         for worker in self.workers:
-            os.kill(worker.pid, signal.SIGTERM)
-
-    def kill_workers(self):
-        """Kill workers without waiting their tasks to finish."""
-        for worker in self.workers:
-            os.kill(worker.pid, signal.SIGKILL)
+            os.kill(worker.pid, signal.SIGKILL if kill else signal.SIGTERM)
 
     def _start_workers(self, queues):
         """Start a new worker for each queue name"""
@@ -98,22 +93,29 @@ class Master(multiprocessing.Process):
         signal.signal(signal.SIGINT, self._handle_sigint)
         signal.signal(signal.SIGTERM, self._handle_sigterm)
         signal.signal(signal.SIGHUP, self._handle_sighup)
-
-    def _handle_sigint(self, signum, frame):
-        if self.shutdown_pending:
-            logger.warning("Cold shutdown")
-            self.kill_workers()
-            sys.exit(1)
-        else:
-            logger.warning("Warm shutdown")
-            self._handle_sigterm(None, None)
-        logger.debug("Handled SIGINT")
+        signal.signal(signal.SIGQUIT, self._handle_sigquit)
 
     def _handle_sigterm(self, signum, frame):
-        self.stop_workers()
+        logger.warning("Warm shutdown")
         self.shutdown_pending = True
+        self.stop_workers()
+
+    def _handle_sigquit(self, signum, frame):
+        logger.warning("Cold shutdown")
+        self.shutdown_pending = True
+        self.stop_workers(kill=True)
+
+    def _handle_sigint(self, signum, frame):
+        logger.warning("Handling SIGINT")
+        if sys.stdin.isatty() and not self.shutdown_pending:
+            self._handle_sigterm(None, None)
+        else:
+            self._handle_sigquit(None, None)
+            sys.exit(1)
+        logger.debug("Handled SIGINT")
 
     def _handle_sighup(self, signum, frame):
+        logger.warning("Handling SIGHUP")
         if self.config.path:
             self.config.reload()
         self.stop_workers()

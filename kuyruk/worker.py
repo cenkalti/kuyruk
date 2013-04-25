@@ -179,6 +179,8 @@ class Worker(multiprocessing.Process):
         return os.getloadavg()[0] > self.config.MAX_LOAD
 
     def register_signals(self):
+        # SIGINT is ignored because when pressed Ctrl-C
+        # SIGINT sent to both master and workers while.
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         signal.signal(signal.SIGTERM, self.sigterm_handler)
 
