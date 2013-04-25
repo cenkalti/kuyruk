@@ -1,4 +1,7 @@
 import imp
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Config(object):
@@ -23,9 +26,7 @@ class Config(object):
 
         """
         if obj:
-            if isinstance(obj, Config):
-                self._load_config(obj)
-            elif isinstance(obj, dict):
+            if isinstance(obj, dict):
                 self._load_dict(obj)
             elif isinstance(obj, basestring):
                 self._load_module(obj)
@@ -33,12 +34,8 @@ class Config(object):
                 self._load_object(obj)
 
     def reload(self):
+        logger.warning("Reloading config from %s", self.path)
         self._load_module(self.path)
-
-    def _load_config(self, config):
-        self.clear()
-        for k, v in config.__dict__.iteritems():
-            setattr(self, k, v)
 
     def _load_dict(self, new_dict):
         self.clear()
@@ -47,13 +44,14 @@ class Config(object):
                 setattr(self, k[7:], v)
 
     def _load_module(self, path):
-        self.path = path  # Save for reloading later
         module = imp.load_source('kuyruk_user_config', path)
         self._load_object(module)
+        logger.info("Config is loaded from %s", path)
+        self.path = path  # Save for reloading later
 
     def _load_object(self, obj):
         self._load_dict(obj.__dict__)
 
     def clear(self):
-        for k, v in self.__dict__.iteritems():
+        for k, v in self.__dict__.items():
             delattr(self, k)

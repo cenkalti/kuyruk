@@ -38,7 +38,9 @@ def main():
     if options.save_failed_tasks:
         config.SAVE_FAILED_TASKS = options.save_failed_tasks
 
-    Kuyruk(config).run(options.queues)
+    kuyruk = Kuyruk()
+    kuyruk.config = config
+    kuyruk.run(options.queues)
 
 if __name__ == '__main__':
     main()

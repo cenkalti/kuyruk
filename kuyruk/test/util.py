@@ -138,12 +138,13 @@ def do_while(f_do, f_condition, timeout=None):
             raise Timeout
         return f_condition()
 
+    original_timeout = timeout
     start = time()
     while should_do():
         f_do()
         if timeout:
             passed = time() - start
-            timeout -= passed
+            timeout = original_timeout - passed
 
 
 class Timeout(Exception):

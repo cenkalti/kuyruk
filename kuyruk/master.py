@@ -20,7 +20,6 @@ class Master(object):
 
     """
     def __init__(self, config):
-        super(Master, self).__init__()
         self.config = config
         self.workers = []
         self.stopping = False
@@ -114,6 +113,8 @@ class Master(object):
         self.stopping = True
 
     def _handle_sighup(self, signum, frame):
+        if self.config.path:
+            self.config.reload()
         self.stop_workers()
 
 
