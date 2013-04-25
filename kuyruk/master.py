@@ -14,12 +14,13 @@ from .worker import Worker
 logger = logging.getLogger(__name__)
 
 
-class Master(object):
+class Master(multiprocessing.Process):
     """
     Master worker implementation that coordinates queue workers.
 
     """
     def __init__(self, config):
+        super(Master, self).__init__()
         self.config = config
         self.workers = []
         self.shutdown_pending = False
