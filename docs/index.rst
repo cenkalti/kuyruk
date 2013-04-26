@@ -11,6 +11,9 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   Basics <README>
+   signals
+
 
 
 Indices and tables
