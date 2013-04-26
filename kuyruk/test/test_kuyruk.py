@@ -50,6 +50,7 @@ class KuyrukTestCase(unittest.TestCase):
             child.expect('ZeroDivisionError')
         assert is_empty('kuyruk')
 
+    @skip_on_travis
     def test_cold_shutdown(self):
         """If the worker is stuck on the task it can be stopped by
         invoking cold shutdown"""
