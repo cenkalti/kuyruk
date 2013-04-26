@@ -111,7 +111,6 @@ class Master(multiprocessing.Process):
             self._handle_sigterm(None, None)
         else:
             self._handle_sigquit(None, None)
-            sys.exit(1)
         logger.debug("Handled SIGINT")
 
     def _handle_sighup(self, signum, frame):
