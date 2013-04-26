@@ -7,12 +7,14 @@ It uses `RabbitMQ <http://www.rabbitmq.com>`_ message broker for routing tasks.
 .. image:: https://travis-ci.org/cenkalti/kuyruk.png
    :target: https://travis-ci.org/cenkalti/kuyruk
 
+
 How to install?
 ---------------
 
 .. code-block:: bash
 
    $ pip install kuyruk
+
 
 How to run tests?
 -----------------
