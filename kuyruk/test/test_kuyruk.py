@@ -50,7 +50,6 @@ class KuyrukTestCase(unittest.TestCase):
             child.expect('ZeroDivisionError')
         assert is_empty('kuyruk')
 
-    @skip_on_travis
     def test_cold_shutdown(self):
         """If the worker is stuck on the task it can be stopped by
         invoking cold shutdown"""
@@ -62,6 +61,7 @@ class KuyrukTestCase(unittest.TestCase):
             child.expect('Handled SIGINT')
             child.sendintr()
             child.expect('Cold shutdown')
+            child.read()
             sleep_until(not_running, timeout=TIMEOUT)
 
     def test_eager(self):
@@ -113,13 +113,13 @@ class KuyrukTestCase(unittest.TestCase):
         assert is_empty('kuyruk_failed')
         assert not is_empty('kuyruk')
 
-    @skip_on_travis
     def test_dead_master(self):
         """If master is dead worker should exit gracefully"""
         tasks.print_task('hello world')
         with run_kuyruk(terminate=False) as child:
             child.expect('hello world')
             kill_master(signal.SIGKILL)
+            child.read()
             sleep_until(not_running, timeout=TIMEOUT)
 
     def test_before_after(self):

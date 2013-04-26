@@ -4,7 +4,7 @@ import logging
 import traceback
 import threading
 import multiprocessing
-from time import time, sleep
+from time import sleep
 
 from setproctitle import setproctitle
 
@@ -39,17 +39,17 @@ class Worker(multiprocessing.Process):
 
         """
         setproctitle("kuyruk: worker on %s" % self.queue_name)
-        self.start_wathcing_master()
         self.register_signals()
-        self.started = time()
         self.queue.declare()
         self.channel.basic_qos(prefetch_count=1)
         # self.channel.tx_select()
 
+        self.start_wathcing_master()
+        if self.config.MAX_RUN_TIME > 0:
+            self.start_shutdown_timer()
+
         logger.info('Starting consume')
         for tag, task_description in self.queue:
-            if self.should_quit():
-                break
             self.on_task(tag, task_description)
 
         logger.debug("End run worker")
@@ -132,16 +132,6 @@ class Worker(multiprocessing.Process):
         result = task.run(args, kwargs)
         logger.debug('Result: %r', result)
 
-    def should_quit(self):
-        def checks():
-            CHECKS = [
-                self.is_run_time_exceeded,
-                self.is_master_dead,
-            ]
-            for check in CHECKS:
-                yield check()
-        return any(checks())
-
     def is_master_dead(self):
         try:
             os.kill(os.getppid(), 0)
@@ -168,12 +158,21 @@ class Worker(multiprocessing.Process):
         t.daemon = True
         t.start()
 
-    def is_run_time_exceeded(self):
-        if self.config.MAX_RUN_TIME is not None:
-            passed_seconds = time() - self.started
-            if passed_seconds >= self.config.MAX_RUN_TIME:
-                logger.warning('Kuyruk run for %s seconds', passed_seconds)
-                return True
+    def start_shutdown_timer(self):
+        """
+        Start a Thread that counts down from MAX_RUN_TIME. When it reaches
+        zero it sends a signal to itself for graceful shutdown.
+
+        """
+        def watch():
+            sleep(self.config.MAX_RUN_TIME)
+            logger.critical('Run time reached zero, cancelling consume.')
+            # We do not call the handler directly here because
+            # pika is not thread safe.
+            os.kill(os.getpid(), signal.SIGTERM)
+        t = threading.Thread(target=watch)
+        t.daemon = True
+        t.start()
 
     def is_load_high(self):
         return os.getloadavg()[0] > self.config.MAX_LOAD
