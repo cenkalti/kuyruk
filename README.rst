@@ -10,14 +10,14 @@ It uses `RabbitMQ <http://www.rabbitmq.com>`_ message broker for routing tasks.
 How to install?
 ---------------
 
-.. code:: bash
+.. code-block:: bash
 
    $ pip install kuyruk
 
 How to run tests?
 -----------------
 
-.. code:: bash
+.. code-block:: bash
 
    $ git clone git://github.com/cenkalti/kuyruk.git
    $ cd kuyruk
@@ -35,7 +35,7 @@ will send the task to default queue instead of invoking it. Since Kuyruk does
 not support a result backend yet you should not be using the return value of
 the function.
 
-.. code:: python
+.. code-block:: python
 
    from kuyruk import Kuyruk
 
@@ -52,6 +52,6 @@ How to run the worker?
 Running the binary ``kuyruk`` is enough for processing the tasks in the
 default queue.
 
-.. code:: bash
+.. code-block:: bash
 
    $ kuyruk
