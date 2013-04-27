@@ -4,16 +4,15 @@ import signal
 import logging
 import subprocess
 from time import time, sleep
-from functools import partial, wraps
+from functools import partial
 from contextlib import contextmanager
 
-import pexpect
-from nose.plugins.skip import SkipTest
+from what import What
 
 from ..channel import LazyChannel
 from ..queue import Queue as RabbitQueue
 
-TIMEOUT = 10
+TIMEOUT = 5
 
 logger = logging.getLogger(__name__)
 
@@ -31,20 +30,10 @@ def is_empty(queue):
         return len(queue) == 0
 
 
-def skip_on_travis(f):
-    """Some process related tests are failing on Travis-CI"""
-    @wraps(f)
-    def inner(*args, **kwargs):
-        if os.environ.get('TRAVIS') == 'true':
-            raise SkipTest
-        return f(*args, **kwargs)
-    return inner
-
-
 @contextmanager
 def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
     assert not_running()
-    args = ['-m', 'kuyruk.__main__']  # run main module
+    args = [sys.executable, '-u', '-m', 'kuyruk.__main__']  # run main module
     args.extend(['--logging-level=DEBUG'])
     if queues:
         args.extend(['--queues', queues])
@@ -52,22 +41,22 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
     if save_failed_tasks:
         args.append('--save-failed-tasks')
 
-    child = pexpect.spawn(sys.executable, args, timeout=TIMEOUT)
+    child = What(*args)
+    child.timeout = TIMEOUT
     try:
         yield child
         # Master and workers should exit normally after SIGTERM
         if terminate:
             # Try to terminate kuyruk gracefully
-            child.kill(signal.SIGTERM)
-            child.expect('End run master', timeout=TIMEOUT)
-            child.close()
+            child.terminate()
+            child.expect('End run master')
         sleep_until(not_running, timeout=TIMEOUT)
     finally:
         # We need to make sure that not any process of kuyruk running
         def kill():
-            kill_all(signal.SIGKILL)
+            for pid in get_pids('kuyruk:'):
+                os.kill(pid, signal.SIGKILL)
             sleep(0.25)
-        child.close(force=True)
         do_until(kill, not_running)
 
 
@@ -76,28 +65,17 @@ def not_running():
 
 
 def is_running():
-    return get_pids('kuyruk:')
+    return bool(get_pids('kuyruk:'))
 
 
 def run_requeue():
-    pexpect.run('%s -m kuyruk.requeue' % sys.executable)
-
-
-def kill_worker(signum=signal.SIGTERM):
-    pkill('kuyruk: worker', signum)
-
-
-def kill_master(signum=signal.SIGTERM):
-    pkill('kuyruk: master', signum)
-
-
-def kill_all(signum=signal.SIGTERM):
-    pkill('kuyruk:', signum)
+    w = What(sys.executable, '-u', '-m', 'kuyruk.requeue')
+    w.expect_exit(0, TIMEOUT)
 
 
 def pkill(pattern, signum=signal.SIGTERM):
     logger.info("Killing pattern: '%s' with signal: %s" % (pattern, signum))
-    pexpect.run("pkill -%i -f '%s'" % (signum, pattern))
+    What('pkill', '-%i' % signum, '-f', "'%s'" % pattern).wait()
 
 
 def get_pids(pattern):

@@ -2,7 +2,7 @@ import os
 import sys
 import unittest
 
-import pexpect
+from what import What
 
 from ..queue import Queue
 from ..channel import LazyChannel
@@ -42,8 +42,7 @@ class LoaderTestCase(unittest.TestCase):
 def run_python(args, cwd):
     dirname = os.path.dirname(__file__)
     cwd = os.path.join(dirname, cwd)
-    command = "%s %s" % (sys.executable, args)
-    print pexpect.run(command, cwd=cwd)
+    What(sys.executable, *args.split(' '), cwd=cwd).expect_exit(0)
 
 
 def assert_name(name):
