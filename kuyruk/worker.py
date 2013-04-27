@@ -70,7 +70,7 @@ class Worker(multiprocessing.Process):
     def process_task(self, tag, task_description):
         from kuyruk import Kuyruk
         try:
-            self.import_and_call_task(task_description)
+            self.process_data_events_and_run_task(task_description)
         # sleep() calls below prevent cpu burning
         except Kuyruk.Reject:
             logger.warning('Task is rejected')
@@ -84,6 +84,21 @@ class Worker(multiprocessing.Process):
         else:
             logger.info('Task is successful')
             self.queue.ack(tag)
+
+    def process_data_events_and_run_task(self, task_description):
+        """Start a thread in background that listens data events from
+        connection for keeping it open and call task function in main thread.
+
+        """
+        try:
+            self.dep = DataEventProcessor(self.channel.connection)
+            self.dep.start()
+            self.import_and_call_task(task_description)
+        except Exception:
+            raise
+        finally:
+            self.dep.stop()
+            self.dep.join()
 
     def handle_exception(self, tag, task_description):
         retry_count = task_description.get('retry', 0)
@@ -189,3 +204,23 @@ class Worker(multiprocessing.Process):
         logger.warning("Catched SIGTERM")
         logger.warning("Stopping %s...", self)
         self.queue.cancel()
+
+
+class DataEventProcessor(threading.Thread):
+
+    def __init__(self, connection):
+        super(DataEventProcessor, self).__init__()
+        self.daemon = True
+        self.connection = connection
+        self._stop = threading.Event()
+
+    def run(self):
+        while not self._stop.is_set():
+            try:
+                self.connection.process_data_events()
+            except Exception:
+                os._exit(1)
+            sleep(0.1)
+
+    def stop(self):
+        self._stop.set()
