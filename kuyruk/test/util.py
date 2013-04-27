@@ -7,7 +7,7 @@ from time import time, sleep
 from functools import partial
 from contextlib import contextmanager
 
-from what import What, WhatError
+from what import What
 
 from ..channel import LazyChannel
 from ..queue import Queue as RabbitQueue
@@ -55,14 +55,7 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
             child.terminate()
             child.expect('End run master')
 
-        try:
-            # Return code must be 0 if exited succesfully
-            child.expect_exit(0)
-        except WhatError:
-            pass
-        else:
-            # Reap master
-            child.wait()
+        child.expect_exit()
 
     finally:
         # We need to make sure that not any process of kuyruk is running

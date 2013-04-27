@@ -64,12 +64,7 @@ class KuyrukTestCase(unittest.TestCase):
             child.expect('Handled SIGINT')
             child.send_signal(signal.SIGINT)
             child.expect('Cold shutdown')
-            try:
-                child.expect_exit(0)
-            except WhatError:
-                pass
-            else:
-                child.wait()
+            child.expect_exit(0)
             wait_until(not_running, timeout=TIMEOUT)
 
     def test_eager(self):
@@ -127,12 +122,7 @@ class KuyrukTestCase(unittest.TestCase):
         with run_kuyruk(terminate=False) as child:
             child.expect('hello world')
             child.kill()
-            try:
-                child.expect_exit(-signal.SIGKILL)
-            except WhatError:
-                pass
-            else:
-                child.wait()
+            child.expect_exit(-signal.SIGKILL)
             wait_until(not_running, timeout=TIMEOUT)
 
     def test_before_after(self):
