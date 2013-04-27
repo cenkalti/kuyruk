@@ -23,11 +23,10 @@ def main():
     failed_queue = Queue('kuyruk_failed', channel)
 
     while 1:
-        message = failed_queue.receive()
-        if message is None:
+        tag, task_description = failed_queue.receive()
+        if task_description is None:
             break
 
-        tag, task_description = message
         queue_name = task_description['queue']
         del task_description['queue']
         task_queue = Queue(queue_name, channel)
