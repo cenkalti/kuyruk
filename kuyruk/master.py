@@ -60,15 +60,6 @@ class Master(multiprocessing.Process):
             worker.start()
             self.workers.append(worker)
 
-    def _spawn_new_worker(self, worker):
-        """Spawn a new process with parameters same as the old worker."""
-        logger.debug("Spawning new worker")
-        new_worker = Worker(worker.queue_name, self.config)
-        new_worker.start()
-        self.workers.append(new_worker)
-        self.workers.remove(worker)
-        logger.debug(self.workers)
-
     def _wait_for_workers(self):
         """Loop until any of the self.workers is alive.
         If a worker is dead and Kuyruk is running state, spawn a new worker.
@@ -81,15 +72,35 @@ class Master(multiprocessing.Process):
             for worker in list(self.workers):
                 if worker.is_alive():
                     any_alive = True
+                elif not self.shutdown_pending:
+                    self._kill_pg(worker)
+                    self._spawn_new_worker(worker)
+                    any_alive = True
                 else:
-                    if not self.shutdown_pending:
-                        self._spawn_new_worker(worker)
-                        any_alive = True
+                    self.workers.remove(worker)
 
             if any_alive:
                 logger.debug("Waiting for workers... "
                              "%i seconds passed" % (time() - start))
                 sleep(1)
+
+    def _spawn_new_worker(self, worker):
+        """Spawn a new process with parameters same as the old worker."""
+        logger.debug("Spawning new worker")
+        new_worker = Worker(worker.queue_name, self.config)
+        new_worker.start()
+        self.workers.append(new_worker)
+        self.workers.remove(worker)
+        logger.debug(self.workers)
+
+    def _kill_pg(self, worker):
+        try:
+            # Worker could spawn processes in task,
+            # kill them all.
+            os.killpg(worker.pid, signal.SIGKILL)
+        except OSError as e:
+            if e.errno != 3:  # No such process
+                raise
 
     def _register_signals(self):
         signal.signal(signal.SIGINT, self._handle_sigint)
