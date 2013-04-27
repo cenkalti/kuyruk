@@ -10,6 +10,9 @@ from util import *
 
 logger = logging.getLogger(__name__)
 
+logger.debug('Process id: %s', os.getpid())
+logger.debug('Process group id: %s', os.getpgrp())
+
 
 class KuyrukTestCase(unittest.TestCase):
 
@@ -61,7 +64,7 @@ class KuyrukTestCase(unittest.TestCase):
             child.expect('Handled SIGINT')
             child.send_signal(signal.SIGINT)
             child.expect('Cold shutdown')
-            sleep_until(not_running, timeout=TIMEOUT)
+            wait_until(not_running, timeout=TIMEOUT)
 
     def test_eager(self):
         """Test eager mode for using in test environments"""
@@ -118,7 +121,7 @@ class KuyrukTestCase(unittest.TestCase):
         with run_kuyruk(terminate=False) as child:
             child.expect('hello world')
             child.kill()
-            sleep_until(not_running, timeout=TIMEOUT)
+            wait_until(not_running, timeout=TIMEOUT)
 
     def test_before_after(self):
         """Before and after task functions are run"""

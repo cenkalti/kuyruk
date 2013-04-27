@@ -26,6 +26,8 @@ class Master(multiprocessing.Process):
         self.shutdown_pending = False
 
     def run(self, queues=None):
+        logger.debug('Process id: %s', os.getpid())
+        logger.debug('Process group id: %s', os.getpgrp())
         setproctitle('kuyruk: master')
         self._register_signals()
 

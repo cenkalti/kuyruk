@@ -54,26 +54,24 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
             # Try to terminate kuyruk gracefully
             child.terminate()
             child.expect('End run master')
-        sleep_until(not_running, timeout=TIMEOUT)
+        wait_until(not_running, timeout=TIMEOUT)
     finally:
-        # We need to make sure that not any process of kuyruk running
-        get_worker_pids = lambda: get_pids('kuyruk: worker')
-        get_master_pid = lambda: get_pids('kuyruk: master')
+        # We need to make sure that any process of kuyruk is not running
 
-        # Kill master and wait until it is dead
+        # Kill master process and wait until it is dead
+        child.kill()
+        child.wait()
+        logger.debug('Master return code: %s', child.returncode)
+
+        # Kill worker processes by sending SIGKILL to their process group id
         try:
             logger.info('Killing process group: %s', child.pid)
             os.killpg(child.pid, signal.SIGTERM)
-        except OSError:
-            pass
-        else:
-            logger.debug('Child return code: %s', child.returncode)
-            sleep_while(get_master_pid)
+        except OSError as e:
+            if e.errno != 3:  # No such process
+                raise
 
-        # Kill all running workers and wait until they are dead
-        for pid in get_worker_pids():
-            os.kill(pid, signal.SIGKILL)
-        sleep_while(get_worker_pids)
+        wait_while(lambda: get_pids('kuyruk:'))
 
 
 def not_running():
@@ -87,11 +85,6 @@ def is_running():
 def run_requeue():
     w = What(sys.executable, '-u', '-m', 'kuyruk.requeue')
     w.expect_exit(0, TIMEOUT)
-
-
-def pkill(pattern, signum=signal.SIGTERM):
-    logger.info("Killing pattern: '%s' with signal: %s" % (pattern, signum))
-    What('pkill', '-%i' % signum, '-f', "'%s'" % pattern).wait()
 
 
 def get_pids(pattern):
@@ -114,11 +107,11 @@ def get_pid(pattern):
     return pids[0]
 
 
-def sleep_until(f, timeout=None):
-    return sleep_while(lambda: not f(), timeout)
+def wait_until(f, timeout=None):
+    return wait_while(lambda: not f(), timeout)
 
 
-def sleep_while(f, timeout=None):
+def wait_while(f, timeout=None):
     do_while(partial(sleep, 0.1), f, timeout)
 
 

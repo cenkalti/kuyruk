@@ -38,6 +38,8 @@ class Worker(multiprocessing.Process):
         it will be invoked when worker.start() is called.
 
         """
+        logger.debug('Process id: %s', os.getpid())
+        logger.debug('Process group id: %s', os.getpgrp())
         setproctitle("kuyruk: worker on %s" % self.queue_name)
         self.register_signals()
         self.queue.declare()
