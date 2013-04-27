@@ -57,11 +57,23 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
         sleep_until(not_running, timeout=TIMEOUT)
     finally:
         # We need to make sure that not any process of kuyruk running
-        def kill():
-            for pid in get_pids('kuyruk:'):
-                os.kill(pid, signal.SIGKILL)
-            sleep(0.25)
-        do_until(kill, not_running)
+        get_worker_pids = lambda: get_pids('kuyruk: worker')
+        get_master_pid = lambda: get_pids('kuyruk: master')
+
+        # Kill master and wait until it is dead
+        try:
+            logger.info('Killing process group: %s', child.pid)
+            os.killpg(child.pid, signal.SIGTERM)
+        except OSError:
+            pass
+        else:
+            logger.debug('Child return code: %s', child.returncode)
+            sleep_while(get_master_pid)
+
+        # Kill all running workers and wait until they are dead
+        for pid in get_worker_pids():
+            os.kill(pid, signal.SIGKILL)
+        sleep_while(get_worker_pids)
 
 
 def not_running():
