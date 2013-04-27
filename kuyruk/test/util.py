@@ -45,7 +45,7 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
     if save_failed_tasks:
         args.append('--save-failed-tasks')
 
-    child = What(*args)
+    child = What(*args, preexec_fn=os.setsid)
     child.timeout = TIMEOUT
     try:
         yield child
