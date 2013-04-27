@@ -7,7 +7,7 @@ from time import time, sleep
 from functools import partial
 from contextlib import contextmanager
 
-from what import What
+from what import What, WhatError
 
 from ..channel import LazyChannel
 from ..queue import Queue as RabbitQueue
@@ -49,18 +49,33 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
     child.timeout = TIMEOUT
     try:
         yield child
-        # Master and workers should exit normally after SIGTERM
+
         if terminate:
-            # Try to terminate kuyruk gracefully
+            # Send SIGTERM to master for gracefull shutdown
             child.terminate()
             child.expect('End run master')
-        wait_until(not_running, timeout=TIMEOUT)
+
+        try:
+            # Return code must be 0 if exited succesfully
+            child.expect_exit(0)
+        except WhatError:
+            pass
+        else:
+            # Reap master
+            child.wait()
+
     finally:
-        # We need to make sure that any process of kuyruk is not running
+        # We need to make sure that not any process of kuyruk is running
+        # after the test is finished.
 
         # Kill master process and wait until it is dead
-        child.kill()
-        child.wait()
+        try:
+            child.kill()
+            child.wait()
+        except OSError as e:
+            if e.errno != 3:  # No such process
+                raise
+
         logger.debug('Master return code: %s', child.returncode)
 
         # Kill worker processes by sending SIGKILL to their process group id
