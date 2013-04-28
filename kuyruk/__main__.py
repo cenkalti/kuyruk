@@ -15,8 +15,8 @@ def main():
     parser.add_option('--logging-level', default='INFO')
     # These options below override the options from config module
     parser.add_option('--queues')
-    parser.add_option('--max-load', type='int')
-    parser.add_option('--max-run-time', type='int')
+    parser.add_option('--max-load', type='float')
+    parser.add_option('--max-run-time', type='float')
     parser.add_option('--save-failed-tasks', action='store_true')
     options, args = parser.parse_args()
 
