@@ -199,6 +199,7 @@ class Worker(multiprocessing.Process):
         # SIGINT sent to both master and workers while.
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         signal.signal(signal.SIGTERM, self.sigterm_handler)
+        signal.signal(signal.SIGUSR1, print_stack)  # for debugging
 
     def sigterm_handler(self, signum, frame):
         logger.warning("Catched SIGTERM")
@@ -224,3 +225,9 @@ class DataEventProcessor(threading.Thread):
 
     def stop(self):
         self._stop.set()
+
+
+def print_stack(sig, frame):
+    print '=' * 70
+    print ''.join(traceback.format_stack())
+    print '-' * 70
