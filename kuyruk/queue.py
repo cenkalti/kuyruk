@@ -1,12 +1,13 @@
 import json
 import socket
-import pickle
 import logging
-from time import sleep
 from functools import wraps
+from threading import RLock
 
 import pika
 import pika.exceptions
+
+from .message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,13 @@ def require_declare(f):
     return inner
 
 
+def synchronized(f):
+    def inner(self, *args, **kw):
+        with self.lock:
+            return f(self, *args, **kw)
+    return inner
+
+
 class Queue(object):
 
     def __init__(self, name, channel, local=False):
@@ -45,42 +53,30 @@ class Queue(object):
         self.local = local
         self.declared = False
         self.canceling = False
+        self.lock = RLock()
 
         if self.local:
             self.name = "%s_%s" % (self.name, socket.gethostname())
 
+    @synchronized
     def __len__(self):
         return self.declare().method.message_count
 
-    def __iter__(self):
-        self.generator = self.channel.consume(self.name)
-        return self
-
-    def next(self):
-        if self.canceling:
-            self.canceling = False
-            raise StopIteration
-        else:
-            try:
-                message = next(self.generator)
-            except Exception as e:
-                if e.args[0] == 4:  # Interrupted system call
-                    raise StopIteration
-                raise
-            return self.decode(message)
-
+    @synchronized
     def declare(self):
         logger.warning('Declaring queue: %s', self.name)
         return self.channel.queue_declare(
             queue=self.name, durable=True,
             exclusive=False, auto_delete=False)
 
+    @synchronized
     @require_declare
     def receive(self):
         """Get a single message from queue."""
         message = self.channel.basic_get(self.name)
-        return self.decode(message)
+        return Message.decode(message)
 
+    @synchronized
     @require_declare
     def send(self, obj):
         """Send a single message to the queue. obj must be JSON serializable."""
@@ -94,35 +90,36 @@ class Queue(object):
             body=json.dumps(obj),
             properties=properties)
 
-    def cancel(self):
-        self.canceling = True
-        return self.channel.cancel()
-
-    def pause(self, seconds):
-        logger.info('Pausing')
-        channel = self.channel
-        channel.basic_cancel(channel._generator)
-        sleep(seconds)
-        channel._generator = channel.basic_consume(
-            channel._generator_callback, self.name)
-        logger.info('Resuming')
-
+    @synchronized
     def ack(self, delivery_tag):
+        logger.debug('Acking message')
         return self.channel.basic_ack(delivery_tag=delivery_tag)
 
+    @synchronized
+    def nack(self, delivery_tag, multiple=False, requeue=True):
+        logger.debug('Nacking message')
+        return self.channel.basic_nack(
+            delivery_tag=delivery_tag, multiple=multiple, requeue=requeue)
+
+    @synchronized
     def reject(self, delivery_tag):
         """Reject the message. Message will be delivered to another worker."""
+        logger.debug('Rejecting message')
         return self.channel.basic_reject(
             delivery_tag=delivery_tag, requeue=True)
 
+    @synchronized
     def discard(self, delivery_tag):
         """Discard the message. Discarded messages will be lost."""
+        logger.debug('Discarding message')
         return self.channel.basic_reject(
             delivery_tag=delivery_tag, requeue=False)
 
+    @synchronized
     def recover(self):
         return self.channel.basic_recover(requeue=True)
 
+    @synchronized
     def delete(self):
         try:
             return self.channel.queue_delete(queue=self.name)
@@ -131,18 +128,10 @@ class Queue(object):
             if e.args[0] != 404:
                 raise
 
-    @staticmethod
-    def decode(message):
-        method, properties, body = message
-        if body is None:
-            return None, None
+    @synchronized
+    def basic_consume(self, callback):
+        return self.channel.basic_consume(callback, self.name)
 
-        if properties.content_type == 'application/json':
-            obj = json.loads(body)
-        elif properties.content_type == 'application/python-pickle':
-            obj = pickle.loads(body)
-        else:
-            raise ValueError('Unknown content type')
-
-        logger.debug('Message decoded: %s', obj)
-        return method.delivery_tag, obj
+    @synchronized
+    def basic_cancel(self, consumer_id):
+        return self.channel.basic_cancel(consumer_id)

@@ -5,12 +5,14 @@ import traceback
 import threading
 import multiprocessing
 from time import sleep
+from functools import wraps
 
 from setproctitle import setproctitle
 
 from . import loader
 from .queue import Queue
 from .channel import LazyChannel
+from .consumer import Consumer
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,8 @@ class Worker(multiprocessing.Process):
         self.queue_name = queue_name
         is_local = queue_name.startswith('@')
         self.queue = Queue(queue_name, self.channel, local=is_local)
+        self.consumer = Consumer(self.queue)
+        self.processor = None
 
     def run(self):
         """Run worker until stop flag is set.
@@ -46,70 +50,72 @@ class Worker(multiprocessing.Process):
         self.channel.basic_qos(prefetch_count=1)
         # self.channel.tx_select()
 
-        self.start_wathcing_master()
+        start_thread(self.watch_master, daemon=True)
         if self.config.MAX_RUN_TIME > 0:
-            self.start_shutdown_timer()
+            start_thread(self.count_run_time, daemon=True)
 
         logger.info('Starting consume')
-        for tag, task_description in self.queue:
-            self.on_task(tag, task_description)
+        for message in self.consumer:
+            self.on_task(message)
+
+        if self.processor:
+            self.processor.join()
 
         logger.debug("End run worker")
 
-    def on_task(self, tag, task_description):
-        logger.info('Task received: %s', task_description)
+    def on_task(self, message):
+        logger.info('Task received: %s', message)
         if self.is_load_high():
             logger.warning('Load is high, rejecting task')
-            self.queue.reject(tag)
+            message.reject()
             # self.channel.tx_commit()
-            self.queue.pause(30)
+            self.consumer.pause(30)
         else:
-            self.process_task(tag, task_description)
+            target = self.stop_consumer_on_exception(self.process_task)
+            self.processor = start_thread(target, (message, ))
             # self.channel.tx_commit()
 
-    def process_task(self, tag, task_description):
+    def stop_consumer_on_exception(self, f):
+        @wraps(f)
+        def inner(*args, **kwargs):
+            try:
+                return f(*args, **kwargs)
+            except Exception:
+                traceback.print_exc()
+                self.consumer.stop()
+        return inner
+
+    def process_task(self, message):
         from kuyruk import Kuyruk
+
+        task_description = message.get_object()
         try:
-            self.process_data_events_and_run_task(task_description)
+            self.import_and_call_task(task_description)
         # sleep() calls below prevent cpu burning
         except Kuyruk.Reject:
             logger.warning('Task is rejected')
             sleep(1)
-            self.queue.reject(tag)
+            message.reject()
         except Exception:
             logger.error('Task raised an exception')
             logger.error(traceback.format_exc())
             sleep(1)
-            self.handle_exception(tag, task_description)
+            self.handle_exception(message, task_description)
         else:
             logger.info('Task is successful')
-            self.queue.ack(tag)
+            message.ack()
+        logger.debug("Processing task is finished")
 
-    def process_data_events_and_run_task(self, task_description):
-        """Start a thread in background that listens data events from
-        connection for keeping it open and call task function in main thread.
-
-        """
-        try:
-            self.dep = DataEventProcessor(self.channel.connection)
-            self.dep.start()
-            self.import_and_call_task(task_description)
-        except Exception:
-            raise
-        finally:
-            self.dep.stop()
-            self.dep.join()
-
-    def handle_exception(self, tag, task_description):
+    def handle_exception(self, message, task_description):
         retry_count = task_description.get('retry', 0)
         if retry_count:
             logger.debug('Retry count: %s', retry_count)
-            self.queue.discard(tag)
+            message.discard()
             task_description['retry'] = retry_count - 1
             self.queue.send(task_description)
         else:
             logger.debug('No retry left')
-            self.queue.discard(tag)
+            message.discard()
             if self.config.SAVE_FAILED_TASKS:
                 self.save_failed_task(task_description)
 
@@ -155,41 +161,24 @@ class Worker(multiprocessing.Process):
         except OSError:
             return True
 
-    def start_wathcing_master(self):
-        """
-        Start a Thread that watches the master and send itself SIGTERM
-        when master is dead.
+    def watch_master(self):
+        """Watch the master and send itself SIGTERM when it is dead."""
+        while True:
+            if self.is_master_dead():
+                logger.critical('Master is dead')
+                self.consumer.stop()
+                break
+            else:
+                sleep(1)
 
-        """
-        def watch():
-            while True:
-                if self.is_master_dead():
-                    logger.critical('Master is dead')
-                    # We do not call the handler directly here because
-                    # pika is not thread safe.
-                    os.kill(os.getpid(), signal.SIGTERM)
-                    break
-                else:
-                    sleep(1)
-        t = threading.Thread(target=watch)
-        t.daemon = True
-        t.start()
-
-    def start_shutdown_timer(self):
-        """
-        Start a Thread that counts down from MAX_RUN_TIME. When it reaches
+    def count_run_time(self):
+        """Counts down from MAX_RUN_TIME. When it reaches
         zero it sends a signal to itself for graceful shutdown.
 
         """
-        def watch():
-            sleep(self.config.MAX_RUN_TIME)
-            logger.critical('Run time reached zero, cancelling consume.')
-            # We do not call the handler directly here because
-            # pika is not thread safe.
-            os.kill(os.getpid(), signal.SIGTERM)
-        t = threading.Thread(target=watch)
-        t.daemon = True
-        t.start()
+        sleep(self.config.MAX_RUN_TIME)
+        logger.critical('Run time reached zero, cancelling consume.')
+        self.consumer.stop()
 
     def is_load_high(self):
         return os.getloadavg()[0] > self.config.MAX_LOAD
@@ -204,27 +193,14 @@ class Worker(multiprocessing.Process):
     def sigterm_handler(self, signum, frame):
         logger.warning("Catched SIGTERM")
         logger.warning("Stopping %s...", self)
-        self.queue.cancel()
+        self.consumer.stop()
 
 
-class DataEventProcessor(threading.Thread):
-
-    def __init__(self, connection):
-        super(DataEventProcessor, self).__init__()
-        self.daemon = True
-        self.connection = connection
-        self._stop = threading.Event()
-
-    def run(self):
-        while not self._stop.is_set():
-            try:
-                self.connection.process_data_events()
-            except Exception:
-                os._exit(1)
-            sleep(0.1)
-
-    def stop(self):
-        self._stop.set()
+def start_thread(target, args=(), daemon=False):
+    t = threading.Thread(target=target, args=args)
+    t.daemon = daemon
+    t.start()
+    return t
 
 
 def print_stack(sig, frame):
