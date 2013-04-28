@@ -34,6 +34,7 @@ class Worker(multiprocessing.Process):
         self.queue = Queue(queue_name, self.channel, local=is_local)
         self.consumer = Consumer(self.queue)
         self.processor = None
+        self.shutdown_pending = threading.Event()
 
     def run(self):
         """Run worker until stop flag is set.
@@ -50,30 +51,28 @@ class Worker(multiprocessing.Process):
         self.channel.basic_qos(prefetch_count=1)
         # self.channel.tx_select()
 
+        # Start daemon threads
         start_thread(self.watch_master, daemon=True)
+        start_thread(self.watch_load, daemon=True)
         if self.config.MAX_RUN_TIME > 0:
             start_thread(self.count_run_time, daemon=True)
 
         logger.info('Starting consume')
         for message in self.consumer:
-            self.on_task(message)
+            self.on_message(message)
+            # self.channel.tx_commit()
 
+        # Finish last task
         if self.processor:
             self.processor.join()
 
         logger.debug("End run worker")
 
-    def on_task(self, message):
-        logger.info('Task received: %s', message)
-        if self.is_load_high():
-            logger.warning('Load is high, rejecting task')
-            message.reject()
-            # self.channel.tx_commit()
-            self.consumer.pause(30)
-        else:
-            target = self.stop_consumer_on_exception(self.process_task)
-            self.processor = start_thread(target, (message, ))
-            # self.channel.tx_commit()
+    def on_message(self, message):
+        """Start a new thread and run process task in it."""
+        logger.info('Message received: %s', message)
+        target = self.stop_consumer_on_exception(self.process_task)
+        self.processor = start_thread(target, (message, ))
 
     def stop_consumer_on_exception(self, f):
         @wraps(f)
@@ -155,21 +154,27 @@ class Worker(multiprocessing.Process):
         result = task.run(args, kwargs)
         logger.debug('Result: %r', result)
 
-    def is_master_dead(self):
+    def is_master_alive(self):
         try:
             os.kill(os.getppid(), 0)
-        except OSError:
             return True
+        except OSError:
+            return False
 
     def watch_master(self):
         """Watch the master and send itself SIGTERM when it is dead."""
-        while True:
-            if self.is_master_dead():
+        while not self.shutdown_pending.is_set():
+            if not self.is_master_alive():
                 logger.critical('Master is dead')
-                self.consumer.stop()
-                break
-            else:
-                sleep(1)
+                self.shutdown()
+            sleep(1)
+
+    def watch_load(self):
+        while not self.shutdown_pending.is_set():
+            if self.is_load_high():
+                logger.warning('Load is high, pausing consume')
+                self.consumer.pause(10)
+            sleep(1)
 
     def count_run_time(self):
         """Counts down from MAX_RUN_TIME. When it reaches
@@ -178,7 +183,7 @@ class Worker(multiprocessing.Process):
         """
         sleep(self.config.MAX_RUN_TIME)
         logger.critical('Run time reached zero, cancelling consume.')
-        self.consumer.stop()
+        self.shutdown()
 
     def is_load_high(self):
         return os.getloadavg()[0] > self.config.MAX_LOAD
@@ -192,7 +197,12 @@ class Worker(multiprocessing.Process):
 
     def sigterm_handler(self, signum, frame):
         logger.warning("Catched SIGTERM")
-        logger.warning("Stopping %s...", self)
+        self.shutdown()
+
+    def shutdown(self):
+        """Shutdown gracefully."""
+        logger.warning("Shutting down worker gracefully")
+        self.shutdown_pending.set()
         self.consumer.stop()
 
 
