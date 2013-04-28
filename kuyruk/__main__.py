@@ -1,7 +1,9 @@
+import sys
 import logging
 import logging.config
 import optparse
 
+from . import __version__
 from kuyruk import Kuyruk
 from config import Config
 
@@ -10,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 def main():
     parser = optparse.OptionParser()
+    parser.add_option('--version', action='store_true')
     parser.add_option('--config')
     parser.add_option('--logging-config')
     parser.add_option('--logging-level', default='INFO')
@@ -19,6 +22,10 @@ def main():
     parser.add_option('--max-run-time', type='float')
     parser.add_option('--save-failed-tasks', action='store_true')
     options, args = parser.parse_args()
+
+    if options.version:
+        print __version__
+        sys.exit()
 
     if options.logging_config:
         logging.config.fileConfig(options.logging_config)
