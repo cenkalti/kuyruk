@@ -80,8 +80,8 @@ class Worker(multiprocessing.Process):
             try:
                 return f(*args, **kwargs)
             except Exception:
-                traceback.print_exc()
-                self.consumer.stop()
+                logger.critical(traceback.format_exc())
+                os._exit(1)
         return inner
 
     def process_task(self, message):
