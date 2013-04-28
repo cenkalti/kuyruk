@@ -8,9 +8,9 @@ from contextlib import contextmanager
 logger = logging.getLogger(__name__)
 
 
-def import_task(module_name, class_name, function_name):
+def import_task(module_name, class_name, function_name, path=None):
     """Find and return the function for given function name."""
-    namespace = import_task_module(module_name)
+    namespace = import_task_module(module_name, path)
     if class_name:
         cls = getattr(namespace, class_name)
         namespace = cls
@@ -22,36 +22,30 @@ def import_task(module_name, class_name, function_name):
     return ImportResult(task=task, cls=cls)
 
 
-def import_task_module(module_name):
+def import_task_module(module_name, path=None):
     """Import module by searching main module, current working directory and
     python path."""
     main_module, main_module_name = get_main_module()
     if module_name == main_module_name:
         return main_module
-    else:
-        return import_from_cwd(module_name)
 
+    if path is None:
+        path = os.getcwd()
 
-def import_from_cwd(module):
-    """Import the module from current working directory."""
-    with cwd_in_path():
-        return importlib.import_module(module)
+    with custom_path(path):
+        return importlib.import_module(module_name)
 
 
 @contextmanager
-def cwd_in_path():
-    cwd = os.getcwd()
-    if cwd in sys.path:
+def custom_path(path):
+    if path in sys.path:
         yield
     else:
-        sys.path.insert(0, cwd)
+        sys.path.insert(0, path)
         try:
             yield
         finally:
-            try:
-                sys.path.remove(cwd)
-            except ValueError:
-                pass
+            sys.path.remove(path)
 
 
 def get_main_module():

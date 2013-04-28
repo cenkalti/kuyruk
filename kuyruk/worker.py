@@ -138,7 +138,8 @@ class Worker(multiprocessing.Process):
             task_description['object_id'],
             task_description['args'],
             task_description['kwargs'])
-        task, cls = loader.import_task(module, cls, function)
+        task, cls = loader.import_task(module, cls, function,
+                                       self.config.IMPORT_PATH)
 
         if cls:
             obj = cls.get(object_id)
