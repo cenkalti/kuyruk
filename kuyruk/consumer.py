@@ -81,7 +81,7 @@ class Consumer(object):
             messages = len(self._generator_messages)
             logger.info('Requeueing %i messages with delivery tag %s',
                         messages, method.delivery_tag)
-            self.queue.basic_nack(
+            self.queue.nack(
                 method.delivery_tag, multiple=True, requeue=True)
             with self.queue.lock:
                 self.queue.channel.connection.process_data_events()
