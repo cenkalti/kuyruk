@@ -81,6 +81,7 @@ class Worker(multiprocessing.Process):
                 return f(*args, **kwargs)
             except Exception:
                 logger.critical(traceback.format_exc())
+                logger.critical('Error in task processor, exiting')
                 os._exit(1)
         return inner
 
