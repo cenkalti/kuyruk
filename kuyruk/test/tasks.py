@@ -32,6 +32,7 @@ def retry_task():
 def loop_forever():
     while 1:
         print 'looping forever'
+        sleep(1)
 
 
 @kuyruk.task(eager=True)

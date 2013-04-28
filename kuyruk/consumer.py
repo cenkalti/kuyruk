@@ -49,7 +49,7 @@ class Consumer(object):
                     self.queue.channel.connection.process_data_events()
             except Exception as e:
                 logger.debug(e)
-                if e.args[0] == 9:  # Bad file descriptor
+                if e.args[0] != 4:  # Interrupted system call
                     logger.critical("Connection is closed")
                     os._exit(1)
 
