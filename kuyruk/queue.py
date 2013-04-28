@@ -67,7 +67,7 @@ class Queue(object):
                 if e.args[0] == 4:  # Interrupted system call
                     raise StopIteration
                 raise
-            return self._decode(message)
+            return self.decode(message)
 
     def declare(self):
         logger.warning('Declaring queue: %s', self.name)
@@ -79,7 +79,7 @@ class Queue(object):
     def receive(self):
         """Get a single message from queue."""
         message = self.channel.basic_get(self.name)
-        return self._decode(message)
+        return self.decode(message)
 
     @require_declare
     def send(self, obj):
@@ -131,7 +131,8 @@ class Queue(object):
             if e.args[0] != 404:
                 raise
 
-    def _decode(self, message):
+    @staticmethod
+    def decode(message):
         method, properties, body = message
         if body is None:
             return None, None
@@ -143,6 +144,5 @@ class Queue(object):
         else:
             raise ValueError('Unknown content type')
 
-        logger.debug(
-            'Message received in queue: %s message: %s', self.name, obj)
+        logger.debug('Message decoded: %s', obj)
         return method.delivery_tag, obj
