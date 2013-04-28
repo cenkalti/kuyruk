@@ -45,17 +45,17 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
     if save_failed_tasks:
         args.append('--save-failed-tasks')
 
-    child = What(*args, preexec_fn=os.setsid)
-    child.timeout = TIMEOUT
+    master = What(*args, preexec_fn=os.setsid)
+    master.timeout = TIMEOUT
     try:
-        yield child
+        yield master
 
         if terminate:
             # Send SIGTERM to master for gracefull shutdown
-            child.terminate()
-            child.expect('End run master')
+            master.terminate()
+            master.expect('End run master')
 
-        child.expect_exit()
+        master.expect_exit()
 
     finally:
         # We need to make sure that not any process of kuyruk is running
@@ -63,18 +63,18 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
 
         # Kill master process and wait until it is dead
         try:
-            child.kill()
-            child.wait()
+            master.kill()
+            master.wait()
         except OSError as e:
             if e.errno != 3:  # No such process
                 raise
 
-        logger.debug('Master return code: %s', child.returncode)
+        logger.debug('Master return code: %s', master.returncode)
 
         # Kill worker processes by sending SIGKILL to their process group id
         try:
-            logger.info('Killing process group: %s', child.pid)
-            os.killpg(child.pid, signal.SIGTERM)
+            logger.info('Killing process group: %s', master.pid)
+            os.killpg(master.pid, signal.SIGTERM)
         except OSError as e:
             if e.errno != 3:  # No such process
                 raise

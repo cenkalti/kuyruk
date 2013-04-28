@@ -29,42 +29,42 @@ class KuyrukTestCase(unittest.TestCase):
     def test_simple_task(self):
         """Run a task on default queue"""
         tasks.print_task('hello world')
-        with run_kuyruk() as child:
-            child.expect('hello world')
+        with run_kuyruk() as master:
+            master.expect('hello world')
 
     def test_another_queue(self):
         """Run a task on different queue"""
         tasks.print_task2('hello another')
-        with run_kuyruk(queues='another_queue') as child:
-            child.expect('hello another')
+        with run_kuyruk(queues='another_queue') as master:
+            master.expect('hello another')
 
     def test_exception(self):
         """Errored task message is discarded"""
         tasks.raise_exception()
-        with run_kuyruk() as child:
-            child.expect('ZeroDivisionError')
+        with run_kuyruk() as master:
+            master.expect('ZeroDivisionError')
         assert is_empty('kuyruk')
 
     def test_retry(self):
         """Errored tasks must be retried"""
         tasks.retry_task()
-        with run_kuyruk() as child:
-            child.expect('ZeroDivisionError')
-            child.expect('ZeroDivisionError')
+        with run_kuyruk() as master:
+            master.expect('ZeroDivisionError')
+            master.expect('ZeroDivisionError')
         assert is_empty('kuyruk')
 
     def test_cold_shutdown(self):
         """If the worker is stuck on the task it can be stopped by
         invoking cold shutdown"""
         tasks.loop_forever()
-        with run_kuyruk(terminate=False) as child:
-            child.expect('looping forever')
-            child.send_signal(signal.SIGINT)
-            child.expect('Warm shutdown')
-            child.expect('Handled SIGINT')
-            child.send_signal(signal.SIGINT)
-            child.expect('Cold shutdown')
-            child.expect_exit(0)
+        with run_kuyruk(terminate=False) as master:
+            master.expect('looping forever')
+            master.send_signal(signal.SIGINT)
+            master.expect('Warm shutdown')
+            master.expect('Handled SIGINT')
+            master.send_signal(signal.SIGINT)
+            master.expect('Cold shutdown')
+            master.expect_exit(0)
             wait_until(not_running, timeout=TIMEOUT)
 
     def test_eager(self):
@@ -76,27 +76,27 @@ class KuyrukTestCase(unittest.TestCase):
     def test_reject(self):
         """Rejected tasks must be requeued again"""
         tasks.rejecting_task()
-        with run_kuyruk() as child:
-            child.expect('Task is rejected')
-            child.expect('Task is rejected')
+        with run_kuyruk() as master:
+            master.expect('Task is rejected')
+            master.expect('Task is rejected')
         assert not is_empty('kuyruk')
 
     def test_respawn(self):
         """Respawn a new worker if dead
 
         This test also covers the broker disconnect case because when the
-        connection drops the child worker will raise an unhandled exception.
+        connection drops the master worker will raise an unhandled exception.
         This exception will cause the worker to exit. After exiting, master
-        worker will spawn a new child worker.
+        worker will spawn a new master worker.
 
         """
         _pid = lambda: get_pid('kuyruk: worker')
-        with run_kuyruk() as child:
-            child.expect('Starting consume')
+        with run_kuyruk() as master:
+            master.expect('Starting consume')
             pid1 = _pid()
             os.kill(pid1, signal.SIGKILL)
-            child.expect('Spawning new worker')
-            child.expect('Starting consume')
+            master.expect('Spawning new worker')
+            master.expect('Starting consume')
             pid2 = _pid()
         assert pid2 > pid1
 
@@ -104,11 +104,11 @@ class KuyrukTestCase(unittest.TestCase):
         """Failed tasks are saved to another queue"""
         delete_queue('kuyruk_failed')
         tasks.raise_exception()
-        with run_kuyruk(save_failed_tasks=True) as child:
-            child.expect('ZeroDivisionError')
-            child.expect('No retry left')
-            child.expect('Saving failed task')
-            child.expect('Saved')
+        with run_kuyruk(save_failed_tasks=True) as master:
+            master.expect('ZeroDivisionError')
+            master.expect('No retry left')
+            master.expect('Saving failed task')
+            master.expect('Saved')
         assert is_empty('kuyruk')
         assert not is_empty('kuyruk_failed')
 
@@ -119,21 +119,21 @@ class KuyrukTestCase(unittest.TestCase):
     def test_dead_master(self):
         """If master is dead worker should exit gracefully"""
         tasks.print_task('hello world')
-        with run_kuyruk(terminate=False) as child:
-            child.expect('hello world')
-            child.kill()
-            child.expect_exit(-signal.SIGKILL)
+        with run_kuyruk(terminate=False) as master:
+            master.expect('hello world')
+            master.kill()
+            master.expect_exit(-signal.SIGKILL)
             wait_until(not_running, timeout=TIMEOUT)
 
     def test_before_after(self):
         """Before and after task functions are run"""
         tasks.task_with_functions('hello world')
-        with run_kuyruk() as child:
-            child.expect('function1')
-            child.expect('function2')
-            child.expect('hello world')
-            child.expect('function3')
-            child.expect('function4')
+        with run_kuyruk() as master:
+            master.expect('function1')
+            master.expect('function2')
+            master.expect('hello world')
+            master.expect('function3')
+            master.expect('function4')
 
     def test_class_task(self):
         cat = tasks.Cat(1, 'Felix')
@@ -141,8 +141,8 @@ class KuyrukTestCase(unittest.TestCase):
         self.assertTrue(inspect.ismethod(cat.meow))
 
         cat.meow('hello')
-        with run_kuyruk() as child:
-            child.expect('Felix says: hello')
+        with run_kuyruk() as master:
+            master.expect('Felix says: hello')
 
     def test_task_name(self):
         self.assertEqual(tasks.Cat.meow.name, 'kuyruk.test.tasks:Cat.meow')
