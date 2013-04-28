@@ -182,7 +182,7 @@ class Worker(multiprocessing.Process):
 
         """
         sleep(self.config.MAX_RUN_TIME)
-        logger.critical('Run time reached zero, cancelling consume.')
+        logger.warning('Run time reached zero, cancelling consume.')
         self.shutdown()
 
     def is_load_high(self):
