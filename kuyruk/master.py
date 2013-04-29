@@ -24,9 +24,9 @@ class Master(multiprocessing.Process):
         self.config = config
         self.workers = []
         self.shutdown_pending = False
-        self.queues_overriden = False
+        self.override_queues = None
 
-    def run(self, queues=None):
+    def run(self):
         logger.debug('Process id: %s', os.getpid())
         logger.debug('Process group id: %s', os.getpgrp())
         setproctitle('kuyruk: master')
@@ -35,16 +35,23 @@ class Master(multiprocessing.Process):
         if self.config.MAX_LOAD is None:
             self.config.MAX_LOAD = multiprocessing.cpu_count()
 
-        queues = self._get_queues(override_with=queues)
-        self._start_workers(queues)
+        self._start_workers()
         self._wait_for_workers()
         logger.info('End run master')
 
-    def _get_queues(self, override_with=None):
+    def _start_workers(self):
+        """Start a new worker for each queue name"""
+        queues = self._get_queues()
+        logger.info('Starting to work on queues: %s', queues)
+        for queue in queues:
+            worker = Worker(queue, self.config)
+            worker.start()
+            self.workers.append(worker)
+
+    def _get_queues(self):
         """Return a list of queue name per worker."""
-        if override_with:
-            queues = override_with
-            self.queues_overriden = True
+        if self.override_queues:
+            queues = self.override_queues
         else:
             hostname = socket.gethostname()
             try:
@@ -63,14 +70,6 @@ class Master(multiprocessing.Process):
 
         for worker in workers:
             os.kill(worker.pid, signal.SIGKILL if kill else signal.SIGTERM)
-
-    def _start_workers(self, queues):
-        """Start a new worker for each queue name"""
-        logger.info('Starting to work on queues: %s', queues)
-        for queue in queues:
-            worker = Worker(queue, self.config)
-            worker.start()
-            self.workers.append(worker)
 
     def _wait_for_workers(self):
         """Loop until any of the self.workers is alive.
@@ -143,10 +142,8 @@ class Master(multiprocessing.Process):
         old_workers = self.workers
         if self.config.path:
             self.config.reload()
-            if not self.queues_overriden:
-                self.workers = []
-                queues = self._get_queues()
-                self._start_workers(queues)
+            self.workers = []
+            self._start_workers()
         self.stop_workers(workers=old_workers)
 
 

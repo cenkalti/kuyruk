@@ -56,7 +56,9 @@ class Kuyruk(object):
         received.
 
         """
-        Master(self.config).run(queues)
+        master = Master(self.config)
+        master.override_queues = queues
+        Master(self.config).run()
 
     def before_task(self, f):
         self.before_task_functions.append(f)
