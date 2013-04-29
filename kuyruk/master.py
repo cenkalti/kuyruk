@@ -24,6 +24,7 @@ class Master(multiprocessing.Process):
         self.config = config
         self.workers = []
         self.shutdown_pending = False
+        self.queues_overriden = False
 
     def run(self, queues=None):
         logger.debug('Process id: %s', os.getpid())
@@ -34,22 +35,33 @@ class Master(multiprocessing.Process):
         if self.config.MAX_LOAD is None:
             self.config.MAX_LOAD = multiprocessing.cpu_count()
 
-        if queues is None:
-            try:
-                queues = self.config.WORKERS[socket.gethostname()]
-            except KeyError:
-                logger.warning(
-                    'No queues specified. Listening on default queue: "kuyruk"')
-                queues = 'kuyruk'
-
-        queues = parse_queues_str(queues)
+        queues = self._get_queues(override_with=queues)
         self._start_workers(queues)
         self._wait_for_workers()
         logger.info('End run master')
 
-    def stop_workers(self, kill=False):
+    def _get_queues(self, override_with=None):
+        """Return a list of queue name per worker."""
+        if override_with:
+            queues = override_with
+            self.queues_overriden = True
+        else:
+            hostname = socket.gethostname()
+            try:
+                queues = self.config.WORKERS[hostname]
+            except KeyError:
+                logger.warning('No queues specified for host %r. '
+                               'Listening on default queue: "kuyruk"', hostname)
+                queues = 'kuyruk'
+
+        return parse_queues_str(queues)
+
+    def stop_workers(self, workers=None, kill=False):
         """Send stop signal to all workers."""
-        for worker in self.workers:
+        if workers is None:
+            workers = self.workers
+
+        for worker in workers:
             os.kill(worker.pid, signal.SIGKILL if kill else signal.SIGTERM)
 
     def _start_workers(self, queues):
@@ -128,9 +140,14 @@ class Master(multiprocessing.Process):
 
     def _handle_sighup(self, signum, frame):
         logger.warning("Handling SIGHUP")
+        old_workers = self.workers
         if self.config.path:
             self.config.reload()
-        self.stop_workers()
+            if not self.queues_overriden:
+                self.workers = []
+                queues = self._get_queues()
+                self._start_workers(queues)
+        self.stop_workers(workers=old_workers)
 
 
 def parse_queues_str(s):

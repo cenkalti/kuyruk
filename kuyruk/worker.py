@@ -173,8 +173,9 @@ class Worker(multiprocessing.Process):
 
     def watch_load(self):
         while not self.shutdown_pending.is_set():
-            if self.is_load_high():
-                logger.warning('Load is high, pausing consume')
+            load = os.getloadavg()[0]
+            if load > self.config.MAX_LOAD:
+                logger.warning('Load is high (%s), pausing consume', load)
                 self.consumer.pause(10)
             sleep(1)
 
@@ -186,9 +187,6 @@ class Worker(multiprocessing.Process):
         sleep(self.config.MAX_RUN_TIME)
         logger.warning('Run time reached zero, cancelling consume.')
         self.shutdown()
-
-    def is_load_high(self):
-        return os.getloadavg()[0] > self.config.MAX_LOAD
 
     def register_signals(self):
         # SIGINT is ignored because when pressed Ctrl-C
