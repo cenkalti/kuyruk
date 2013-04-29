@@ -40,8 +40,9 @@ class Master(multiprocessing.Process):
         logger.info('End run master')
 
     def _start_workers(self):
-        """Start a new worker for each queue name"""
+        """Start a new worker for each queue"""
         queues = self._get_queues()
+        queues = parse_queues_str(queues)
         logger.info('Starting to work on queues: %s', queues)
         for queue in queues:
             worker = Worker(queue, self.config)
@@ -49,19 +50,17 @@ class Master(multiprocessing.Process):
             self.workers.append(worker)
 
     def _get_queues(self):
-        """Return a list of queue name per worker."""
+        """Return queues string."""
         if self.override_queues:
-            queues = self.override_queues
-        else:
-            hostname = socket.gethostname()
-            try:
-                queues = self.config.WORKERS[hostname]
-            except KeyError:
-                logger.warning('No queues specified for host %r. '
-                               'Listening on default queue: "kuyruk"', hostname)
-                queues = 'kuyruk'
+            return self.override_queues
 
-        return parse_queues_str(queues)
+        hostname = socket.gethostname()
+        try:
+            return self.config.WORKERS[hostname]
+        except KeyError:
+            logger.warning('No queues specified for host %r. '
+                           'Listening on default queue: "kuyruk"', hostname)
+            return 'kuyruk'
 
     def stop_workers(self, workers=None, kill=False):
         """Send stop signal to all workers."""
