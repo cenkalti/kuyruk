@@ -40,8 +40,12 @@ class LazyChannel(object):
     def open(self):
         credentials = pika.PlainCredentials(self.user, self.password)
         parameters = pika.ConnectionParameters(
-            host=self.host, port=self.port, credentials=credentials,
-            heartbeat_interval=24*60*60)
+            host=self.host,
+            port=self.port,
+            credentials=credentials,
+            heartbeat_interval=600,
+            socket_timeout=2,
+            connection_attempts=2)
         self.connection = pika.BlockingConnection(parameters)
         logger.info('Connected to RabbitMQ')
         self.channel = self.connection.channel()
