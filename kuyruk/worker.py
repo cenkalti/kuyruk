@@ -64,7 +64,9 @@ class Worker(multiprocessing.Process):
 
         # Finish last task
         if self.processor:
-            self.processor.join()
+            while self.processor.is_alive():
+                with self.queue.lock:
+                    self.channel.connection.process_data_events()
 
         logger.debug("End run worker")
 
