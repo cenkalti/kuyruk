@@ -36,6 +36,7 @@ class KuyrukTestCase(unittest.TestCase):
         """Run a task on different queue"""
         tasks.print_task2('hello another')
         with run_kuyruk(queues='another_queue') as master:
+            master.expect('another_queue')
             master.expect('hello another')
 
     def test_exception(self):
