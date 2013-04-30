@@ -48,7 +48,7 @@ class Worker(multiprocessing.Process):
         self.register_signals()
         self.queue.declare()
         self.channel.basic_qos(prefetch_count=1)
-        # self.channel.tx_select()
+        self.channel.tx_select()
 
         # Start daemon threads
         start_daemon_thread(self.process_data_events)
@@ -60,7 +60,7 @@ class Worker(multiprocessing.Process):
         logger.info('Starting consume')
         for message in self.consumer:
             self.process_task(message)
-            # self.channel.tx_commit()
+            self.channel.tx_commit()
 
         logger.debug("End run worker")
         self.finished.set()
