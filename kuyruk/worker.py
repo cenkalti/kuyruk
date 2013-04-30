@@ -144,7 +144,7 @@ class Worker(multiprocessing.Process):
             return False
 
     def watch_master(self):
-        """Watch the master and send itself SIGTERM when it is dead."""
+        """Watch the master and shutdown gracefully when it is dead."""
         while not self.shutdown_pending.is_set():
             if not self.is_master_alive():
                 logger.critical('Master is dead')
@@ -152,6 +152,7 @@ class Worker(multiprocessing.Process):
             sleep(1)
 
     def watch_load(self):
+        """Pause consuming messages if lood goes above the allowed limit."""
         while not self.shutdown_pending.is_set():
             load = os.getloadavg()[0]
             if load > self.config.MAX_LOAD:
@@ -160,8 +161,8 @@ class Worker(multiprocessing.Process):
             sleep(1)
 
     def count_run_time(self):
-        """Counts down from MAX_RUN_TIME. When it reaches
-        zero it sends a signal to itself for graceful shutdown.
+        """Counts down from MAX_RUN_TIME. When it reaches zero sutdown
+        gracefully.
 
         """
         sleep(self.config.MAX_RUN_TIME)
