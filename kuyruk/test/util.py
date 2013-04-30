@@ -12,7 +12,7 @@ from what import What
 from ..channel import LazyChannel
 from ..queue import Queue as RabbitQueue
 
-TIMEOUT = 10
+TIMEOUT = 30
 
 logger = logging.getLogger(__name__)
 
