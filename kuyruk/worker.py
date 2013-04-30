@@ -5,7 +5,6 @@ import traceback
 import threading
 import multiprocessing
 from time import sleep
-from functools import wraps
 
 from setproctitle import setproctitle
 
@@ -33,8 +32,8 @@ class Worker(multiprocessing.Process):
         is_local = queue_name.startswith('@')
         self.queue = Queue(queue_name, self.channel, local=is_local)
         self.consumer = Consumer(self.queue)
-        self.processor = None
         self.shutdown_pending = threading.Event()
+        self.finished = threading.Event()
 
     def run(self):
         """Run worker until stop flag is set.
@@ -52,40 +51,19 @@ class Worker(multiprocessing.Process):
         # self.channel.tx_select()
 
         # Start daemon threads
-        start_thread(self.watch_master, daemon=True)
-        start_thread(self.watch_load, daemon=True)
+        start_daemon_thread(self.process_data_events)
+        start_daemon_thread(self.watch_master)
+        start_daemon_thread(self.watch_load)
         if self.config.MAX_RUN_TIME > 0:
-            start_thread(self.count_run_time, daemon=True)
+            start_daemon_thread(self.count_run_time)
 
         logger.info('Starting consume')
         for message in self.consumer:
-            self.on_message(message)
+            self.process_task(message)
             # self.channel.tx_commit()
 
-        # Finish last task
-        if self.processor:
-            while self.processor.is_alive():
-                with self.queue.lock:
-                    self.channel.connection.process_data_events()
-
         logger.debug("End run worker")
-
-    def on_message(self, message):
-        """Start a new thread and run process task in it."""
-        logger.info('Message received: %s', message)
-        target = self.stop_consumer_on_exception(self.process_task)
-        self.processor = start_thread(target, (message, ))
-
-    def stop_consumer_on_exception(self, f):
-        @wraps(f)
-        def inner(*args, **kwargs):
-            try:
-                return f(*args, **kwargs)
-            except Exception:
-                logger.critical(traceback.format_exc())
-                logger.critical('Error in task processor, exiting')
-                os._exit(1)
-        return inner
+        self.finished.set()
 
     def process_task(self, message):
         from kuyruk import Kuyruk
@@ -190,6 +168,11 @@ class Worker(multiprocessing.Process):
         logger.warning('Run time reached zero, cancelling consume.')
         self.shutdown()
 
+    def process_data_events(self):
+        while not self.finished.is_set():
+            with self.queue.lock:
+                self.queue.channel.connection.process_data_events()
+
     def register_signals(self):
         # SIGINT is ignored because when pressed Ctrl-C
         # SIGINT sent to both master and workers while.
@@ -208,11 +191,10 @@ class Worker(multiprocessing.Process):
         self.consumer.stop()
 
 
-def start_thread(target, args=(), daemon=False):
+def start_daemon_thread(target, args=()):
     t = threading.Thread(target=target, args=args)
-    t.daemon = daemon
+    t.daemon = True
     t.start()
-    return t
 
 
 def print_stack(sig, frame):
