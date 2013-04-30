@@ -50,14 +50,14 @@ class Worker(multiprocessing.Process):
         self.channel.basic_qos(prefetch_count=1)
         self.channel.tx_select()
 
-        # Start daemon threads
+        # Start threads
         start_daemon_thread(self.process_data_events)
         start_daemon_thread(self.watch_master)
         start_daemon_thread(self.watch_load)
         if self.config.MAX_RUN_TIME > 0:
-            start_daemon_thread(self.count_run_time)
+            start_daemon_thread(self.shutdown_timer)
 
-        logger.info('Starting consume')
+        # Consume messages
         for message in self.consumer:
             self.process_task(message)
             self.channel.tx_commit()
@@ -160,7 +160,7 @@ class Worker(multiprocessing.Process):
                 self.consumer.pause(10)
             sleep(1)
 
-    def count_run_time(self):
+    def shutdown_timer(self):
         """Counts down from MAX_RUN_TIME. When it reaches zero sutdown
         gracefully.
 

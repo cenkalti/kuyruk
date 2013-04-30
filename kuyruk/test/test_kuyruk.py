@@ -93,11 +93,11 @@ class KuyrukTestCase(unittest.TestCase):
         """
         _pid = lambda: get_pid('kuyruk: worker')
         with run_kuyruk() as master:
-            master.expect('Starting consume')
+            master.expect('Start consuming')
             pid1 = _pid()
             os.kill(pid1, signal.SIGKILL)
             master.expect('Spawning new worker')
-            master.expect('Starting consume')
+            master.expect('Start consuming')
             pid2 = _pid()
         assert pid2 > pid1
 

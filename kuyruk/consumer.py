@@ -33,9 +33,8 @@ class Consumer(object):
         self._start()
 
     def _start(self):
-        logger.debug('Forcing data events on')
+        logger.debug('Start consuming')
         if not self._generator:
-            logger.debug('Issuing Basic.Consume')
             self._generator = self.queue.basic_consume(self._generator_callback)
 
     def next(self):

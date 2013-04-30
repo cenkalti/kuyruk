@@ -130,6 +130,7 @@ class Queue(object):
 
     @synchronized
     def basic_consume(self, callback):
+        logger.debug('Issuing Basic.Consume')
         return self.channel.basic_consume(callback, self.name)
 
     @synchronized
