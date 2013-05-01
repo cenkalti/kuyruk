@@ -8,6 +8,7 @@ from datetime import datetime
 from kuyruk import importer
 from kuyruk.queue import Queue
 from kuyruk.channel import LazyChannel
+from kuyruk.eventmixin import EventMixin
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +23,11 @@ def profile(f):
     return inner
 
 
-class Task(object):
+class Task(EventMixin):
 
     def __init__(self, f, kuyruk, queue='kuyruk',
                  local=False, eager=False, retry=0):
+        super(Task, self).__init__()
         self.f = f
         self.kuyruk = kuyruk
         self.queue = queue
@@ -33,9 +35,6 @@ class Task(object):
         self.eager = eager
         self.retry = retry
         self.cls = None
-        self.before_task_functions = []
-        self.after_task_functions = []
-        self.on_exception_functions = []
 
     def __repr__(self):
         return "<Task of %r>" % self.name
@@ -132,18 +131,6 @@ class Task(object):
     def class_name(self):
         if self.cls:
             return self.cls.__name__
-
-    def before_task(self, f):
-        self.before_task_functions.append(f)
-        return f
-
-    def after_task(self, f):
-        self.after_task_functions.append(f)
-        return f
-
-    def on_exception(self, f):
-        self.on_exception_functions.append(f)
-        return f
 
 
 class TaskResult(object):

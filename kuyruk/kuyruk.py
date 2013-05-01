@@ -4,11 +4,12 @@ import logging
 from kuyruk.task import Task
 from kuyruk.master import Master
 from kuyruk.config import Config
+from kuyruk.eventmixin import EventMixin
 
 logger = logging.getLogger(__name__)
 
 
-class Kuyruk(object):
+class Kuyruk(EventMixin):
     """
     Main class for Kuyruk distributed task queue. It holds the configuration
     values and provides a task decorator for user application and run method
@@ -21,10 +22,8 @@ class Kuyruk(object):
         :param config: See config.py for default values.
 
         """
+        super(Kuyruk, self).__init__()
         self.config = Config(config)
-        self.before_task_functions = []
-        self.after_task_functions = []
-        self.on_exception_functions = []
 
     def task(self, queue='kuyruk', eager=False, retry=0):
         """Wrap functions with this decorator to convert them to background
@@ -61,18 +60,6 @@ class Kuyruk(object):
         master = Master(self.config)
         master.override_queues = queues
         master.run()
-
-    def before_task(self, f):
-        self.before_task_functions.append(f)
-        return f
-
-    def after_task(self, f):
-        self.after_task_functions.append(f)
-        return f
-
-    def on_exception(self, f):
-        self.on_exception_functions.append(f)
-        return f
 
     class Reject(Exception):
         """
