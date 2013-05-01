@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import os
 import logging
 import threading
+from Queue import Queue, Empty
 
 from kuyruk.message import Message
 
@@ -13,7 +14,7 @@ class Consumer(object):
     def __init__(self, queue):
         self.queue = queue
         self._generator = None
-        self._generator_messages = list()
+        self._generator_messages = Queue()
         self._stop = threading.Event()
 
     def __iter__(self):
@@ -40,9 +41,11 @@ class Consumer(object):
 
     def next(self):
         while not self._stop.is_set():
-            if self._generator_messages:
-                message = self._generator_messages.pop(0)
+            try:
+                message = self._generator_messages.get(timeout=0.1)
                 return Message(message, self.queue)
+            except Empty:
+                pass
 
             try:
                 with self.queue.lock:
@@ -64,26 +67,32 @@ class Consumer(object):
 
         """
         logger.debug('Adding a message to generator messages')
-        self._generator_messages.append((method, properties, body))
-        logger.debug('%i pending messages', len(self._generator_messages))
+        self._generator_messages.put((method, properties, body))
 
     def _cancel(self):
         """Cancel the consumption of a queue, rejecting all pending messages.
 
         """
         logger.debug('_cancel is called')
-        messages = 0
+        remaining_messages = []
+        count_messages = 0
         self.queue.basic_cancel(self._generator)
-        if self._generator_messages:
+        if not self._generator_messages.empty():
             logger.debug('There are message pending, nacking all')
             # Get the last item
-            (method, properties, body) = self._generator_messages.pop()
-            messages = len(self._generator_messages)
+            try:
+                while 1:
+                    message = self._generator_messages.get_nowait()
+                    remaining_messages.append(message)
+            except Empty:
+                pass
+            last_message = remaining_messages[-1]
+            method, properties, body = last_message
+            count_messages = len(remaining_messages)
             logger.info('Requeueing %i messages with delivery tag %s',
-                        messages, method.delivery_tag)
-            self.queue.nack(
-                method.delivery_tag, multiple=True, requeue=True)
+                        count_messages, method.delivery_tag)
+            self.queue.nack(method.delivery_tag, multiple=True, requeue=True)
             with self.queue.lock:
                 self.queue.channel.connection.process_data_events()
         self._generator = None
-        return messages
+        return count_messages
