@@ -118,10 +118,12 @@ class Queue(object):
 
     @synchronized
     def recover(self):
+        logger.debug('Recovering messages')
         return self.channel.basic_recover(requeue=True)
 
     @synchronized
     def delete(self):
+        logger.warning('Deleting queue')
         try:
             return self.channel.queue_delete(queue=self.name)
         except pika.exceptions.ChannelClosed as e:
@@ -136,4 +138,5 @@ class Queue(object):
 
     @synchronized
     def basic_cancel(self, consumer_id):
+        logger.debug('Issuing Basic.Cancel')
         return self.channel.basic_cancel(consumer_id)
