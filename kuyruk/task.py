@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import sys
 import logging
 from time import time
 from types import MethodType
@@ -34,6 +35,7 @@ class Task(object):
         self.cls = None
         self.before_task_functions = []
         self.after_task_functions = []
+        self.on_exception_functions = []
 
     def __repr__(self):
         return "<Task of %r>" % self.name
@@ -95,13 +97,16 @@ class Task(object):
     @profile
     def run(self, args, kwargs):
         """Run the wrapped function with before and after task functions."""
-        def run(functions):
-            [f(self, args, kwargs) for f in functions]
+        def run(functions, **extra):
+            [f(self, args, kwargs, **extra) for f in functions]
 
         try:
             run(self.kuyruk.before_task_functions)
             run(self.before_task_functions)
             self.f(*args, **kwargs)  # call wrapped function
+        except Exception:
+            run(self.on_exception_functions, exc_info=sys.exc_info())
+            raise
         finally:
             run(self.after_task_functions)
             run(self.kuyruk.after_task_functions)
@@ -132,6 +137,10 @@ class Task(object):
 
     def after_task(self, f):
         self.after_task_functions.append(f)
+        return f
+
+    def on_exception(self, f):
+        self.on_exception_functions.append(f)
         return f
 
 
