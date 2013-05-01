@@ -1,9 +1,10 @@
+from __future__ import absolute_import
 import logging
 
-from .kuyruk import Kuyruk
-from .task import Task
-from .worker import Worker
-from .queue import Queue
+from kuyruk.kuyruk import Kuyruk
+from kuyruk.task import Task
+from kuyruk.worker import Worker
+from kuyruk.queue import Queue
 
 __version__ = '0.7.2'
 

@@ -1,11 +1,12 @@
+from __future__ import absolute_import
 import sys
 import logging
 import logging.config
 import optparse
 
-from . import __version__
-from kuyruk import Kuyruk
-from config import Config
+from kuyruk import __version__
+from kuyruk.kuyruk import Kuyruk
+from kuyruk.config import Config
 
 logger = logging.getLogger(__name__)
 

@@ -1,8 +1,9 @@
+from __future__ import absolute_import
 import os
 import logging
 import threading
 
-from .message import Message
+from kuyruk.message import Message
 
 logger = logging.getLogger(__name__)
 

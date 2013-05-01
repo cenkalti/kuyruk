@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 import signal
 import logging
@@ -8,10 +9,10 @@ from time import sleep
 
 from setproctitle import setproctitle
 
-from . import importer
-from .queue import Queue
-from .channel import LazyChannel
-from .consumer import Consumer
+from kuyruk import importer
+from kuyruk.queue import Queue
+from kuyruk.channel import LazyChannel
+from kuyruk.consumer import Consumer
 
 logger = logging.getLogger(__name__)
 

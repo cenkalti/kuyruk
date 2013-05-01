@@ -1,9 +1,10 @@
+from __future__ import absolute_import
 import logging
 import optparse
 
-from .channel import LazyChannel
-from .queue import Queue
-from .config import Config
+from kuyruk.channel import LazyChannel
+from kuyruk.queue import Queue
+from kuyruk.config import Config
 
 logger = logging.getLogger(__name__)
 

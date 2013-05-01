@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import json
 import socket
 import logging
@@ -7,7 +8,7 @@ from threading import RLock
 import pika
 import pika.exceptions
 
-from .message import Message
+from kuyruk.message import Message
 
 logger = logging.getLogger(__name__)
 

@@ -1,8 +1,9 @@
+from __future__ import absolute_import
 import logging
 
-from .task import Task
-from .master import Master
-from .config import Config
+from kuyruk.task import Task
+from kuyruk.master import Master
+from kuyruk.config import Config
 
 logger = logging.getLogger(__name__)
 

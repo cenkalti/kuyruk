@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 import sys
 import signal
@@ -9,7 +10,7 @@ from time import time, sleep
 
 from setproctitle import setproctitle
 
-from .worker import Worker
+from kuyruk.worker import Worker
 
 logger = logging.getLogger(__name__)
 

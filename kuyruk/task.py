@@ -1,11 +1,12 @@
+from __future__ import absolute_import
 import logging
 from time import time
 from types import MethodType
 from datetime import datetime
 
-from . import importer
-from .queue import Queue
-from .channel import LazyChannel
+from kuyruk import importer
+from kuyruk.queue import Queue
+from kuyruk.channel import LazyChannel
 
 logger = logging.getLogger(__name__)
 
