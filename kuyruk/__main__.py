@@ -12,8 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    parser = optparse.OptionParser()
-    parser.add_option('-v', '--version', action='store_true')
+    parser = optparse.OptionParser(version=__version__)
     parser.add_option('-c', '--config')
     parser.add_option(
         '-l', '--logging-level', default='INFO',
@@ -31,10 +30,6 @@ def main():
     parser.add_option('--save-failed-tasks', action='store_true')
     parser.add_option('--no-save-failed-tasks', action='store_true')
     options, args = parser.parse_args()
-
-    if options.version:
-        print __version__
-        sys.exit()
 
     if options.logging_config:
         logging.config.fileConfig(options.logging_config)
