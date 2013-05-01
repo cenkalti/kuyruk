@@ -97,7 +97,8 @@ class Task(EventMixin):
     def run(self, args, kwargs):
         """Run the wrapped function and event handlers."""
         def run(functions, **extra):
-            [f(self, args, kwargs, **extra) for f in functions]
+            for f in functions:
+                f(self, args, kwargs, **extra)
 
         try:
             run(self.kuyruk.before_task_functions)
