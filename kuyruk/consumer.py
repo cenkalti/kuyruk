@@ -74,18 +74,11 @@ class Consumer(object):
 
         """
         logger.debug('_cancel is called')
-        remaining_messages = []
         count_messages = 0
         self.queue.basic_cancel(self._generator)
         if not self._generator_messages.empty():
             logger.debug('There are message pending, nacking all')
-            # Get the last item
-            try:
-                while 1:
-                    message = self._generator_messages.get_nowait()
-                    remaining_messages.append(message)
-            except Empty:
-                pass
+            remaining_messages = queue_get_all(self._generator_messages)
             last_message = remaining_messages[-1]
             method, properties, body = last_message
             count_messages = len(remaining_messages)
@@ -94,5 +87,16 @@ class Consumer(object):
             self.queue.nack(method.delivery_tag, multiple=True, requeue=True)
             with self.queue.lock:
                 self.queue.channel.connection.process_data_events()
+                
         self._generator = None
         return count_messages
+
+
+def queue_get_all(q):
+    items = []
+    while 1:
+        try:
+            items.append(q.get_nowait())
+        except Empty:
+            break
+    return items
