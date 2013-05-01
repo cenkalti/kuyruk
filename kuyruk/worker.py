@@ -35,7 +35,6 @@ class Worker(multiprocessing.Process):
         self.queue = Queue(queue_name, self.channel, local=is_local)
         self.consumer = Consumer(self.queue)
         self.shutdown_pending = threading.Event()
-        self.finished = threading.Event()
 
     def run(self):
         """Run worker until stop flag is set.
@@ -65,7 +64,6 @@ class Worker(multiprocessing.Process):
                 self.channel.tx_commit()
 
         logger.debug("End run worker")
-        self.finished.set()
 
     def process_task(self, message):
         from kuyruk import Kuyruk
