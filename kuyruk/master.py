@@ -38,7 +38,7 @@ class Master(multiprocessing.Process):
 
         self._start_workers()
         self._wait_for_workers()
-        logger.info('End run master')
+        logger.debug('End run master')
 
     def _start_workers(self):
         """Start a new worker for each queue"""

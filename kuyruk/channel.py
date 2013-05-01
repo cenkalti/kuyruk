@@ -49,7 +49,7 @@ class LazyChannel(object):
         self.connection = pika.BlockingConnection(parameters)
         logger.info('Connected to RabbitMQ')
         self.channel = self.connection.channel()
-        logger.info('Connected to channel')
+        logger.debug('Opened channel')
 
     def close(self):
         if self.is_open:
