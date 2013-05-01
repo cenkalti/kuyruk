@@ -24,6 +24,7 @@ class Kuyruk(object):
         self.config = Config(config)
         self.before_task_functions = []
         self.after_task_functions = []
+        self.on_exception_functions = []
 
     def task(self, queue='kuyruk', eager=False, retry=0):
         """Wrap functions with this decorator to convert them to background
@@ -67,6 +68,10 @@ class Kuyruk(object):
 
     def after_task(self, f):
         self.after_task_functions.append(f)
+        return f
+
+    def on_exception(self, f):
+        self.on_exception_functions.append(f)
         return f
 
     class Reject(Exception):

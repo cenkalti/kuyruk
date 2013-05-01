@@ -105,7 +105,9 @@ class Task(object):
             run(self.before_task_functions)
             self.f(*args, **kwargs)  # call wrapped function
         except Exception:
-            run(self.on_exception_functions, exc_info=sys.exc_info())
+            exc_info = sys.exc_info()
+            run(self.on_exception_functions, exc_info=exc_info)
+            run(self.kuyruk.on_exception_functions, exc_info=exc_info)
             raise
         finally:
             run(self.after_task_functions)
