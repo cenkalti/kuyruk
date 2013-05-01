@@ -35,6 +35,8 @@ class Config(object):
                 self._load_object(obj)
 
     def reload(self):
+        assert self.path, "In order to reload config, Config object must be" \
+                          "initalized from a path."
         logger.warning("Reloading config from %s", self.path)
         self._load_module(self.path)
 
