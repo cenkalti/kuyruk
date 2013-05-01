@@ -22,6 +22,7 @@ def main():
     parser.add_option('--max-load', type='float')
     parser.add_option('--max-run-time', type='float')
     parser.add_option('--save-failed-tasks', action='store_true')
+    parser.add_option('--no-save-failed-tasks', action='store_true')
     options, args = parser.parse_args()
 
     if options.version:
@@ -44,7 +45,9 @@ def main():
         config.MAX_RUN_TIME = options.max_run_time
 
     if options.save_failed_tasks:
-        config.SAVE_FAILED_TASKS = options.save_failed_tasks
+        config.SAVE_FAILED_TASKS = True
+    elif options.no_save_failed_tasks:
+        config.SAVE_FAILED_TASKS = False
 
     kuyruk = Kuyruk()
     kuyruk.config = config
