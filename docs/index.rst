@@ -13,6 +13,7 @@ Contents:
 
    Basics <README>
    signals
+   events
 
 
 
