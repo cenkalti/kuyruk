@@ -8,7 +8,7 @@ from time import sleep
 
 from setproctitle import setproctitle
 
-from . import loader
+from . import importer
 from .queue import Queue
 from .channel import LazyChannel
 from .consumer import Consumer
@@ -118,7 +118,7 @@ class Worker(multiprocessing.Process):
             task_description['object_id'],
             task_description['args'],
             task_description['kwargs'])
-        task, cls = loader.import_task(module, cls, function,
+        task, cls = importer.import_task(module, cls, function,
                                        self.config.IMPORT_PATH)
 
         if cls:

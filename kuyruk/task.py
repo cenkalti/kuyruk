@@ -3,7 +3,7 @@ from time import time
 from types import MethodType
 from datetime import datetime
 
-from . import loader
+from . import importer
 from .queue import Queue
 from .channel import LazyChannel
 
@@ -117,7 +117,7 @@ class Task(object):
     def module_name(self):
         name = self.f.__module__
         if name == '__main__':
-            name = loader.get_main_module().name
+            name = importer.get_main_module().name
         return name
 
     @property
