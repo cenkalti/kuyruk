@@ -13,6 +13,7 @@ from kuyruk import importer
 from kuyruk.queue import Queue
 from kuyruk.channel import LazyChannel
 from kuyruk.consumer import Consumer
+from kuyruk.helpers import start_daemon_thread
 
 logger = logging.getLogger(__name__)
 
@@ -52,16 +53,16 @@ class Worker(multiprocessing.Process):
         self.channel.tx_select()
 
         # Start threads
-        start_daemon_thread(self.process_data_events)
         start_daemon_thread(self.watch_master)
         start_daemon_thread(self.watch_load)
         if self.config.MAX_RUN_TIME > 0:
             start_daemon_thread(self.shutdown_timer)
 
         # Consume messages
-        for message in self.consumer:
-            self.process_task(message)
-            self.channel.tx_commit()
+        with self.consumer.consume() as messages:
+            for message in messages:
+                self.process_task(message)
+                self.channel.tx_commit()
 
         logger.debug("End run worker")
         self.finished.set()
@@ -170,11 +171,6 @@ class Worker(multiprocessing.Process):
         logger.warning('Run time reached zero, cancelling consume.')
         self.shutdown()
 
-    def process_data_events(self):
-        while not self.finished.is_set():
-            with self.queue.lock:
-                self.queue.channel.connection.process_data_events()
-
     def register_signals(self):
         # SIGINT is ignored because when pressed Ctrl-C
         # SIGINT sent to both master and workers while.
@@ -191,12 +187,6 @@ class Worker(multiprocessing.Process):
         logger.warning("Shutting down worker gracefully")
         self.shutdown_pending.set()
         self.consumer.stop()
-
-
-def start_daemon_thread(target, args=()):
-    t = threading.Thread(target=target, args=args)
-    t.daemon = True
-    t.start()
 
 
 def print_stack(sig, frame):

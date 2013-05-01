@@ -1,7 +1,9 @@
 from __future__ import absolute_import
+import os
 import json
 import socket
 import logging
+import traceback
 from functools import wraps
 from threading import RLock
 
@@ -140,3 +142,20 @@ class Queue(object):
     def basic_cancel(self, consumer_id):
         logger.debug('Issuing Basic.Cancel')
         return self.channel.basic_cancel(consumer_id)
+
+    @synchronized
+    def process_data_events(self):
+        try:
+            self.channel.connection.process_data_events()
+        except Exception as e:
+            logger.debug(e)
+            if e.args[0] == 4:  # Interrupted system call
+                # Happens when a signal is received. No harm.
+                pass
+            else:
+                logger.critical(traceback.format_exc())
+                os._exit(1)
+
+    @synchronized
+    def sleep(self, seconds):
+        self.channel.connection.sleep(seconds)
