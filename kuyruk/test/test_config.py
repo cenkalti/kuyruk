@@ -1,6 +1,6 @@
 import unittest
 
-from ..config import Config
+from kuyruk.config import Config
 
 
 class ConfigTestCase(unittest.TestCase):

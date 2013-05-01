@@ -9,8 +9,8 @@ from contextlib import contextmanager
 
 from what import What
 
-from ..channel import LazyChannel
-from ..queue import Queue as RabbitQueue
+from kuyruk.channel import LazyChannel
+from kuyruk.queue import Queue as RabbitQueue
 
 TIMEOUT = 30
 

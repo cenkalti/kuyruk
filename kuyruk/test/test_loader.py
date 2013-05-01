@@ -4,8 +4,8 @@ import unittest
 
 from what import What
 
-from ..queue import Queue
-from ..channel import LazyChannel
+from kuyruk.queue import Queue
+from kuyruk.channel import LazyChannel
 from util import delete_queue
 
 
