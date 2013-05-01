@@ -102,12 +102,15 @@ class Task(EventMixin):
         try:
             run(self.kuyruk.before_task_functions)
             run(self.before_task_functions)
-            self.f(*args, **kwargs)  # call wrapped function
+            return_value = self.f(*args, **kwargs)  # call wrapped function
         except Exception:
             exc_info = sys.exc_info()
             run(self.on_exception_functions, exc_info=exc_info)
             run(self.kuyruk.on_exception_functions, exc_info=exc_info)
             raise
+        else:
+            run(self.after_return_functions, return_value=return_value)
+            run(self.kuyruk.after_return_functions, return_value=return_value)
         finally:
             run(self.after_task_functions)
             run(self.kuyruk.after_task_functions)
