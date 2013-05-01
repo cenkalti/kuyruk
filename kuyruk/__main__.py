@@ -14,9 +14,11 @@ logger = logging.getLogger(__name__)
 def main():
     parser = optparse.OptionParser(version=__version__)
     parser.add_option('-c', '--config')
+    log_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
     parser.add_option(
         '-l', '--logging-level', default='INFO',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])
+        choices=log_levels,
+        help="any of %s" % ', '.join(log_levels))
     parser.add_option(
         '--logging-config',
         help="INI style logging configuration file")
@@ -24,7 +26,7 @@ def main():
     # These options below override the options from config module
     parser.add_option(
         '--queues',
-        help="Comma seperated list of queues that the workers will run on")
+        help="comma seperated list of queues that the workers will run on")
     parser.add_option('--max-load', type='float')
     parser.add_option('--max-run-time', type='float')
     parser.add_option('--save-failed-tasks', action='store_true')
