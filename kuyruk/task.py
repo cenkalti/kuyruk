@@ -96,7 +96,7 @@ class Task(object):
 
     @profile
     def run(self, args, kwargs):
-        """Run the wrapped function with before and after task functions."""
+        """Run the wrapped function and event handlers."""
         def run(functions, **extra):
             [f(self, args, kwargs, **extra) for f in functions]
 
