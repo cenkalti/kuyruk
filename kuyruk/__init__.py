@@ -6,7 +6,7 @@ from kuyruk.task import Task
 from kuyruk.worker import Worker
 from kuyruk.queue import Queue
 
-__version__ = '0.7.2'
+__version__ = '0.8.0'
 
 
 try:
