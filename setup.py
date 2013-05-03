@@ -44,6 +44,7 @@ setup(
         'console_scripts': [
             'kuyruk = kuyruk.__main__:main',
             'kuyruk-requeue-failed-tasks = kuyruk.requeue:main',
+            'kuyruk-manager = kuyruk.manager.runserver:main',
         ],
     },
     classifiers=[
