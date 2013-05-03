@@ -1,6 +1,5 @@
 import json
 import struct
-from time import sleep
 
 
 def receive_message(sock):
@@ -18,4 +17,3 @@ def send_message(sock, message):
     size = struct.pack('I', size)
     sock.sendall(size)
     sock.sendall(message)
-    sleep(60)
