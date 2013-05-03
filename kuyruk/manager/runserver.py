@@ -17,6 +17,7 @@ def main():
     server_thread.start()
     print "Server loop running in thread:", server_thread.name
     app = create_app(server)
+    app.debug = True
     wsgi.server(eventlet.listen(('', 5000)), app, debug=True)
 
 

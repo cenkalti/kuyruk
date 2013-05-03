@@ -1,9 +1,18 @@
 {% extends "layout.html" %}
 
 {% block body %}
-    <ul>
-    {% for addr, master in sockets.items() %}
-        <li>addr: Uptime={{ master.stats.uptime }}</li>
-    {% endfor %}
-    </ul>
+    <table border="1">
+        <tr>
+            <th>Hostname</th>
+            <th>Uptime</th>
+            <th>Actions</th>
+        </tr>
+        {% for addr, master in sockets.items() %}
+        <tr>
+            <td>{{ master.stats.hostname }}</td>
+            <td>{{ master.stats.uptime }}</td>
+            <td><a href="{{ url_for('reload', host=addr[0], port=addr[1]) }}">Reload</a></td>
+        </tr>
+        {% endfor %}
+    </table>
 {% endblock %}

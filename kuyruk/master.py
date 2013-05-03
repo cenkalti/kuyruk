@@ -12,7 +12,7 @@ from setproctitle import setproctitle
 
 from kuyruk.worker import Worker
 from kuyruk.helpers import start_daemon_thread
-from kuyruk.manager.messaging import send_message
+from kuyruk.manager.messaging import send_message, receive_message
 
 logger = logging.getLogger(__name__)
 
@@ -156,8 +156,16 @@ class Master(multiprocessing.Process):
             try:
                 address = (self.config.MANAGER_HOST, self.config.MANAGER_PORT)
                 sock.connect(address)
+                sock.setblocking(0)
                 while not self.shutdown_pending:
-                    send_message(sock, {'uptime': self.uptime})
+                    send_message(sock, {
+                        'hostname': socket.gethostname(),
+                        'uptime': self.uptime,
+                    })
+                    try:
+                        print receive_message(sock)
+                    except Exception as e:
+                        print e
                     sleep(1)
             except Exception as e:
                 logger.debug("Cannot connect to manager")
