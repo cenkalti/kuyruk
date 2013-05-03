@@ -11,6 +11,8 @@ from time import time, sleep
 from setproctitle import setproctitle
 
 from kuyruk.worker import Worker
+from kuyruk.helpers import start_daemon_thread
+from kuyruk.manager.messaging import send_message
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +34,8 @@ class Master(multiprocessing.Process):
         logger.debug('Process group id: %s', os.getpgrp())
         setproctitle('kuyruk: master')
         self._register_signals()
+        self.started = time()
+        start_daemon_thread(self._send_status)
 
         if self.config.MAX_LOAD is None:
             self.config.MAX_LOAD = multiprocessing.cpu_count()
@@ -145,6 +149,26 @@ class Master(multiprocessing.Process):
             self.workers = []
             self._start_workers()
         self.stop_workers(workers=old_workers)
+
+    def _send_status(self):
+        while not self.shutdown_pending:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                address = (self.config.MANAGER_HOST, self.config.MANAGER_PORT)
+                sock.connect(address)
+                while not self.shutdown_pending:
+                    send_message(sock, {'uptime': self.uptime})
+                    sleep(1)
+            except Exception as e:
+                logger.debug("Cannot connect to manager")
+                logger.debug(e)
+                sleep(1)
+            finally:
+                sock.close()
+
+    @property
+    def uptime(self):
+        return int(time() - self.started)
 
 
 def parse_queues_str(s):

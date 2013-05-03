@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+
+{% block body %}
+    <ul>
+    {% for addr, master in sockets.items() %}
+        <li>addr: Uptime={{ master.stats.uptime }}</li>
+    {% endfor %}
+    </ul>
+{% endblock %}
