@@ -143,8 +143,12 @@ class Master(multiprocessing.Process):
 
     def _handle_sighup(self, signum, frame):
         logger.warning("Handling SIGHUP")
+        self.reload()
+
+    def reload(self):
+        logger.warning("Reloading workers")
         old_workers = self.workers
-        if self.config.path:
+        if hasattr(self.config, 'path'):
             self.config.reload()
             self.workers = []
             self._start_workers()
@@ -163,13 +167,18 @@ class Master(multiprocessing.Process):
                         'uptime': self.uptime,
                     })
                     try:
-                        print receive_message(sock)
-                    except Exception as e:
-                        print e
+                        f, args, kwargs = receive_message(sock)
+                    except socket.error:
+                        pass
+                    else:
+                        print f, args, kwargs
+                        f = getattr(self, f)
+                        f(*args, **kwargs)
+
                     sleep(1)
-            except Exception as e:
+            except socket.error as e:
                 logger.debug("Cannot connect to manager")
-                logger.debug(e)
+                logger.debug("%s:%s", type(e), e)
                 sleep(1)
             finally:
                 sock.close()

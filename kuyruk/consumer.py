@@ -42,7 +42,8 @@ class Consumer(object):
 
     def stop(self):
         """Stop consumption of messages."""
-        self._message_iterator.stop()
+        if self._message_iterator:
+            self._message_iterator.stop()
 
     def pause(self, seconds):
         logger.info('Pausing for %i seconds...', seconds)

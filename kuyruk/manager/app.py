@@ -1,4 +1,6 @@
-from flask import Flask, render_template, redirect, request, url_for
+from flask import Flask, render_template, redirect, request
+
+from kuyruk.helpers import human_time
 
 
 def create_app(manager):
@@ -14,7 +16,14 @@ def create_app(manager):
 
     @app.route('/reload')
     def reload():
+        addr = str(request.args['host']), int(request.args['port'])
+        master = manager.sockets[addr]
+        master['actions'].put(('reload', (), {}))
         return redirect_back()
+
+    @app.context_processor
+    def context_processor():
+        return {'human_time': human_time}
 
     return app
 
