@@ -19,42 +19,29 @@ class Config(object):
     SAVE_FAILED_TASKS = False
     WORKERS = {}
 
-    def __init__(self, obj=None):
-        """Populate from obj. obj may be a path to a module, a dict or
-        a dict. If the key is not found in obj, default is used. Config
-        keys must be prefixed with "KUYRUK_". They are stripped when
-        the Config object is initialized.
+    def __init__(self, path=None):
+        """Initialize Config from a module.
+        Configuration options must be prefixed with "KUYRUK_".
+        They are stripped when the Config object is initialized.
 
         """
-        if obj:
-            if isinstance(obj, dict):
-                self._load_dict(obj)
-            elif isinstance(obj, basestring):
-                self._load_module(obj)
-            else:
-                self._load_object(obj)
+        if path:
+            self.path = path
+            self._load_module()
 
     def reload(self):
-        assert self.path, "In order to reload config, Config object must be" \
-                          "initalized from a path."
+        assert self.path
         logger.warning("Reloading config from %s", self.path)
-        self._load_module(self.path)
+        self._clear()
+        self._load_module()
 
-    def _load_dict(self, new_dict):
-        self.clear()
-        for k, v in new_dict.iteritems():
+    def _load_module(self):
+        module = imp.load_source('kuyruk_user_config', self.path)
+        for k, v in module.__dict__.iteritems():
             if k.startswith('KUYRUK_'):
                 setattr(self, k[7:], v)
+        logger.info("Config is loaded from %s", self.path)
 
-    def _load_module(self, path):
-        module = imp.load_source('kuyruk_user_config', path)
-        self._load_object(module)
-        logger.info("Config is loaded from %s", path)
-        self.path = path  # Save for reloading later
-
-    def _load_object(self, obj):
-        self._load_dict(obj.__dict__)
-
-    def clear(self):
+    def _clear(self):
         for k, v in self.__dict__.items():
             delattr(self, k)
