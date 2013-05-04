@@ -1,10 +1,36 @@
 import Queue
 from pprint import pformat
 from collections import namedtuple
-from SocketServer import BaseRequestHandler, ThreadingMixIn, TCPServer
+from SocketServer import ThreadingTCPServer, BaseRequestHandler
 from kuyruk.manager.messaging import message_loop
 
 Master = namedtuple('Master', 'socket uptime')
+
+
+class ManagerServer(ThreadingTCPServer):
+
+    daemon_threads = True
+
+    def __init__(self, host, port):
+        self.sockets = {}
+        ThreadingTCPServer.__init__(self, (host, port), RequestHandler)
+
+    def get_request(self):
+        client_sock, client_addr = ThreadingTCPServer.get_request(self)
+        self.sockets[client_addr] = {
+            'socket': client_sock,
+            'actions': Queue.Queue(),
+        }
+        print 'self.sockets', pformat(self.sockets)
+        return client_sock, client_addr
+
+    def process_request_thread(self, request, client_address):
+        ThreadingTCPServer.process_request_thread(self, request, client_address)
+        self._remove_socket(client_address)
+
+    def _remove_socket(self, client_address):
+        del self.sockets[client_address]
+        print 'self.sockets', pformat(self.sockets)
 
 
 class RequestHandler(BaseRequestHandler):
@@ -25,37 +51,3 @@ class RequestHandler(BaseRequestHandler):
     @property
     def struct(self):
         return self.server.sockets[self.client_address]
-
-
-class ThreadedTCPServer(ThreadingMixIn, TCPServer):
-
-    daemon_threads = True
-
-    def __init__(self, server_address, RequestHandlerClass,
-                 bind_and_activate=True):
-        self.sockets = {}
-        TCPServer.__init__(self, server_address, RequestHandlerClass,
-                           bind_and_activate)
-
-    def get_request(self):
-        client_sock, client_addr = TCPServer.get_request(self)
-        self.sockets[client_addr] = {
-            'socket': client_sock,
-            'actions': Queue.Queue(),
-        }
-        print 'self.sockets', pformat(self.sockets)
-        return client_sock, client_addr
-
-    def finish_request(self, request, client_address):
-        TCPServer.finish_request(self, request, client_address)
-        print 'deleting on finish'
-        self._remove_socket(client_address)
-
-    def handle_error(self, request, client_address):
-        print 'deleting on error'
-        self._remove_socket(client_address)
-        TCPServer.handle_error(self, request, client_address)
-
-    def _remove_socket(self, client_address):
-        del self.sockets[client_address]
-        print 'self.sockets', pformat(self.sockets)

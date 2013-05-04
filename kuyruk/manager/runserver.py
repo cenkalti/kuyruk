@@ -1,25 +1,25 @@
 #!/putio/env/bin/python
-import eventlet
-eventlet.monkey_patch()
-
 import threading
-from eventlet import wsgi
+from wsgiref.simple_server import make_server
+
 from kuyruk.manager.app import create_app
-from kuyruk.manager.server import RequestHandler, ThreadedTCPServer
+from kuyruk.manager.server import ManagerServer
 
 HOST, PORT = "localhost", 16500
 
 
 def main():
-    server = ThreadedTCPServer((HOST, PORT), RequestHandler)
-    server_thread = threading.Thread(target=server.serve_forever)
+    manager_server = ManagerServer(HOST, PORT)
+    app = create_app(manager_server)
+
+    server_thread = threading.Thread(target=manager_server.serve_forever)
     server_thread.daemon = True
     server_thread.start()
     print "Server loop running in thread:", server_thread.name
-    app = create_app(server)
-    app.debug = True
-    wsgi.server(eventlet.listen(('', 5000)), app, debug=True)
 
+    httpd = make_server('', 5000, app)
+    print "Serving on port 5000..."
+    httpd.serve_forever()
 
 if __name__ == "__main__":
     main()
