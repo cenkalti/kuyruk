@@ -14,15 +14,15 @@ def create_app(manager):
     def masters():
         return render_template('masters.html', sockets=manager.sockets)
 
-    @app.route('/reload')
-    def reload():
+    @app.route('/action/<name>')
+    def action(name):
         addr = str(request.args['host']), int(request.args['port'])
         master = manager.sockets[addr]
-        master['actions'].put(('reload', (), {}))
+        master['actions'].put((name, (), {}))
         return redirect_back()
 
     @app.context_processor
-    def context_processor():
+    def inject_helpers():
         return {'human_time': human_time}
 
     return app

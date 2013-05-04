@@ -124,26 +124,34 @@ class Master(multiprocessing.Process):
         signal.signal(signal.SIGQUIT, self._handle_sigquit)
 
     def _handle_sigterm(self, signum, frame):
-        logger.warning("Warm shutdown")
-        self.shutdown_pending = True
-        self.stop_workers()
+        logger.warning("Handling SIGTERM")
+        self.warm_shutdown()
 
     def _handle_sigquit(self, signum, frame):
-        logger.warning("Cold shutdown")
-        self.shutdown_pending = True
-        self.stop_workers(kill=True)
+        logger.warning("Handling SIGQUIT")
+        self.cold_shutdown()
 
     def _handle_sigint(self, signum, frame):
         logger.warning("Handling SIGINT")
         if sys.stdin.isatty() and not self.shutdown_pending:
-            self._handle_sigterm(None, None)
+            self.warm_shutdown()
         else:
-            self._handle_sigquit(None, None)
+            self.cold_shutdown()
         logger.debug("Handled SIGINT")
 
     def _handle_sighup(self, signum, frame):
         logger.warning("Handling SIGHUP")
         self.reload()
+
+    def warm_shutdown(self):
+        logger.warning("Warm shutdown")
+        self.shutdown_pending = True
+        self.stop_workers()
+
+    def cold_shutdown(self):
+        logger.warning("Cold shutdown")
+        self.shutdown_pending = True
+        self.stop_workers(kill=True)
 
     def reload(self):
         logger.warning("Reloading workers")

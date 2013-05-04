@@ -15,8 +15,13 @@
             <td>{{ addr[0] }}</td>
             <td>{{ addr[1] }}</td>
             <td>{{ human_time(master.stats.uptime) }}</td>
-            <td><a href="{{ url_for('reload', host=addr[0], port=addr[1]) }}">Reload</a></td>
+            <td>
+                <a href="{{ url_for('action', name='reload', host=addr[0], port=addr[1]) }}">Reload</a>
+                <a href="{{ url_for('action', name='warm_shutdown', host=addr[0], port=addr[1]) }}">Warm Shutdown</a>
+                <a href="{{ url_for('action', name='cold_shutdown', host=addr[0], port=addr[1]) }}">Cold Shutdown</a>
+            </td>
         </tr>
+        {% else %}
         {% endfor %}
     </table>
 {% endblock %}
