@@ -12,13 +12,12 @@ from time import time, sleep
 from setproctitle import setproctitle
 
 from kuyruk.worker import Worker
-from kuyruk.helpers import start_daemon_thread
-from kuyruk.manager.messaging import message_loop
+from kuyruk.manager.client import ManagerClientMixin
 
 logger = logging.getLogger(__name__)
 
 
-class Master(multiprocessing.Process):
+class Master(multiprocessing.Process, ManagerClientMixin):
     """
     Master worker implementation that coordinates queue workers.
 
@@ -26,6 +25,9 @@ class Master(multiprocessing.Process):
     def __init__(self, config):
         super(Master, self).__init__()
         self.config = config
+        if self.config.MAX_LOAD is None:
+            self.config.MAX_LOAD = multiprocessing.cpu_count()
+
         self.workers = []
         self.shutdown_pending = threading.Event()
         self.override_queues = None
@@ -36,11 +38,10 @@ class Master(multiprocessing.Process):
         setproctitle('kuyruk: master')
         self._register_signals()
         self.started = time()
-        start_daemon_thread(self._send_status)
-
-        if self.config.MAX_LOAD is None:
-            self.config.MAX_LOAD = multiprocessing.cpu_count()
-
+        self.start_manager_client(
+            self.config.MANAGER_HOST,
+            self.config.MANAGER_PORT,
+            self.shutdown_pending)
         self._start_workers()
         self._wait_for_workers()
         logger.debug('End run master')
@@ -163,31 +164,15 @@ class Master(multiprocessing.Process):
             self._start_workers()
         self.stop_workers(workers=old_workers)
 
-    def _generate_stats(self):
+    def generate_message(self):
+        """Generate stats to be sent to manager."""
         return {
+            'type': 'master',
             'hostname': socket.gethostname(),
             'uptime': self.uptime,
+            'pid': os.getpid(),
             'load': os.getloadavg(),
         }
-
-    def _on_action(self, sock, action):
-        f, args, kwargs = action
-        print f, args, kwargs
-        f = getattr(self, f)
-        f(*args, **kwargs)
-
-    def _send_status(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            address = (self.config.MANAGER_HOST, self.config.MANAGER_PORT)
-            sock.connect(address)
-            message_loop(
-                sock,
-                self._generate_stats,
-                self._on_action,
-                stop_event=self.shutdown_pending)
-        finally:
-            sock.close()
 
     @property
     def uptime(self):

@@ -12,7 +12,11 @@ def create_app(manager):
 
     @app.route('/masters')
     def masters():
-        return render_template('masters.html', sockets=manager.sockets)
+        masters = {}
+        for addr, struct in manager.sockets.iteritems():
+            if struct['stats']['type'] == 'master':
+                masters[addr] = struct
+        return render_template('masters.html', sockets=masters)
 
     @app.route('/action/<name>')
     def action(name):

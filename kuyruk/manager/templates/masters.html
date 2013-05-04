@@ -1,11 +1,12 @@
 {% extends "layout.html" %}
 
 {% block body %}
-    <table border="1">
+    <table>
         <tr>
             <th>Hostname</th>
             <th>IP</th>
             <th>Port</th>
+            <th>PID</th>
             <th>Uptime</th>
             <th>Load</th>
             <th>Actions</th>
@@ -15,9 +16,10 @@
             <td>{{ master.stats.hostname }}</td>
             <td>{{ addr[0] }}</td>
             <td>{{ addr[1] }}</td>
+            <td>{{ master.stats.pid }}</td>
             <td>{{ human_time(master.stats.uptime) }}</td>
             <td>
-                {% for l in master.stats.load %}
+                {% for l in master.stats.load -%}
                     {{ l|round(2) }}
                 {% endfor %}
             </td>

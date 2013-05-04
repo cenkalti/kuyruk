@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import os
+import socket
 import signal
 import logging
 import traceback
@@ -14,11 +15,12 @@ from kuyruk.queue import Queue
 from kuyruk.channel import LazyChannel
 from kuyruk.consumer import Consumer
 from kuyruk.helpers import start_daemon_thread
+from kuyruk.manager.client import ManagerClientMixin
 
 logger = logging.getLogger(__name__)
 
 
-class Worker(multiprocessing.Process):
+class Worker(multiprocessing.Process, ManagerClientMixin):
 
     def __init__(self, queue_name, config):
         """
@@ -56,6 +58,10 @@ class Worker(multiprocessing.Process):
         start_daemon_thread(self.watch_load)
         if self.config.MAX_RUN_TIME > 0:
             start_daemon_thread(self.shutdown_timer)
+        self.start_manager_client(
+            self.config.MANAGER_HOST,
+            self.config.MANAGER_PORT,
+            self.shutdown_pending)
 
         # Consume messages
         with self.consumer.consume() as messages:
@@ -186,6 +192,15 @@ class Worker(multiprocessing.Process):
         logger.warning("Shutting down worker gracefully")
         self.shutdown_pending.set()
         self.consumer.stop()
+
+    def generate_message(self):
+        """Generate stats to be sent to manager."""
+        return {
+            'type': 'worker',
+            'hostname': socket.gethostname(),
+            # 'uptime': self.uptime,
+            # 'load': os.getloadavg(),
+        }
 
 
 def print_stack(sig, frame):

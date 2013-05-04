@@ -1,6 +1,7 @@
 #!/putio/env/bin/python
 import threading
-from wsgiref.simple_server import make_server
+
+from werkzeug.serving import run_simple
 
 from kuyruk.manager.app import create_app
 from kuyruk.manager.server import ManagerServer
@@ -9,17 +10,15 @@ HOST, PORT = "localhost", 16500
 
 
 def main():
-    manager_server = ManagerServer(HOST, PORT)
-    app = create_app(manager_server)
+    manager = ManagerServer(HOST, PORT)
+    manager_thread = threading.Thread(target=manager.serve_forever)
+    manager_thread.daemon = True
+    manager_thread.start()
+    print "Manager running in thread:", manager_thread.name
 
-    server_thread = threading.Thread(target=manager_server.serve_forever)
-    server_thread.daemon = True
-    server_thread.start()
-    print "Server loop running in thread:", server_thread.name
-
-    httpd = make_server('', 5000, app)
-    print "Serving on port 5000..."
-    httpd.serve_forever()
+    app = create_app(manager)
+    app.debug = True
+    run_simple('0.0.0.0', 5000, app, threaded=True, use_debugger=True)
 
 if __name__ == "__main__":
     main()
