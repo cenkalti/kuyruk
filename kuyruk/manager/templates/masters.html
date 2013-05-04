@@ -1,35 +1,43 @@
 {% extends "layout.html" %}
 
+{% macro action_button(addr, name, display) %}
+    <button type="submit" name='action' value="{{ name }}"
+            formaction="{{ url_for('action', host=addr[0], port=addr[1]) }}">
+        {{ display }}</button>
+{% endmacro %}
+
 {% block body %}
-    <table>
-        <tr>
-            <th>Hostname</th>
-            <th>IP</th>
-            <th>Port</th>
-            <th>PID</th>
-            <th>Uptime</th>
-            <th>Load</th>
-            <th>Actions</th>
-        </tr>
-        {% for addr, master in sockets.items() %}
-        <tr>
-            <td>{{ master.stats.hostname }}</td>
-            <td>{{ addr[0] }}</td>
-            <td>{{ addr[1] }}</td>
-            <td>{{ master.stats.pid }}</td>
-            <td>{{ human_time(master.stats.uptime) }}</td>
-            <td>
-                {% for l in master.stats.load -%}
-                    {{ l|round(2) }}
-                {% endfor %}
-            </td>
-            <td>
-                <a href="{{ url_for('action', name='reload', host=addr[0], port=addr[1]) }}">Reload</a>
-                <a href="{{ url_for('action', name='warm_shutdown', host=addr[0], port=addr[1]) }}">Warm Shutdown</a>
-                <a href="{{ url_for('action', name='cold_shutdown', host=addr[0], port=addr[1]) }}">Cold Shutdown</a>
-            </td>
-        </tr>
-        {% else %}
-        {% endfor %}
-    </table>
+    <form method="POST">
+        <table>
+            <tr>
+                <th>Hostname</th>
+                <th>IP</th>
+                <th>Port</th>
+                <th>PID</th>
+                <th>Uptime</th>
+                <th>Load</th>
+                <th>Actions</th>
+            </tr>
+            {% for addr, master in sockets.items() %}
+            <tr>
+                <td>{{ master.stats.hostname }}</td>
+                <td>{{ addr[0] }}</td>
+                <td>{{ addr[1] }}</td>
+                <td>{{ master.stats.pid }}</td>
+                <td>{{ human_time(master.stats.uptime) }}</td>
+                <td>
+                    {% for l in master.stats.load -%}
+                        {{ l|round(2) }}
+                    {% endfor %}
+                </td>
+                <td>
+                    {{ action_button(addr, 'reload', 'Reload') }}
+                    {{ action_button(addr, 'warm_shutdown', 'Warm Shutdown') }}
+                    {{ action_button(addr, 'cold_shutdown', 'Cold Shutdown') }}
+                </td>
+            </tr>
+            {% else %}
+            {% endfor %}
+        </table>
+    </form>
 {% endblock %}

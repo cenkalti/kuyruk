@@ -19,11 +19,11 @@ def create_app(manager):
                 masters[addr] = struct
         return render_template('masters.html', sockets=masters)
 
-    @app.route('/action/<name>')
-    def action(name):
+    @app.route('/action', methods=['POST'])
+    def action():
         addr = str(request.args['host']), int(request.args['port'])
         master = manager.sockets[addr]
-        master['actions'].put((name, (), {}))
+        master['actions'].put((request.form['action'], (), {}))
         return redirect_back()
 
     @app.context_processor
