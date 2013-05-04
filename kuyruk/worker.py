@@ -118,9 +118,10 @@ class Worker(multiprocessing.Process):
             task_description['object_id'],
             task_description['args'],
             task_description['kwargs'])
-        task, cls = importer.import_task(module, cls, function,
-                                       self.config.IMPORT_PATH)
+        task, cls = importer.import_task(
+            module, cls, function, self.config.IMPORT_PATH)
 
+        # Fetch object and prepent to args if class task
         if cls:
             obj = cls.get(object_id)
             if not obj:
