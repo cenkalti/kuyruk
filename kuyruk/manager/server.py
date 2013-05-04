@@ -2,7 +2,7 @@ import Queue
 from pprint import pformat
 from collections import namedtuple
 from SocketServer import BaseRequestHandler, ThreadingMixIn, TCPServer
-from kuyruk.manager.messaging import send_message, receive_message
+from kuyruk.manager.messaging import message_loop
 
 Master = namedtuple('Master', 'socket uptime')
 
@@ -10,22 +10,17 @@ Master = namedtuple('Master', 'socket uptime')
 class RequestHandler(BaseRequestHandler):
 
     def handle(self):
-        while 1:
-            try:
-                stats = receive_message(self.request)
-                print self.client_address, pformat(stats)
-                self.struct['stats'] = stats
-            except EOFError:
-                break
+        message_loop(self.request, self._generate_action, self._on_stats)
 
-            self.send_action()
-
-    def send_action(self):
+    def _generate_action(self):
         try:
-            action = self.struct['actions'].get_nowait()
-            send_message(self.request, action)
+            return self.struct['actions'].get_nowait()
         except Queue.Empty:
             pass
+
+    def _on_stats(self, sock, stats):
+        print self.client_address, pformat(stats)
+        self.struct['stats'] = stats
 
     @property
     def struct(self):
@@ -33,6 +28,8 @@ class RequestHandler(BaseRequestHandler):
 
 
 class ThreadedTCPServer(ThreadingMixIn, TCPServer):
+
+    daemon_threads = True
 
     def __init__(self, server_address, RequestHandlerClass,
                  bind_and_activate=True):

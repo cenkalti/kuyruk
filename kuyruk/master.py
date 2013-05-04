@@ -5,6 +5,7 @@ import signal
 import socket
 import logging
 import itertools
+import threading
 import multiprocessing
 from time import time, sleep
 
@@ -12,7 +13,7 @@ from setproctitle import setproctitle
 
 from kuyruk.worker import Worker
 from kuyruk.helpers import start_daemon_thread
-from kuyruk.manager.messaging import send_message, receive_message
+from kuyruk.manager.messaging import message_loop
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class Master(multiprocessing.Process):
         super(Master, self).__init__()
         self.config = config
         self.workers = []
-        self.shutdown_pending = False
+        self.shutdown_pending = threading.Event()
         self.override_queues = None
 
     def run(self):
@@ -87,7 +88,7 @@ class Master(multiprocessing.Process):
             for worker in list(self.workers):
                 if worker.is_alive():
                     any_alive = True
-                elif not self.shutdown_pending:
+                elif not self.shutdown_pending.is_set():
                     self._kill_pg(worker)
                     self._spawn_new_worker(worker)
                     any_alive = True
@@ -133,7 +134,7 @@ class Master(multiprocessing.Process):
 
     def _handle_sigint(self, signum, frame):
         logger.warning("Handling SIGINT")
-        if sys.stdin.isatty() and not self.shutdown_pending:
+        if sys.stdin.isatty() and not self.shutdown_pending.is_set():
             self.warm_shutdown()
         else:
             self.cold_shutdown()
@@ -145,12 +146,12 @@ class Master(multiprocessing.Process):
 
     def warm_shutdown(self):
         logger.warning("Warm shutdown")
-        self.shutdown_pending = True
+        self.shutdown_pending.set()
         self.stop_workers()
 
     def cold_shutdown(self):
         logger.warning("Cold shutdown")
-        self.shutdown_pending = True
+        self.shutdown_pending.set()
         self.stop_workers(kill=True)
 
     def reload(self):
@@ -162,34 +163,31 @@ class Master(multiprocessing.Process):
             self._start_workers()
         self.stop_workers(workers=old_workers)
 
-    def _send_status(self):
-        while not self.shutdown_pending:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            try:
-                address = (self.config.MANAGER_HOST, self.config.MANAGER_PORT)
-                sock.connect(address)
-                sock.setblocking(0)
-                while not self.shutdown_pending:
-                    send_message(sock, {
-                        'hostname': socket.gethostname(),
-                        'uptime': self.uptime,
-                    })
-                    try:
-                        f, args, kwargs = receive_message(sock)
-                    except socket.error:
-                        pass
-                    else:
-                        print f, args, kwargs
-                        f = getattr(self, f)
-                        f(*args, **kwargs)
+    def _generate_stats(self):
+        return {
+            'hostname': socket.gethostname(),
+            'uptime': self.uptime,
+            'load': os.getloadavg(),
+        }
 
-                    sleep(1)
-            except socket.error as e:
-                logger.debug("Cannot connect to manager")
-                logger.debug("%s:%s", type(e), e)
-                sleep(1)
-            finally:
-                sock.close()
+    def _on_action(self, sock, action):
+        f, args, kwargs = action
+        print f, args, kwargs
+        f = getattr(self, f)
+        f(*args, **kwargs)
+
+    def _send_status(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            address = (self.config.MANAGER_HOST, self.config.MANAGER_PORT)
+            sock.connect(address)
+            message_loop(
+                sock,
+                self._generate_stats,
+                self._on_action,
+                stop_event=self.shutdown_pending)
+        finally:
+            sock.close()
 
     @property
     def uptime(self):
