@@ -9,7 +9,18 @@
     </style>
 </head>
 <body>
-{% block body %}
-{% endblock %}
+    <nav>
+        <a href="">Masters</a> |
+        <a href="">Workers</a> |
+        <a href="">Queues</a>
+    </nav>
+    <br>
+    {% block body %}
+    {% endblock %}
+    <br>
+    <footer>
+        <hr>
+        {{ now }} - Kuyruk Manager is running on host: {{ hostname }}
+    </footer>
 </body>
 </html>

@@ -1,5 +1,6 @@
+import socket
+from datetime import datetime
 from flask import Flask, render_template, redirect, request
-
 from kuyruk.helpers import human_time
 
 
@@ -27,7 +28,11 @@ def create_app(manager):
 
     @app.context_processor
     def inject_helpers():
-        return {'human_time': human_time}
+        return {
+            'now': str(datetime.utcnow())[:19],
+            'hostname': socket.gethostname(),
+            'human_time': human_time,
+        }
 
     return app
 
