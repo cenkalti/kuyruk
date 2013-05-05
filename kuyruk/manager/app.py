@@ -1,6 +1,6 @@
 import socket
 from datetime import datetime
-from flask import Flask, render_template, redirect, request
+from flask import Flask, render_template, redirect, request, url_for
 from kuyruk.helpers import human_time
 
 
@@ -9,7 +9,7 @@ def create_app(manager):
 
     @app.route('/')
     def index():
-        return render_template('index.html')
+        return redirect(url_for('masters'))
 
     @app.route('/masters')
     def masters():
@@ -18,6 +18,21 @@ def create_app(manager):
             if struct['stats']['type'] == 'master':
                 masters[addr] = struct
         return render_template('masters.html', sockets=masters)
+
+    @app.route('/workers')
+    def workers():
+        workers = {}
+        for addr, struct in manager.sockets.iteritems():
+            if struct['stats']['type'] == 'worker':
+                workers[addr] = struct
+        return render_template('workers.html', sockets=workers)
+
+    @app.route('/queues')
+    def queues():
+        queues = {}
+        for addr, struct in manager.sockets.iteritems():
+            pass
+        return render_template('masters.html', sockets=queues)
 
     @app.route('/action', methods=['POST'])
     def action():
