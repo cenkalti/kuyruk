@@ -16,6 +16,7 @@ class ManagerClientThread(threading.Thread):
         self.port = port
         self.generate_message = generate_message
         self.on_message = on_message
+        self.stop_event = stop_event
         self.run = retry(stop_event=stop_event)(self.run)
 
     def run(self):
@@ -26,7 +27,9 @@ class ManagerClientThread(threading.Thread):
             logger.debug("Connection to manager")
             sock.connect((self.host, self.port))
             logger.debug("Connected to manager")
-            message_loop(sock, self.generate_message, self.on_message)
+            message_loop(sock,
+                         self.generate_message, self.on_message,
+                         stop_event=self.stop_event)
         finally:
             logger.debug("Closing socket")
             sock.close()
