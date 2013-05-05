@@ -8,7 +8,7 @@
                 <th>Messages Ready</th>
                 <th>Consumers</th>
             </tr>
-            {% for queue in queues %}
+            {% for queue in queues|sort(attribute='name') %}
             <tr>
                 <td>{{ queue.name }}</td>
                 <td>{{ queue.messages_ready }}</td>

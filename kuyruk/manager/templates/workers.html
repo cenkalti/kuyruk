@@ -11,7 +11,7 @@
                 <th>Uptime</th>
                 <th>Actions</th>
             </tr>
-            {% for addr, master in sockets.items() %}
+            {% for addr, master in sockets|dictsort %}
             <tr>
                 <td>{{ master.stats.hostname }}</td>
                 <td>{{ master.stats.pid }}</td>
