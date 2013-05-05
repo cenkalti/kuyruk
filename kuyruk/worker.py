@@ -62,7 +62,8 @@ class Worker(multiprocessing.Process):
         ManagerClientThread(
             self.config.MANAGER_HOST,
             self.config.MANAGER_PORT,
-            self, self.generate_message).start()
+            self, self.generate_message,
+            self.shutdown_pending).start()
 
         # Consume messages
         with self.consumer.consume() as messages:

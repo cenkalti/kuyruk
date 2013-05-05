@@ -41,7 +41,8 @@ class Master(multiprocessing.Process):
         ManagerClientThread(
             self.config.MANAGER_HOST,
             self.config.MANAGER_PORT,
-            self, self.generate_message).start()
+            self, self.generate_message,
+            self.shutdown_pending).start()
         self._wait_for_workers()
         logger.debug('End run master')
 

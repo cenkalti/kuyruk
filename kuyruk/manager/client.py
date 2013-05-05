@@ -2,21 +2,22 @@ import socket
 import logging
 import threading
 from functools import partial
-
 from kuyruk.manager.messaging import message_loop
+from kuyruk.helpers import retry
 
 logger = logging.getLogger(__name__)
 
 
 class ManagerClientThread(threading.Thread):
 
-    def __init__(self, host, port, actor, generate_message_func):
+    def __init__(self, host, port, actor, generate_message_func, stop_event):
         super(ManagerClientThread, self).__init__()
         self.host = host
         self.port = port
         self.daemon = True
         self.on_message = partial(on_message, actor)
         self.generate_message_func = generate_message_func
+        self.run = retry(stop_event=stop_event)(self.run)
 
     def run(self):
         """Connect to manager and read/write messages from/to socket."""
