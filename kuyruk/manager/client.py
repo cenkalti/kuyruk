@@ -1,7 +1,6 @@
 import socket
 import logging
 import threading
-from functools import partial
 from kuyruk.manager.messaging import message_loop
 from kuyruk.helpers import retry
 
@@ -10,13 +9,13 @@ logger = logging.getLogger(__name__)
 
 class ManagerClientThread(threading.Thread):
 
-    def __init__(self, host, port, actor, generate_message_func, stop_event):
+    def __init__(self, host, port, generate_message, on_message, stop_event):
         super(ManagerClientThread, self).__init__()
+        self.daemon = True
         self.host = host
         self.port = port
-        self.daemon = True
-        self.on_message = partial(on_message, actor)
-        self.generate_message_func = generate_message_func
+        self.generate_message = generate_message
+        self.on_message = on_message
         self.run = retry(stop_event=stop_event)(self.run)
 
     def run(self):
@@ -24,20 +23,10 @@ class ManagerClientThread(threading.Thread):
         logger.debug("Running manager client thread")
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
+            logger.debug("Connection to manager")
             sock.connect((self.host, self.port))
             logger.debug("Connected to manager")
-            message_loop(
-                sock,
-                self.generate_message_func,
-                self.on_message)
+            message_loop(sock, self.generate_message, self.on_message)
         finally:
             logger.debug("Closing socket")
             sock.close()
-
-
-def on_message(actor, sock, action):
-    """Run the function sent by the manager."""
-    f, args, kwargs = action
-    print f, args, kwargs
-    f = getattr(actor, f)
-    f(*args, **kwargs)

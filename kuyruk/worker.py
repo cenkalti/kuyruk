@@ -4,31 +4,26 @@ import socket
 import signal
 import logging
 import traceback
-import threading
-import multiprocessing
-from time import time, sleep
-
+from time import sleep
 from setproctitle import setproctitle
-
 from kuyruk import importer
 from kuyruk.queue import Queue
+from kuyruk.process import Process
 from kuyruk.channel import LazyChannel
 from kuyruk.consumer import Consumer
 from kuyruk.helpers import start_daemon_thread
-from kuyruk.manager.client import ManagerClientThread
 
 logger = logging.getLogger(__name__)
 
 
-class Worker(multiprocessing.Process):
+class Worker(Process):
 
     def __init__(self, queue_name, config):
         """
         :param queue_name: Queue name that this worker gets the messages from
         :param config: Configuration object
         """
-        super(Worker, self).__init__()
-        self.config = config
+        super(Worker, self).__init__(config)
         self.channel = LazyChannel(
             self.config.RABBIT_HOST, self.config.RABBIT_PORT,
             self.config.RABBIT_USER, self.config.RABBIT_PASSWORD)
@@ -36,7 +31,6 @@ class Worker(multiprocessing.Process):
         is_local = queue_name.startswith('@')
         self.queue = Queue(queue_name, self.channel, local=is_local)
         self.consumer = Consumer(self.queue)
-        self.shutdown_pending = threading.Event()
 
     def run(self):
         """Run worker until stop flag is set.
@@ -45,10 +39,8 @@ class Worker(multiprocessing.Process):
         it will be invoked when worker.start() is called.
 
         """
-        logger.debug('Process id: %s', os.getpid())
-        logger.debug('Process group id: %s', os.getpgrp())
+        super(Worker, self).run()
         setproctitle("kuyruk: worker on %s" % self.queue_name)
-        self.register_signals()
         self.queue.declare()
         self.channel.basic_qos(prefetch_count=1)
         self.channel.tx_select()
@@ -58,12 +50,7 @@ class Worker(multiprocessing.Process):
         start_daemon_thread(self.watch_load)
         if self.config.MAX_RUN_TIME > 0:
             start_daemon_thread(self.shutdown_timer)
-        self.started = time()
-        ManagerClientThread(
-            self.config.MANAGER_HOST,
-            self.config.MANAGER_PORT,
-            self, self.generate_message,
-            self.shutdown_pending).start()
+        self.maybe_start_manager_thread()
 
         # Consume messages
         with self.consumer.consume() as messages:
@@ -180,12 +167,12 @@ class Worker(multiprocessing.Process):
 
     def register_signals(self):
         # SIGINT is ignored because when pressed Ctrl-C
-        # SIGINT sent to both master and workers while.
+        # it is sent to both master and workers.
         signal.signal(signal.SIGINT, signal.SIG_IGN)
-        signal.signal(signal.SIGTERM, self.sigterm_handler)
+        signal.signal(signal.SIGTERM, self.handle_sigterm)
         signal.signal(signal.SIGUSR1, print_stack)  # for debugging
 
-    def sigterm_handler(self, signum, frame):
+    def handle_sigterm(self, signum, frame):
         logger.warning("Catched SIGTERM")
         self.warm_shutdown()
 
@@ -195,7 +182,7 @@ class Worker(multiprocessing.Process):
         self.shutdown_pending.set()
         self.consumer.stop()
 
-    def generate_message(self):
+    def get_stats(self):
         """Generate stats to be sent to manager."""
         method = self.queue.declare().method
         return {
@@ -210,10 +197,6 @@ class Worker(multiprocessing.Process):
                 'consumers': method.consumer_count,
             }
         }
-
-    @property
-    def uptime(self):
-        return int(time() - self.started)
 
 
 def print_stack(sig, frame):

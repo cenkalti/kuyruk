@@ -20,6 +20,7 @@ class Config(object):
     WORKERS = {}
     MANAGER_HOST = 'localhost'  # TODO Must be None
     MANAGER_PORT = 16500
+    MANAGER_HTTP_PORT = 16501
 
     def __init__(self, path=None):
         """Initialize Config from a module.

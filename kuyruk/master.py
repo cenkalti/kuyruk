@@ -5,50 +5,38 @@ import signal
 import socket
 import logging
 import itertools
-import threading
 import multiprocessing
 from time import time, sleep
-
 from setproctitle import setproctitle
-
 from kuyruk.worker import Worker
-from kuyruk.manager.client import ManagerClientThread
+from kuyruk.process import Process
 
 logger = logging.getLogger(__name__)
 
 
-class Master(multiprocessing.Process):
+class Master(Process):
     """
     Master worker implementation that coordinates queue workers.
 
     """
     def __init__(self, config):
-        super(Master, self).__init__()
-        self.config = config
+        super(Master, self).__init__(config)
+        self.workers = []
+        self.override_queues = None
         if self.config.MAX_LOAD is None:
             self.config.MAX_LOAD = multiprocessing.cpu_count()
 
-        self.workers = []
-        self.shutdown_pending = threading.Event()
-        self.override_queues = None
-
     def run(self):
-        self._register_signals()
+        super(Master, self).run()
         setproctitle('kuyruk: master')
-        logger.debug('PID: %s PGID: %s', os.getpid(), os.getpgrp())
-        self.started = time()
-        self._start_workers()
-        ManagerClientThread(
-            self.config.MANAGER_HOST,
-            self.config.MANAGER_PORT,
-            self, self.generate_message,
-            self.shutdown_pending).start()
-        self._wait_for_workers()
+        self.start_workers()
+        self.maybe_start_manager_thread()
+        self.wait_for_workers()
         logger.debug('End run master')
 
-    def _start_workers(self):
+    def start_workers(self):
         """Start a new worker for each queue"""
-        queues = self._get_queues()
+        queues = self.get_queues()
         queues = parse_queues_str(queues)
         logger.info('Starting to work on queues: %s', queues)
         for queue in queues:
@@ -56,7 +44,7 @@ class Master(multiprocessing.Process):
             worker.start()
             self.workers.append(worker)
 
-    def _get_queues(self):
+    def get_queues(self):
         """Return queues string."""
         if self.override_queues:
             return self.override_queues
@@ -77,7 +65,7 @@ class Master(multiprocessing.Process):
         for worker in workers:
             os.kill(worker.pid, signal.SIGKILL if kill else signal.SIGTERM)
 
-    def _wait_for_workers(self):
+    def wait_for_workers(self):
         """Loop until any of the self.workers is alive.
         If a worker is dead and Kuyruk is running state, spawn a new worker.
 
@@ -90,8 +78,8 @@ class Master(multiprocessing.Process):
                 if worker.is_alive():
                     any_alive = True
                 elif not self.shutdown_pending.is_set():
-                    self._kill_pg(worker)
-                    self._spawn_new_worker(worker)
+                    worker.kill_pg()
+                    self.spawn_new_worker(worker)
                     any_alive = True
                 else:
                     self.workers.remove(worker)
@@ -101,7 +89,7 @@ class Master(multiprocessing.Process):
                              "%i seconds passed" % (time() - start))
                 sleep(1)
 
-    def _spawn_new_worker(self, worker):
+    def spawn_new_worker(self, worker):
         """Spawn a new process with parameters same as the old worker."""
         logger.debug("Spawning new worker")
         new_worker = Worker(worker.queue_name, self.config)
@@ -110,30 +98,21 @@ class Master(multiprocessing.Process):
         self.workers.remove(worker)
         logger.debug(self.workers)
 
-    def _kill_pg(self, worker):
-        try:
-            # Worker could spawn processes in task,
-            # kill them all.
-            os.killpg(worker.pid, signal.SIGKILL)
-        except OSError as e:
-            if e.errno != 3:  # No such process
-                raise
+    def register_signals(self):
+        signal.signal(signal.SIGINT, self.handle_sigint)
+        signal.signal(signal.SIGTERM, self.handle_sigterm)
+        signal.signal(signal.SIGHUP, self.handle_sighup)
+        signal.signal(signal.SIGQUIT, self.handle_sigquit)
 
-    def _register_signals(self):
-        signal.signal(signal.SIGINT, self._handle_sigint)
-        signal.signal(signal.SIGTERM, self._handle_sigterm)
-        signal.signal(signal.SIGHUP, self._handle_sighup)
-        signal.signal(signal.SIGQUIT, self._handle_sigquit)
-
-    def _handle_sigterm(self, signum, frame):
+    def handle_sigterm(self, signum, frame):
         logger.warning("Handling SIGTERM")
         self.warm_shutdown()
 
-    def _handle_sigquit(self, signum, frame):
+    def handle_sigquit(self, signum, frame):
         logger.warning("Handling SIGQUIT")
         self.cold_shutdown()
 
-    def _handle_sigint(self, signum, frame):
+    def handle_sigint(self, signum, frame):
         logger.warning("Handling SIGINT")
         if sys.stdin.isatty() and not self.shutdown_pending.is_set():
             self.warm_shutdown()
@@ -141,7 +120,7 @@ class Master(multiprocessing.Process):
             self.cold_shutdown()
         logger.debug("Handled SIGINT")
 
-    def _handle_sighup(self, signum, frame):
+    def handle_sighup(self, signum, frame):
         logger.warning("Handling SIGHUP")
         self.reload()
 
@@ -161,10 +140,10 @@ class Master(multiprocessing.Process):
         if hasattr(self.config, 'path'):
             self.config.reload()
             self.workers = []
-            self._start_workers()
+            self.start_workers()
         self.stop_workers(workers=old_workers)
 
-    def generate_message(self):
+    def get_stats(self):
         """Generate stats to be sent to manager."""
         return {
             'type': 'master',
@@ -173,10 +152,6 @@ class Master(multiprocessing.Process):
             'pid': os.getpid(),
             'load': os.getloadavg(),
         }
-
-    @property
-    def uptime(self):
-        return int(time() - self.started)
 
 
 def parse_queues_str(s):
@@ -193,7 +168,10 @@ def parse_queues_str(s):
 def parse_count(q):
     parts = q.split('*', 1)
     if len(parts) > 1:
-        return int(parts[0]) * [parts[1]]
+        try:
+            return int(parts[0]) * [parts[1]]
+        except ValueError:
+            return int(parts[1]) * [parts[0]]
     return [parts[0]]
 
 
