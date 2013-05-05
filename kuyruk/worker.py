@@ -6,7 +6,7 @@ import logging
 import traceback
 import threading
 import multiprocessing
-from time import sleep
+from time import time, sleep
 
 from setproctitle import setproctitle
 
@@ -15,12 +15,12 @@ from kuyruk.queue import Queue
 from kuyruk.channel import LazyChannel
 from kuyruk.consumer import Consumer
 from kuyruk.helpers import start_daemon_thread
-from kuyruk.manager.client import ManagerClientMixin
+from kuyruk.manager.client import ManagerClientThread
 
 logger = logging.getLogger(__name__)
 
 
-class Worker(multiprocessing.Process, ManagerClientMixin):
+class Worker(multiprocessing.Process):
 
     def __init__(self, queue_name, config):
         """
@@ -58,10 +58,11 @@ class Worker(multiprocessing.Process, ManagerClientMixin):
         start_daemon_thread(self.watch_load)
         if self.config.MAX_RUN_TIME > 0:
             start_daemon_thread(self.shutdown_timer)
-        self.start_manager_client(
+        self.started = time()
+        ManagerClientThread(
             self.config.MANAGER_HOST,
             self.config.MANAGER_PORT,
-            self.shutdown_pending)
+            self, self.generate_message).start()
 
         # Consume messages
         with self.consumer.consume() as messages:
@@ -155,7 +156,7 @@ class Worker(multiprocessing.Process, ManagerClientMixin):
         while not self.shutdown_pending.is_set():
             if not self.is_master_alive():
                 logger.critical('Master is dead')
-                self.shutdown()
+                self.warm_shutdown()
             sleep(1)
 
     def watch_load(self):
@@ -174,7 +175,7 @@ class Worker(multiprocessing.Process, ManagerClientMixin):
         """
         sleep(self.config.MAX_RUN_TIME)
         logger.warning('Run time reached zero, cancelling consume.')
-        self.shutdown()
+        self.warm_shutdown()
 
     def register_signals(self):
         # SIGINT is ignored because when pressed Ctrl-C
@@ -185,9 +186,9 @@ class Worker(multiprocessing.Process, ManagerClientMixin):
 
     def sigterm_handler(self, signum, frame):
         logger.warning("Catched SIGTERM")
-        self.shutdown()
+        self.warm_shutdown()
 
-    def shutdown(self):
+    def warm_shutdown(self):
         """Shutdown gracefully."""
         logger.warning("Shutting down worker gracefully")
         self.shutdown_pending.set()
@@ -195,12 +196,23 @@ class Worker(multiprocessing.Process, ManagerClientMixin):
 
     def generate_message(self):
         """Generate stats to be sent to manager."""
+        method = self.queue.declare().method
         return {
             'type': 'worker',
             'hostname': socket.gethostname(),
-            # 'uptime': self.uptime,
-            # 'load': os.getloadavg(),
+            'uptime': self.uptime,
+            'pid': os.getpid(),
+            'ppid': os.getppid(),
+            'queue': {
+                'name': method.queue,
+                'messages_ready': method.message_count,
+                'consumers': method.consumer_count,
+            }
         }
+
+    @property
+    def uptime(self):
+        return int(time() - self.started)
 
 
 def print_stack(sig, frame):

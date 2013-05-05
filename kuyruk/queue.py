@@ -11,6 +11,7 @@ import pika
 import pika.exceptions
 
 from kuyruk.message import Message
+from kuyruk.channel import LazyChannel
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,10 @@ def synchronized(f):
 
 class Queue(object):
 
-    def __init__(self, name, channel, local=False):
+    def __init__(self, name, channel=None, local=False):
+        if channel is None:
+            channel = LazyChannel()
+
         self.name = name
         self.channel = channel
         self.local = local

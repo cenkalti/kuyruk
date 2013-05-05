@@ -12,12 +12,12 @@ from time import time, sleep
 from setproctitle import setproctitle
 
 from kuyruk.worker import Worker
-from kuyruk.manager.client import ManagerClientMixin
+from kuyruk.manager.client import ManagerClientThread
 
 logger = logging.getLogger(__name__)
 
 
-class Master(multiprocessing.Process, ManagerClientMixin):
+class Master(multiprocessing.Process):
     """
     Master worker implementation that coordinates queue workers.
 
@@ -33,16 +33,15 @@ class Master(multiprocessing.Process, ManagerClientMixin):
         self.override_queues = None
 
     def run(self):
-        logger.debug('Process id: %s', os.getpid())
-        logger.debug('Process group id: %s', os.getpgrp())
-        setproctitle('kuyruk: master')
         self._register_signals()
+        setproctitle('kuyruk: master')
+        logger.debug('PID: %s PGID: %s', os.getpid(), os.getpgrp())
         self.started = time()
-        self.start_manager_client(
+        self._start_workers()
+        ManagerClientThread(
             self.config.MANAGER_HOST,
             self.config.MANAGER_PORT,
-            self.shutdown_pending)
-        self._start_workers()
+            self, self.generate_message).start()
         self._wait_for_workers()
         logger.debug('End run master')
 

@@ -22,6 +22,7 @@ def message_loop(sock, generate_message, callback,
     :return: None
 
     """
+    logger.debug("Running message loop...")
     if stop_event is None:
         stop_event = threading.Event()
 

@@ -36,7 +36,10 @@ class ManagerServer(ThreadingTCPServer):
 class RequestHandler(BaseRequestHandler):
 
     def handle(self):
-        message_loop(self.request, self._generate_action, self._on_stats)
+        try:
+            message_loop(self.request, self._generate_action, self._on_stats)
+        except EOFError:
+            print 'Client disconnected'
 
     def _generate_action(self):
         try:

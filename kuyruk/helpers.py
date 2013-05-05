@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def start_daemon_thread(target, args=()):
-    target = _retry(target)
+    # target = _retry(target)
     t = threading.Thread(target=target, args=args)
     t.daemon = True
     t.start()

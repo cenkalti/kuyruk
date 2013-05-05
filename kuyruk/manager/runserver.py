@@ -1,15 +1,17 @@
 #!/putio/env/bin/python
+import logging
 import threading
-
 from werkzeug.serving import run_simple
-
 from kuyruk.manager.app import create_app
 from kuyruk.manager.server import ManagerServer
 
 HOST, PORT = "localhost", 16500
 
+logger = logging.getLogger(__name__)
+
 
 def main():
+    logging.basicConfig(level=logging.DEBUG)
     manager = ManagerServer(HOST, PORT)
     manager_thread = threading.Thread(target=manager.serve_forever)
     manager_thread.daemon = True

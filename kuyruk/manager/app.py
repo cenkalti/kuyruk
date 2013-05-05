@@ -31,8 +31,10 @@ def create_app(manager):
     def queues():
         queues = {}
         for addr, struct in manager.sockets.iteritems():
-            pass
-        return render_template('masters.html', sockets=queues)
+            if struct['stats']['type'] == 'worker':
+                queue = struct['stats']['queue']
+                queues[queue['name']] = queue
+        return render_template('queues.html', queues=queues.values())
 
     @app.route('/action', methods=['POST'])
     def action():
