@@ -34,8 +34,7 @@ class Process(multiprocessing.Process):
             self.config.MANAGER_HOST,
             self.config.MANAGER_PORT,
             self.get_stats,
-            self.on_action,
-            self.shutdown_pending)
+            self.on_action)
         self.manager_thread.start()
 
     def get_stats(self):

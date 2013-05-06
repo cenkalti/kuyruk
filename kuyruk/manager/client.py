@@ -9,14 +9,13 @@ logger = logging.getLogger(__name__)
 
 class ManagerClientThread(threading.Thread):
 
-    def __init__(self, host, port, generate_message, on_message, stop_event):
+    def __init__(self, host, port, generate_message, on_message):
         super(ManagerClientThread, self).__init__()
         self.daemon = True
         self.host = host
         self.port = port
         self.generate_message = generate_message
         self.on_message = on_message
-        self.stop_event = stop_event
         self.run = retry()(self.run)
 
     def run(self):
@@ -27,9 +26,7 @@ class ManagerClientThread(threading.Thread):
             logger.debug("Connection to manager")
             sock.connect((self.host, self.port))
             logger.debug("Connected to manager")
-            message_loop(sock,
-                         self.generate_message, self.on_message,
-                         stop_event=self.stop_event)
+            message_loop(sock, self.generate_message, self.on_message)
         finally:
             logger.debug("Closing socket")
             sock.close()
