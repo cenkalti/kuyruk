@@ -46,7 +46,7 @@ class KuyrukProcess(multiprocessing.Process):
     def on_action(self, sock, action):
         """Run the function sent by the manager."""
         f, args, kwargs = action
-        logger.info(f, args, kwargs)
+        logger.info("action: f=%s, args=%s, kwargs=%s", f, args, kwargs)
         f = getattr(self, f)
         f(*args, **kwargs)
 
