@@ -19,6 +19,7 @@ class ManagerServer(ThreadingTCPServer):
         client_sock, client_addr = ThreadingTCPServer.get_request(self)
         self.sockets[client_addr] = {
             'socket': client_sock,
+            'stats': {},
             'actions': Queue.Queue(),
         }
         print 'self.sockets', pformat(self.sockets)
