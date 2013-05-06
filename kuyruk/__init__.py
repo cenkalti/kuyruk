@@ -5,9 +5,7 @@ from kuyruk.kuyruk import Kuyruk
 from kuyruk.task import Task
 from kuyruk.worker import Worker
 from kuyruk.queue import Queue
-
-__version__ = '0.9.1'
-
+from kuyruk.version import __version__
 
 try:
     # not available in python 2.6

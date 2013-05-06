@@ -6,6 +6,7 @@
             <tr>
                 <th>Hostname</th>
                 <th>PID</th>
+                <th>Version</th>
                 <th>Uptime</th>
                 <th>Load</th>
                 <th>Actions</th>
@@ -14,6 +15,7 @@
             <tr>
                 <td>{{ master.stats.hostname }}</td>
                 <td>{{ master.stats.pid }}</td>
+                <td>{{ master.stats.version }}</td>
                 <td>{{ human_time(master.stats.uptime) }}</td>
                 <td>
                     {% for l in master.stats.load -%}

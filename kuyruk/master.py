@@ -10,6 +10,7 @@ from time import time, sleep
 from setproctitle import setproctitle
 from kuyruk.worker import Worker
 from kuyruk.process import Process
+from kuyruk.version import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +151,7 @@ class Master(Process):
             'hostname': socket.gethostname(),
             'uptime': self.uptime,
             'pid': os.getpid(),
+            'version': __version__,
             'load': os.getloadavg(),
         }
 
