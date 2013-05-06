@@ -15,7 +15,7 @@ def create_app(manager):
     def masters():
         masters = {}
         for addr, struct in manager.sockets.iteritems():
-            if struct['stats']['type'] == 'master':
+            if struct['stats'].get('type', '') == 'master':
                 masters[addr] = struct
         return render_template('masters.html', sockets=masters)
 
@@ -23,7 +23,7 @@ def create_app(manager):
     def workers():
         workers = {}
         for addr, struct in manager.sockets.iteritems():
-            if struct['stats']['type'] == 'worker':
+            if struct['stats'].get('type', '') == 'worker':
                 workers[addr] = struct
         return render_template('workers.html', sockets=workers)
 
@@ -31,7 +31,7 @@ def create_app(manager):
     def queues():
         queues = {}
         for addr, struct in manager.sockets.iteritems():
-            if struct['stats']['type'] == 'worker':
+            if struct['stats'].get('type', '') == 'worker':
                 queue = struct['stats']['queue']
                 queues[queue['name']] = queue
         return render_template('queues.html', queues=queues.values())
