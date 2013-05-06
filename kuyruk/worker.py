@@ -31,6 +31,7 @@ class Worker(KuyrukProcess):
         is_local = queue_name.startswith('@')
         self.queue = Queue(queue_name, self.channel, local=is_local)
         self.consumer = Consumer(self.queue)
+        self.working = False
 
     def run(self):
         """Run worker until stop flag is set.
@@ -55,8 +56,10 @@ class Worker(KuyrukProcess):
         # Consume messages
         with self.consumer.consume() as messages:
             for message in messages:
+                self.working = True
                 self.process_task(message)
                 self.channel.tx_commit()
+                self.working = False
 
         logger.debug("End run worker")
 
@@ -191,6 +194,8 @@ class Worker(KuyrukProcess):
             'uptime': self.uptime,
             'pid': os.getpid(),
             'ppid': os.getppid(),
+            'working': self.working,
+            'consuming': self.consumer.consuming,
             'queue': {
                 'name': method.queue,
                 'messages_ready': method.message_count,

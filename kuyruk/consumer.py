@@ -18,6 +18,7 @@ class Consumer(object):
         self._generator_messages = Queue()
         self._stop_processing_data_events = threading.Event()
         self._message_iterator = None
+        self.consuming = False
 
     @contextmanager
     def consume(self):
@@ -56,6 +57,7 @@ class Consumer(object):
         logger.debug('Start consuming')
         assert self._generator is None
         self._generator = self.queue.basic_consume(self._generator_callback)
+        self.consuming = True
 
     def _generator_callback(self, unused, method, properties, body):
         """Called when a message is received from RabbitMQ and appended to the
@@ -83,6 +85,7 @@ class Consumer(object):
             self.queue.nack(method.delivery_tag, multiple=True, requeue=True)
 
         self._generator = None
+        self.consuming = False
         return count_messages
 
     def _process_data_events(self):
