@@ -5,18 +5,22 @@
         <table>
             <tr>
                 <th>Hostname</th>
+                <th>IP</th>
+                <th>Port</th>
+                <th>Uptime</th>
                 <th>PID</th>
                 <th>Version</th>
-                <th>Uptime</th>
                 <th>Load</th>
                 <th>Actions</th>
             </tr>
             {% for addr, master in sockets|dictsort %}
             <tr>
                 <td>{{ master.stats.hostname }}</td>
+                <td>{{ addr[0] }}</td>
+                <td>{{ addr[1] }}</td>
+                <td>{{ human_time(master.stats.uptime) }}</td>
                 <td>{{ master.stats.pid }}</td>
                 <td>{{ master.stats.version }}</td>
-                <td>{{ human_time(master.stats.uptime) }}</td>
                 <td>
                     {% for l in master.stats.load -%}
                         {{ l|round(2) }}
