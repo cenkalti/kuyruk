@@ -32,8 +32,8 @@ def get_sockets(type_):
 @app.route('/queues')
 def queues():
     queues = {}
-    for addr, struct in get_sockets('worker').iteritems():
-        queue = struct['stats']['queue']
+    for addr, client in get_sockets('worker').iteritems():
+        queue = client.get_stat('queue')
         queues[queue['name']] = queue
     return render_template('queues.html', queues=queues.values())
 
