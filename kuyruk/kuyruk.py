@@ -23,10 +23,7 @@ class Kuyruk(EventMixin):
 
         """
         super(Kuyruk, self).__init__()
-        if config:
-            self.config = config
-        else:
-            self.config = Config()
+        self.config = Config(config)
 
     def task(self, queue='kuyruk', eager=False, retry=0):
         """Wrap functions with this decorator to convert them to background
