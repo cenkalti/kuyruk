@@ -41,8 +41,8 @@ def queues():
 @app.route('/action', methods=['POST'])
 def action():
     addr = str(request.args['host']), int(request.args['port'])
-    master = app.manager.sockets[addr]
-    master['actions'].put((request.form['action'], (), {}))
+    master = app.manager.clients[addr]
+    master.actions.put((request.form['action'], (), {}))
     return redirect_back()
 
 
