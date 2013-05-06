@@ -21,10 +21,21 @@ def run(host, manager_port, http_port):
 
 def main():
     parser = OptionParser()
-    parser.parse_args()
+    # Options below overrides config
+    parser.add_option('--host')
+    parser.add_option('--port', type='int')
+    parser.add_option('--http-port', type='int')
+    options, args = parser.parse_args()
     config = parser.config
+    if options.host:
+        config.MANAGER_HOST = options.host
+    if options.port:
+        config.MANAGER_PORT = options.port
+    if options.http_port:
+        config.MANAGER_HTTP_PORT = options.http_port
+
     if config.MANAGER_HOST is None:
-        config.MANAGER_HOST = 'localhost'
+        config.MANAGER_HOST = '127.0.0.1'
 
     run(config.MANAGER_HOST, config.MANAGER_PORT, config.MANAGER_HTTP_PORT)
 
