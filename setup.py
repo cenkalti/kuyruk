@@ -1,7 +1,7 @@
 # coding=utf-8
 import os
 import re
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def read(*fname):
@@ -35,7 +35,7 @@ setup(
     author_email='cenkalti@gmail.com',
     keywords='rabbitmq distributed task queue',
     url='http://github.com/cenkalti/kuyruk',
-    packages=['kuyruk'],
+    packages=find_packages(),
     install_requires=install_requires,
     description='A distributed task runner',
     long_description=read('README.rst'),

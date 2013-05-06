@@ -1,1 +1,3 @@
 include README.rst LICENSE
+recursive-include kuyruk/manager/templates *
+recursive-include kuyruk/manager/static *
