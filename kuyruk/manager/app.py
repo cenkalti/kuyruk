@@ -13,29 +13,28 @@ def index():
 
 @app.route('/masters')
 def masters():
-    masters = {}
-    for addr, struct in app.manager.sockets.iteritems():
-        if struct['stats'].get('type', '') == 'master':
-            masters[addr] = struct
-    return render_template('masters.html', sockets=masters)
+    return render_template('masters.html', sockets=get_sockets('master'))
 
 
 @app.route('/workers')
 def workers():
-    workers = {}
-    for addr, struct in app.manager.sockets.iteritems():
-        if struct['stats'].get('type', '') == 'worker':
-            workers[addr] = struct
-    return render_template('workers.html', sockets=workers)
+    return render_template('workers.html', sockets=get_sockets('worker'))
+
+
+def get_sockets(type_):
+    def gen():
+        for addr, struct in app.manager.sockets.iteritems():
+            if struct['stats'].get('type', '') == type_:
+                yield addr, struct
+    return dict(gen())
 
 
 @app.route('/queues')
 def queues():
     queues = {}
-    for addr, struct in app.manager.sockets.iteritems():
-        if struct['stats'].get('type', '') == 'worker':
-            queue = struct['stats']['queue']
-            queues[queue['name']] = queue
+    for addr, struct in get_sockets('worker').iteritems():
+        queue = struct['stats']['queue']
+        queues[queue['name']] = queue
     return render_template('queues.html', queues=queues.values())
 
 
