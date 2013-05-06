@@ -2,7 +2,7 @@
 import logging
 from werkzeug.serving import run_simple
 from kuyruk.helpers import start_daemon_thread
-from kuyruk.manager.app import create_app
+from kuyruk.manager.app import app
 from kuyruk.optionparser import OptionParser
 from kuyruk.manager.server import ManagerServer
 
@@ -14,7 +14,7 @@ def run(host, manager_port, http_port):
     manager_thread = start_daemon_thread(manager.serve_forever)
     logger.info("Manager running in thread: %s", manager_thread.name)
 
-    app = create_app(manager)
+    app.manager = manager
     app.debug = True
     run_simple(host, http_port, app, threaded=True, use_debugger=True)
 
