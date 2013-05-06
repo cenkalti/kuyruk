@@ -8,7 +8,7 @@ from time import sleep
 from setproctitle import setproctitle
 from kuyruk import importer
 from kuyruk.queue import Queue
-from kuyruk.process import Process
+from kuyruk.process import KuyrukProcess
 from kuyruk.channel import LazyChannel
 from kuyruk.consumer import Consumer
 from kuyruk.helpers import start_daemon_thread
@@ -16,7 +16,7 @@ from kuyruk.helpers import start_daemon_thread
 logger = logging.getLogger(__name__)
 
 
-class Worker(Process):
+class Worker(KuyrukProcess):
 
     def __init__(self, queue_name, config):
         """

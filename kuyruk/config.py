@@ -22,28 +22,24 @@ class Config(object):
     MANAGER_PORT = 16501
     MANAGER_HTTP_PORT = 16500
 
-    def __init__(self, module=None):
-        """Initialize Config from a module.
+    def from_object(self, obj):
+        """Populate Config from an object.
         Configuration options must be prefixed with "KUYRUK_".
-        They are stripped when the Config object is initialized.
+        They are stripped when the Config object is populated.
 
         """
-        if module is None:
-            module = imp.new_module('kuyruk_config')
+        for key in dir(obj):
+            if key.startswith('KUYRUK_'):
+                value = getattr(obj, key)
+                setattr(self, key[7:], value)
+        logger.info("Config is loaded from %r", obj)
 
-        self.module = module
-        self._load_module()
-
-    @classmethod
-    def from_path(cls, path=None):
-        if path:
-            module = imp.load_source('kuyruk_config', path)
-            return cls(module)
-        else:
-            return cls()
-
-    def _load_module(self):
-        for k, v in self.module.__dict__.iteritems():
-            if k.startswith('KUYRUK_'):
-                setattr(self, k[7:], v)
-        logger.info("Config is loaded from %r", self.module)
+    def from_pyfile(self, filename):
+        d = imp.new_module('kuyruk_config')
+        d.__file__ = filename
+        try:
+            execfile(filename, d.__dict__)
+        except IOError as e:
+            e.strerror = 'Unable to load configuration file (%s)' % e.strerror
+            raise
+        self.from_object(d)

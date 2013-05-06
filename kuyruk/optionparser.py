@@ -40,5 +40,8 @@ class OptionParser(optparse.OptionParser):
             level = getattr(logging, options.logging_level)
             logging.basicConfig(level=level)
 
-        self.config = Config.from_path(options.config)
+        self.config = Config()
+        if options.config:
+            self.config.from_pyfile(options.config)
+
         return options, args

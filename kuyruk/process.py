@@ -5,17 +5,17 @@ import logging
 import threading
 import multiprocessing
 from time import time
-from kuyruk.config import Config
+from .config import Config
 from .manager.client import ManagerClientThread
 
 logger = logging.getLogger(__name__)
 
 
-class Process(multiprocessing.Process):
+class KuyrukProcess(multiprocessing.Process):
 
     def __init__(self, config):
         assert isinstance(config, Config)
-        super(Process, self).__init__()
+        super(KuyrukProcess, self).__init__()
         self.config = config
         self.manager_thread = None
         self.shutdown_pending = threading.Event()

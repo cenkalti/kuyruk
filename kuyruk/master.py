@@ -9,13 +9,13 @@ import multiprocessing
 from time import time, sleep
 from setproctitle import setproctitle
 from kuyruk.worker import Worker
-from kuyruk.process import Process
+from kuyruk.process import KuyrukProcess
 from kuyruk.version import __version__
 
 logger = logging.getLogger(__name__)
 
 
-class Master(Process):
+class Master(KuyrukProcess):
     """
     Master worker implementation that coordinates queue workers.
 

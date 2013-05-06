@@ -40,7 +40,8 @@ def main():
     elif options.no_save_failed_tasks:
         config.SAVE_FAILED_TASKS = False
 
-    kuyruk = Kuyruk(config)
+    kuyruk = Kuyruk()
+    kuyruk.config = config
     kuyruk.run(options.queues)
 
 if __name__ == '__main__':
