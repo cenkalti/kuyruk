@@ -23,9 +23,9 @@ def workers():
 
 def get_sockets(type_):
     def gen():
-        for addr, struct in app.manager.sockets.iteritems():
-            if struct['stats'].get('type', '') == type_:
-                yield addr, struct
+        for addr, client in app.manager.clients.iteritems():
+            if client.get_stat('type') == type_:
+                yield addr, client
     return dict(gen())
 
 

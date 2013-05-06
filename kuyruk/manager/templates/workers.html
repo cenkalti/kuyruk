@@ -13,7 +13,7 @@
                 <th>Queue</th>
                 <th>Actions</th>
             </tr>
-            {% for addr, master in sockets|dictsort %}
+            {% for addr, master in sockets|dictsort(by='value') %}
             <tr>
                 <td>{{ master.stats.hostname }}</td>
                 <td>{{ addr[0] }}</td>

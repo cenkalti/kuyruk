@@ -2,6 +2,7 @@ import Queue
 from pprint import pformat
 from collections import namedtuple
 from SocketServer import ThreadingTCPServer, BaseRequestHandler
+from kuyruk.total_ordering import total_ordering
 from kuyruk.manager.messaging import message_loop
 
 Master = namedtuple('Master', 'socket uptime')
@@ -12,17 +13,13 @@ class ManagerServer(ThreadingTCPServer):
     daemon_threads = True
 
     def __init__(self, host, port):
-        self.sockets = {}
+        self.clients = {}
         ThreadingTCPServer.__init__(self, (host, port), RequestHandler)
 
     def get_request(self):
         client_sock, client_addr = ThreadingTCPServer.get_request(self)
-        self.sockets[client_addr] = {
-            'socket': client_sock,
-            'stats': {},
-            'actions': Queue.Queue(),
-        }
-        print 'self.sockets', pformat(self.sockets)
+        self.clients[client_addr] = ClientStruct(client_sock)
+        print 'self.clients', pformat(self.clients)
         return client_sock, client_addr
 
     def process_request_thread(self, request, client_address):
@@ -30,8 +27,8 @@ class ManagerServer(ThreadingTCPServer):
         self._remove_socket(client_address)
 
     def _remove_socket(self, client_address):
-        del self.sockets[client_address]
-        print 'self.sockets', pformat(self.sockets)
+        del self.clients[client_address]
+        print 'self.clients', pformat(self.clients)
 
 
 class RequestHandler(BaseRequestHandler):
@@ -44,14 +41,35 @@ class RequestHandler(BaseRequestHandler):
 
     def _generate_action(self):
         try:
-            return self.struct['actions'].get_nowait()
+            return self.struct.actions.get_nowait()
         except Queue.Empty:
             pass
 
     def _on_stats(self, sock, stats):
         print self.client_address, pformat(stats)
-        self.struct['stats'] = stats
+        self.struct.stats = stats
 
     @property
     def struct(self):
-        return self.server.sockets[self.client_address]
+        return self.server.clients[self.client_address]
+
+
+@total_ordering
+class ClientStruct(dict):
+
+    def __init__(self, socket):
+        super(ClientStruct, self).__init__()
+        self.socket = socket
+        self.stats = {}
+        self.actions = Queue.Queue()
+
+    def __lt__(self, other):
+        return self.sort_key < other.sort_key
+
+    @property
+    def sort_key(self):
+        order = ('hostname', 'queue', 'uptime', 'pid')
+        return tuple(self.get_stat(attr) for attr in order)
+
+    def get_stat(self, name):
+        return self.stats.get(name, None)
