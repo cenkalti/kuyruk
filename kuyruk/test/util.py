@@ -1,5 +1,6 @@
 import os
 import sys
+import errno
 import signal
 import logging
 import subprocess
@@ -66,7 +67,7 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
             master.kill()
             master.wait()
         except OSError as e:
-            if e.errno != 3:  # No such process
+            if e.errno != errno.ESRCH:  # No such process
                 raise
 
         logger.debug('Master return code: %s', master.returncode)
@@ -76,7 +77,7 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
             logger.info('Killing process group: %s', master.pid)
             os.killpg(master.pid, signal.SIGTERM)
         except OSError as e:
-            if e.errno != 3:  # No such process
+            if e.errno != errno.ESRCH:  # No such process
                 raise
 
         wait_while(lambda: get_pids('kuyruk:'))

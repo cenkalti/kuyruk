@@ -1,4 +1,5 @@
 import os
+import errno
 import signal
 import logging
 import threading
@@ -55,5 +56,5 @@ class Process(multiprocessing.Process):
         try:
             os.killpg(self.pid, signal.SIGKILL)
         except OSError as e:
-            if e.errno != 3:  # No such process
+            if e.errno != errno.ESRCH:  # No such process
                 raise

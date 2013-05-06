@@ -1,4 +1,5 @@
 import json
+import errno
 import struct
 import socket
 import logging
@@ -37,7 +38,7 @@ def message_loop(sock, generate_message, callback,
             message = receive_message(sock)
             logger.debug('Message received')
         except socket.error as e:
-            if e.errno != 35:
+            if e.errno != errno.EAGAIN:  # Resource temporarily unavailable
                 raise
         else:
             callback(sock, message)
