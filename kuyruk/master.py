@@ -145,6 +145,7 @@ class Master(KuyrukProcess):
             'uptime': self.uptime,
             'pid': os.getpid(),
             'version': __version__,
+            'workers': len(self.workers),
             'load': os.getloadavg(),
         }
 

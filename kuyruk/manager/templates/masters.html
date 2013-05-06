@@ -10,6 +10,7 @@
                 <th>Uptime</th>
                 <th>PID</th>
                 <th>Version</th>
+                <th>Workers</th>
                 <th>Load</th>
                 <th>Actions</th>
             </tr>
@@ -21,6 +22,7 @@
                 <td>{{ human_time(master.stats.uptime) }}</td>
                 <td>{{ master.stats.pid }}</td>
                 <td>{{ master.stats.version }}</td>
+                <td>{{ master.stats.workers }}</td>
                 <td>
                     {% for l in master.stats.load -%}
                         {{ l|round(2) }}
