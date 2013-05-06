@@ -1,22 +1,18 @@
 from __future__ import absolute_import
 import logging
-import optparse
 
 from kuyruk.channel import LazyChannel
 from kuyruk.queue import Queue
-from kuyruk.config import Config
+from kuyruk.optionparser import OptionParser
 
 logger = logging.getLogger(__name__)
 
 
 def main():
-    logging.basicConfig(level=logging.INFO)
+    parser = OptionParser()
+    parser.parse_args()
+    config = parser.config
 
-    parser = optparse.OptionParser()
-    parser.add_option('--config')
-    options, args = parser.parse_args()
-
-    config = Config(options.config)
     channel = LazyChannel(
         config.RABBIT_HOST, config.RABBIT_PORT,
         config.RABBIT_USER, config.RABBIT_PASSWORD)

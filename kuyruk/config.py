@@ -18,9 +18,9 @@ class Config(object):
     MAX_RUN_TIME = None
     SAVE_FAILED_TASKS = False
     WORKERS = {}
-    MANAGER_HOST = 'localhost'  # TODO Must be None
-    MANAGER_PORT = 16500
-    MANAGER_HTTP_PORT = 16501
+    MANAGER_HOST = None
+    MANAGER_PORT = 16501
+    MANAGER_HTTP_PORT = 16500
 
     def __init__(self, path=None):
         """Initialize Config from a module.
