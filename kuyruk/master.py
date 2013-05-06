@@ -58,12 +58,9 @@ class Master(Process):
                            'Listening on default queue: "kuyruk"', hostname)
             return 'kuyruk'
 
-    def stop_workers(self, workers=None, kill=False):
+    def stop_workers(self, kill=False):
         """Send stop signal to all workers."""
-        if workers is None:
-            workers = self.workers
-
-        for worker in workers:
+        for worker in self.workers:
             os.kill(worker.pid, signal.SIGKILL if kill else signal.SIGTERM)
 
     def wait_for_workers(self):
@@ -102,8 +99,8 @@ class Master(Process):
     def register_signals(self):
         signal.signal(signal.SIGINT, self.handle_sigint)
         signal.signal(signal.SIGTERM, self.handle_sigterm)
-        signal.signal(signal.SIGHUP, self.handle_sighup)
         signal.signal(signal.SIGQUIT, self.handle_sigquit)
+        signal.signal(signal.SIGABRT, self.handle_sigabrt)
 
     def handle_sigterm(self, signum, frame):
         logger.warning("Handling SIGTERM")
@@ -113,6 +110,10 @@ class Master(Process):
         logger.warning("Handling SIGQUIT")
         self.cold_shutdown()
 
+    def handle_sigabrt(self, signum, frame):
+        logger.warning("Handling SIGABRT")
+        self.abort()
+
     def handle_sigint(self, signum, frame):
         logger.warning("Handling SIGINT")
         if sys.stdin.isatty() and not self.shutdown_pending.is_set():
@@ -120,10 +121,6 @@ class Master(Process):
         else:
             self.cold_shutdown()
         logger.debug("Handled SIGINT")
-
-    def handle_sighup(self, signum, frame):
-        logger.warning("Handling SIGHUP")
-        self.reload()
 
     def warm_shutdown(self):
         logger.warning("Warm shutdown")
@@ -135,14 +132,10 @@ class Master(Process):
         self.shutdown_pending.set()
         self.stop_workers(kill=True)
 
-    def reload(self):
-        logger.warning("Reloading workers")
-        old_workers = self.workers
-        if hasattr(self.config, 'path'):
-            self.config.reload()
-            self.workers = []
-            self.start_workers()
-        self.stop_workers(workers=old_workers)
+    def abort(self):
+        """Exit immediately making workers orphan."""
+        logger.warning("Aborting")
+        os._exit(1)
 
     def get_stats(self):
         """Generate stats to be sent to manager."""

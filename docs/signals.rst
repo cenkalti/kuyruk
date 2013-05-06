@@ -13,6 +13,10 @@ SIGTERM
 SIGQUIT
     Cold shutdown: Kill workers and exit.
 
+SIGABRT
+    Die immediately. Workers will detect that their
+    master is dead and will initiate a warm shutdown.
+
 SIGINT
     If Kuyruk is run from an interactive shell the first signal initiates a
     warm shutdown (same as SIGTERM). Second signal does a cold shutdown
@@ -23,9 +27,6 @@ SIGINT
 SIGKILL
     Terminate the master process immediately. Workers will detect that their
     master is dead and will initiate a warm shutdown.
-
-SIGHUP
-    Reload config and restart existing workers gracefully.
 
 
 Worker Process

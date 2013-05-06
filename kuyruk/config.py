@@ -35,22 +35,15 @@ class Config(object):
         self._load_module()
 
     @classmethod
-    def from_path(cls, path):
-        module = imp.load_source('kuyruk_config', path)
-        return cls(module)
-
-    def reload(self):
-        logger.warning("Reloading config from %r", self.module)
-        self.clear()
-        reload(self.module)
-        self._load_module()
+    def from_path(cls, path=None):
+        if path:
+            module = imp.load_source('kuyruk_config', path)
+            return cls(module)
+        else:
+            return cls()
 
     def _load_module(self):
         for k, v in self.module.__dict__.iteritems():
             if k.startswith('KUYRUK_'):
                 setattr(self, k[7:], v)
         logger.info("Config is loaded from %r", self.module)
-
-    def clear(self):
-        for k, v in self.__dict__.items():
-            delattr(self, k)
