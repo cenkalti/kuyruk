@@ -17,7 +17,7 @@ class ManagerClientThread(threading.Thread):
         self.generate_message = generate_message
         self.on_message = on_message
         self.stop_event = stop_event
-        self.run = retry(stop_event=stop_event)(self.run)
+        self.run = retry()(self.run)
 
     def run(self):
         """Connect to manager and read/write messages from/to socket."""
