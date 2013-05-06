@@ -36,6 +36,7 @@ setup(
     keywords='rabbitmq distributed task queue',
     url='http://github.com/cenkalti/kuyruk',
     packages=find_packages(),
+    include_package_data=True,
     install_requires=install_requires,
     description='A distributed task runner',
     long_description=read('README.rst'),
