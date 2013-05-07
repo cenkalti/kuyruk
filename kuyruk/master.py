@@ -9,8 +9,8 @@ import multiprocessing
 from time import time, sleep
 from setproctitle import setproctitle
 from kuyruk.worker import Worker
-from kuyruk.process import KuyrukProcess
 from kuyruk.version import __version__
+from kuyruk.process import KuyrukProcess
 
 logger = logging.getLogger(__name__)
 

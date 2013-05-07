@@ -24,7 +24,10 @@ def import_task(module_name, class_name, function_name, path=None):
 
 def import_task_module(module_name, path=None):
     """Import module by searching main module, current working directory and
-    python path."""
+    python path.
+
+    """
+    logger.debug("Importing module %r" % module_name)
     main_module, main_module_name = get_main_module()
     if module_name == main_module_name:
         return main_module

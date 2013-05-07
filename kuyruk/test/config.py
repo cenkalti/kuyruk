@@ -14,3 +14,7 @@ KUYRUK_MANAGER_HTTP_PORT = 16500
 KUYRUK_WORKERS = {
     'aslan.local': 'a, 2*b, c*3, @d'
 }
+KUYRUK_IMPORTS = [
+    'kuyruk.test.config',
+    'kuyruk',
+]

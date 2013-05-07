@@ -13,6 +13,7 @@ class Config(object):
     RABBIT_USER = 'guest'
     RABBIT_PASSWORD = 'guest'
     IMPORT_PATH = None
+    IMPORTS = []
     EAGER = False
     MAX_LOAD = None
     MAX_RUN_TIME = None

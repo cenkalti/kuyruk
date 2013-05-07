@@ -8,10 +8,10 @@ from time import sleep
 from setproctitle import setproctitle
 from kuyruk import importer
 from kuyruk.queue import Queue
-from kuyruk.process import KuyrukProcess
 from kuyruk.channel import LazyChannel
-from kuyruk.consumer import Consumer
+from kuyruk.process import KuyrukProcess
 from kuyruk.helpers import start_daemon_thread
+from kuyruk.consumer import Consumer
 
 logger = logging.getLogger(__name__)
 
@@ -45,13 +45,14 @@ class Worker(KuyrukProcess):
         self.queue.declare()
         self.channel.basic_qos(prefetch_count=1)
         self.channel.tx_select()
+        self.import_modules()
 
         # Start threads
         start_daemon_thread(self.watch_master)
         start_daemon_thread(self.watch_load)
+        self.maybe_start_manager_thread()
         if self.config.MAX_RUN_TIME > 0:
             start_daemon_thread(self.shutdown_timer)
-        self.maybe_start_manager_thread()
 
         # Consume messages
         with self.consumer.consume() as messages:
@@ -62,6 +63,10 @@ class Worker(KuyrukProcess):
                 self.working = False
 
         logger.debug("End run worker")
+
+    def import_modules(self):
+        for module in self.config.IMPORTS:
+            importer.import_task_module(module, self.config.IMPORT_PATH)
 
     def process_task(self, message):
         from kuyruk import Kuyruk
