@@ -17,17 +17,13 @@ def get_version():
     raise Exception('Cannot find version')
 
 
-install_requires = [
-    'Flask>=0.9, <1',
-    'pika>=0.9.12, <1',
-    'setproctitle>=1.1.7, <2',
-]
-
+install_requires = read('requirements.txt').splitlines()
 try:
     # not available in python 2.6
     import importlib
 except ImportError:
     install_requires.append('importlib>=1.0.2, <2')
+
 
 setup(
     name='Kuyruk',
