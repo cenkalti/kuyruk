@@ -65,7 +65,7 @@ class Task(EventMixin):
             return MethodType(self.__call__, obj, objtype)
         return self
 
-    def send_to_queue(self, args=(), kwargs={}):
+    def send_to_queue(self, args, kwargs):
         """
         Send this task to queue
 
