@@ -27,7 +27,7 @@ class Kuyruk(EventMixin):
         if config:
             self.config.from_object(config)
 
-    def task(self, queue='kuyruk', eager=False, retry=0):
+    def task(self, queue='kuyruk', eager=False, retry=0, task_class=None):
         """Wrap functions with this decorator to convert them to background
         tasks. After wrapping, normal calls will send a message to queue
         instead of running the actual function.
@@ -40,7 +40,9 @@ class Kuyruk(EventMixin):
         def decorator():
             def inner(f):
                 queue_ = 'kuyruk' if callable(queue) else queue
-                return Task(f, self, queue=queue_, eager=eager, retry=retry)
+                task_class_ = task_class or Task
+                return task_class_(
+                    f, self, queue=queue_, eager=eager, retry=retry)
             return inner
 
         if callable(queue):
