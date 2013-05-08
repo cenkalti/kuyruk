@@ -41,7 +41,7 @@ class Task(EventMixin):
 
     def __call__(self, *args, **kwargs):
         if self.eager or self.kuyruk.config.EAGER:
-            self.run(args, kwargs)
+            self.apply(args, kwargs)
         else:
             self.send_to_queue(args, kwargs)
 
@@ -94,7 +94,7 @@ class Task(EventMixin):
             queue.send(task_description)
 
     @profile
-    def run(self, args, kwargs):
+    def apply(self, args, kwargs):
         """Run the wrapped function and event handlers."""
         def run(functions, **extra):
             for f in functions:

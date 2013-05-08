@@ -137,7 +137,7 @@ class Worker(KuyrukProcess):
 
         logger.debug('Task %r will be executed with args=%s and kwargs=%s',
                      task, args, kwargs)
-        result = task.run(args, kwargs)
+        result = task.apply(args, kwargs)
         logger.debug('Result: %r', result)
 
     def is_master_alive(self):
