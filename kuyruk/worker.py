@@ -24,9 +24,7 @@ class Worker(KuyrukProcess):
         :param config: Configuration object
         """
         super(Worker, self).__init__(config)
-        self.channel = LazyChannel(
-            self.config.RABBIT_HOST, self.config.RABBIT_PORT,
-            self.config.RABBIT_USER, self.config.RABBIT_PASSWORD)
+        self.channel = LazyChannel.from_config(config)
         self.queue_name = queue_name
         is_local = queue_name.startswith('@')
         self.queue = Queue(queue_name, self.channel, local=is_local)

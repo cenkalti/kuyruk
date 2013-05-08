@@ -75,9 +75,7 @@ class Task(EventMixin):
 
         """
         desc = self.get_task_description(args, kwargs)
-        channel = LazyChannel(
-            self.kuyruk.config.RABBIT_HOST, self.kuyruk.config.RABBIT_PORT,
-            self.kuyruk.config.RABBIT_USER, self.kuyruk.config.RABBIT_PASSWORD)
+        channel = LazyChannel.from_config(self.kuyruk.config)
         with channel:
             queue = Queue(self.queue, channel, self.local)
             queue.send(desc)

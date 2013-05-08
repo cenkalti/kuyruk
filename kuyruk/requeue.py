@@ -13,9 +13,7 @@ def main():
     parser.parse_args()
     config = parser.config
 
-    channel = LazyChannel(
-        config.RABBIT_HOST, config.RABBIT_PORT,
-        config.RABBIT_USER, config.RABBIT_PASSWORD)
+    channel = LazyChannel.from_config(config)
     channel.tx_select()
     failed_queue = Queue('kuyruk_failed', channel)
 

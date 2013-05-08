@@ -16,6 +16,12 @@ class LazyChannel(object):
         self.connection = None
         self.channel = None
 
+    @classmethod
+    def from_config(cls, config):
+        return cls(
+            config.RABBIT_HOST, config.RABBIT_PORT,
+            config.RABBIT_USER, config.RABBIT_PASSWORD)
+
     def __getattr__(self, item):
         if not self.is_open:
             self.open()
