@@ -74,24 +74,25 @@ class Task(EventMixin):
         :return: None
 
         """
-        task_description = {
+        desc = self.get_task_description(args, kwargs)
+        channel = LazyChannel(
+            self.kuyruk.config.RABBIT_HOST, self.kuyruk.config.RABBIT_PORT,
+            self.kuyruk.config.RABBIT_USER, self.kuyruk.config.RABBIT_PASSWORD)
+        with channel:
+            queue = Queue(self.queue, channel, self.local)
+            queue.send(desc)
+
+    def get_task_description(self, args, kwargs):
+        return {
             'module': self.module_name,
             'function': self.f.__name__,
             'class': self.class_name,
             'object_id': args[0].id if self.cls else None,
             'args': args[1:] if self.cls else args,
             'kwargs': kwargs,
-            'timestamp': str(datetime.utcnow())
+            'timestamp': str(datetime.utcnow()),
+            'retry': self.retry,
         }
-        if self.retry:
-            task_description['retry'] = self.retry
-
-        channel = LazyChannel(
-            self.kuyruk.config.RABBIT_HOST, self.kuyruk.config.RABBIT_PORT,
-            self.kuyruk.config.RABBIT_USER, self.kuyruk.config.RABBIT_PASSWORD)
-        with channel:
-            queue = Queue(self.queue, channel, self.local)
-            queue.send(task_description)
 
     @profile
     def apply(self, args, kwargs):
