@@ -1,33 +1,22 @@
 from __future__ import absolute_import
 import sys
 import logging
-from time import time
 from types import MethodType
 from datetime import datetime
 
-from kuyruk import importer
+from kuyruk import signals, importer
 from kuyruk.queue import Queue
+from kuyruk.helpers import profile
 from kuyruk.channel import LazyChannel
 from kuyruk.eventmixin import EventMixin
 
 logger = logging.getLogger(__name__)
 
 
-def profile(f):
-    def inner(self, *args, **kwargs):
-        start = time()
-        result = f(self, *args, **kwargs)
-        end = time()
-        logger.info("%r finished in %i seconds." % (self, end - start))
-        return result
-    return inner
-
-
 class Task(EventMixin):
 
     def __init__(self, f, kuyruk, queue='kuyruk',
                  local=False, eager=False, retry=0):
-        super(Task, self).__init__()
         self.f = f
         self.kuyruk = kuyruk
         self.queue = queue
@@ -95,25 +84,25 @@ class Task(EventMixin):
     @profile
     def apply(self, args, kwargs):
         """Run the wrapped function and event handlers."""
-        def run(functions, **extra):
-            for f in functions:
-                f(self, args, kwargs, **extra)
+        senders = (self, self.__class__, self.kuyruk)
+
+        def send_signal(signal, senders, **extra):
+            for sender in senders:
+                signal.send(sender, task=self,
+                            args=args, kwargs=kwargs, **extra)
 
         try:
-            run(self.kuyruk.before_task_functions)
-            run(self.before_task_functions)
+            send_signal(signals.before_task, reversed(senders))
             return_value = self.f(*args, **kwargs)  # call wrapped function
         except Exception:
-            exc_info = sys.exc_info()
-            run(self.on_exception_functions, exc_info=exc_info)
-            run(self.kuyruk.on_exception_functions, exc_info=exc_info)
+            send_signal(signals.on_exception, senders,
+                        exc_info=sys.exc_info())
             raise
         else:
-            run(self.after_return_functions, return_value=return_value)
-            run(self.kuyruk.after_return_functions, return_value=return_value)
+            send_signal(signals.on_return, senders,
+                        return_value=return_value)
         finally:
-            run(self.after_task_functions)
-            run(self.kuyruk.after_task_functions)
+            send_signal(signals.after_task, senders)
 
     @property
     def name(self):

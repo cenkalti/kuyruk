@@ -22,7 +22,6 @@ class Kuyruk(EventMixin):
         :param config: See config.py for default values.
 
         """
-        super(Kuyruk, self).__init__()
         self.config = Config()
         if config:
             self.config.from_object(config)

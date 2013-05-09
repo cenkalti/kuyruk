@@ -1,7 +1,7 @@
 import logging
 import threading
 import traceback
-from time import sleep
+from time import time, sleep
 from Queue import Empty
 from functools import wraps
 
@@ -72,3 +72,14 @@ def human_time(seconds, suffixes=['y', 'w', 'd', 'h', 'm', 's'], add_s=False, se
             break
 
     return separator.join(time)
+
+
+def profile(f):
+    @wraps(f)
+    def inner(*args, **kwargs):
+        start = time()
+        result = f(*args, **kwargs)
+        end = time()
+        logger.info("%r finished in %i seconds." % (f, end - start))
+        return result
+    return inner

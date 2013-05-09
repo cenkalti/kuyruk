@@ -61,22 +61,26 @@ def task_with_functions(message):
 
 
 @kuyruk2.before_task
-def function1(task, args, kwargs):
+def function1(sender, task, args, kwargs):
+    assert sender is kuyruk2
     print 'function1'
 
 
 @task_with_functions.before_task
-def function2(task, args, kwargs):
+def function2(sender, task, args, kwargs):
+    assert sender is task_with_functions
     print 'function2'
 
 
 @task_with_functions.after_task
-def function3(task, args, kwargs):
+def function3(sender, task, args, kwargs):
+    assert sender is task_with_functions
     print 'function3'
 
 
 @kuyruk2.after_task
-def function4(task, args, kwargs):
+def function4(sender, task, args, kwargs):
+    assert sender is kuyruk2
     print 'function4'
 
 
