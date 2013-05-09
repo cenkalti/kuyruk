@@ -135,6 +135,7 @@ class KuyrukTestCase(unittest.TestCase):
             master.expect('hello world')
             master.expect('function3')
             master.expect('function4')
+            master.expect('function5')
 
     def test_class_task(self):
         cat = tasks.Cat(1, 'Felix')

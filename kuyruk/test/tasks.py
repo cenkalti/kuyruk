@@ -58,30 +58,33 @@ kuyruk2 = Kuyruk()
 @kuyruk2.task
 def task_with_functions(message):
     print message
+    return 42
 
 
 @kuyruk2.before_task
-def function1(sender, task, args, kwargs):
-    assert sender is kuyruk2
+def function1(task, args, kwargs):
     print 'function1'
 
 
 @task_with_functions.before_task
-def function2(sender, task, args, kwargs):
-    assert sender is task_with_functions
+def function2(task, args, kwargs):
     print 'function2'
 
 
-@task_with_functions.after_task
-def function3(sender, task, args, kwargs):
-    assert sender is task_with_functions
+@task_with_functions.on_return
+def function3(task, args, kwargs, return_value):
     print 'function3'
+    assert return_value == 42
+
+
+@task_with_functions.after_task
+def function4(task, args, kwargs):
+    print 'function4'
 
 
 @kuyruk2.after_task
-def function4(sender, task, args, kwargs):
-    assert sender is kuyruk2
-    print 'function4'
+def function5(task, args, kwargs):
+    print 'function5'
 
 
 class Cat(object):
