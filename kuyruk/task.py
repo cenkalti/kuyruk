@@ -85,7 +85,7 @@ class Task(SignalMixin):
     @profile
     def apply(self, args, kwargs):
         """Run the wrapped function and event handlers."""
-        senders = (self, self.__class__, self.kuyruk)
+        SENDERS = (self, self.kuyruk)
 
         def send_signal(signal, senders, **extra):
             for sender in senders:
@@ -93,17 +93,17 @@ class Task(SignalMixin):
                             args=args, kwargs=kwargs, **extra)
 
         try:
-            send_signal(signals.before_task, reversed(senders))
+            send_signal(signals.before_task, reversed(SENDERS))
             return_value = self.f(*args, **kwargs)  # call wrapped function
         except Exception:
-            send_signal(signals.on_exception, senders,
+            send_signal(signals.on_exception, SENDERS,
                         exc_info=sys.exc_info())
             raise
         else:
-            send_signal(signals.on_return, senders,
+            send_signal(signals.on_return, SENDERS,
                         return_value=return_value)
         finally:
-            send_signal(signals.after_task, senders)
+            send_signal(signals.after_task, SENDERS)
 
     @property
     def name(self):
