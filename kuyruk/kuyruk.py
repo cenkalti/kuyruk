@@ -4,12 +4,12 @@ import logging
 from kuyruk.task import Task
 from kuyruk.master import Master
 from kuyruk.config import Config
-from kuyruk.eventmixin import EventMixin
+from kuyruk.eventmixin import SignalMixin
 
 logger = logging.getLogger(__name__)
 
 
-class Kuyruk(EventMixin):
+class Kuyruk(SignalMixin):
     """
     Main class for Kuyruk distributed task queue. It holds the configuration
     values and provides a task decorator for user application and run method

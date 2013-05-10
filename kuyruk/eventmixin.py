@@ -6,8 +6,11 @@ from functools import wraps
 logger = logging.getLogger(__name__)
 
 
-class EventMixin(object):
+class SignalMixin(object):
+    """This mixin class contains some decorator methods for wrapping handler
+    functions to run on certain signals.
 
+    """
     def before_task(self, f):
         f = hide_sender(f)
         signals.before_task.connect(f, sender=self)
