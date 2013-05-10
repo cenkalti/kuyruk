@@ -6,7 +6,7 @@ from functools import wraps
 logger = logging.getLogger(__name__)
 
 
-class SignalMixin(object):
+class EventMixin(object):
     """This mixin class contains some decorator methods for wrapping handler
     functions to run on certain signals.
 

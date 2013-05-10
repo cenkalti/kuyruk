@@ -8,12 +8,12 @@ from kuyruk import signals, importer
 from kuyruk.queue import Queue
 from kuyruk.helpers import profile
 from kuyruk.channel import LazyChannel
-from kuyruk.eventmixin import SignalMixin, hide_sender
+from kuyruk.eventmixin import EventMixin, hide_sender
 
 logger = logging.getLogger(__name__)
 
 
-class Task(SignalMixin):
+class Task(EventMixin):
 
     def __init__(self, f, kuyruk, queue='kuyruk',
                  local=False, eager=False, retry=0):
