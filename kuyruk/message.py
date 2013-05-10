@@ -2,6 +2,8 @@ import json
 import pickle
 import logging
 
+from .helpers.json_datetime import JSONEncoder, JSONDecoder
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,13 +33,17 @@ class Message(object):
         return self.decode((self.method, self.properties, self.body))[1]
 
     @staticmethod
+    def encode(obj):
+        return json.dumps(obj, cls=JSONEncoder)
+
+    @staticmethod
     def decode(message):
         method, properties, body = message
         if body is None:
             return None, None
 
         if properties.content_type == 'application/json':
-            obj = json.loads(body)
+            obj = json.loads(body, cls=JSONDecoder)
         elif properties.content_type == 'application/python-pickle':
             obj = pickle.loads(body)
         else:

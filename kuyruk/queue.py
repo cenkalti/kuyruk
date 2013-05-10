@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 import os
-import json
 import socket
 import logging
 import traceback
@@ -94,7 +93,7 @@ class Queue(object):
         return self.channel.basic_publish(
             exchange='',
             routing_key=self.name,
-            body=json.dumps(obj),
+            body=Message.encode(obj),
             properties=properties)
 
     @synchronized
