@@ -17,11 +17,12 @@ class Kuyruk(SignalMixin):
 
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, task_class=Task):
         """
         :param config: See config.py for default values.
 
         """
+        self.task_class = task_class
         self.config = Config()
         if config:
             self.config.from_object(config)
@@ -39,7 +40,7 @@ class Kuyruk(SignalMixin):
         def decorator():
             def inner(f):
                 queue_ = 'kuyruk' if callable(queue) else queue
-                task_class_ = task_class or Task
+                task_class_ = task_class or self.task_class
                 return task_class_(
                     f, self, queue=queue_, eager=eager, retry=retry)
             return inner
