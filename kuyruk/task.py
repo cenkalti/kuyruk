@@ -8,7 +8,7 @@ from kuyruk import signals, importer
 from kuyruk.queue import Queue
 from kuyruk.helpers import profile
 from kuyruk.channel import LazyChannel
-from kuyruk.eventmixin import EventMixin, hide_sender
+from kuyruk.eventmixin import EventMixin
 
 logger = logging.getLogger(__name__)
 
@@ -126,9 +126,6 @@ class Task(EventMixin):
             return self.cls.__name__
 
     def _connect_signal_handlers(self):
-        def connect_signal(signal, handler):
-            signal.connect(hide_sender(handler), sender=self)
-
         signal_handlers = [
             (signals.before_task, self.before_task_handler),
             (signals.after_task, self.after_task_handler),
@@ -136,7 +133,7 @@ class Task(EventMixin):
             (signals.on_return, self.on_return_handler),
         ]
         for signal, handler in signal_handlers:
-            connect_signal(signal, handler)
+            self.connect_signal(signal, handler)
 
     # Override these from extending classes
 

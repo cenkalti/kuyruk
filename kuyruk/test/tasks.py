@@ -1,6 +1,6 @@
 from time import sleep
 
-from kuyruk.kuyruk import Kuyruk
+from kuyruk.kuyruk import Kuyruk, Task
 
 
 kuyruk = Kuyruk()
@@ -64,6 +64,10 @@ def task_with_functions(message):
 @kuyruk2.before_task
 def function1(task, args, kwargs):
     print 'function1'
+    print task, args, kwargs
+    assert isinstance(task, Task)
+    assert args == ['hello world']
+    assert kwargs == {}
 
 
 @task_with_functions.before_task

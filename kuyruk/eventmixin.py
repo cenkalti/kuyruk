@@ -12,28 +12,27 @@ class EventMixin(object):
 
     """
     def before_task(self, f):
-        f = hide_sender(f)
-        signals.before_task.connect(f, sender=self)
+        self.connect_signal(signals.before_task, f)
         return f
 
     def after_task(self, f):
-        f = hide_sender(f)
-        signals.after_task.connect(f, sender=self)
+        self.connect_signal(signals.after_task, f)
         return f
 
     def on_return(self, f):
-        f = hide_sender(f)
-        signals.on_return.connect(f, sender=self)
+        self.connect_signal(signals.on_return, f)
         return f
 
     def on_exception(self, f):
-        f = hide_sender(f)
-        signals.on_exception.connect(f, sender=self)
+        self.connect_signal(signals.on_exception, f)
         return f
 
+    def connect_signal(self, signal, handler):
+        signal.connect(insert_sender(handler), sender=self, weak=False)
 
-def hide_sender(f):
+
+def insert_sender(f):
     @wraps(f)
-    def inner(sender, *args, **kwargs):
-        return f(*args, **kwargs)
+    def inner(*args, **kwargs):
+        return f(*args[1:], **kwargs)
     return inner
