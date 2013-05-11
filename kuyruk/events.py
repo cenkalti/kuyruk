@@ -1,8 +1,16 @@
-from __future__ import absolute_import
-import logging
-from kuyruk import signals
+"""
+This module is called "events" instead of "signals" not to confuse with OS
+level signals.
 
-logger = logging.getLogger(__name__)
+"""
+from blinker import Namespace
+
+_signals = Namespace()
+
+task_prerun = _signals.signal('task-prerun')
+task_postrun = _signals.signal('task-postrun')
+task_success = _signals.signal('task-success')
+task_failure = _signals.signal('task-failure')
 
 
 class EventMixin(object):
@@ -10,34 +18,34 @@ class EventMixin(object):
     functions to run on certain signals.
 
     """
-    def before_task(self, f):
+    def on_prerun(self, f):
         """Registers a function to run before processing the task.
         If the registered function raises an exception the task will be
         considered as failed.
 
         """
-        self.connect_signal(signals.before_task, f)
+        self.connect_signal(task_prerun, f)
         return f
 
-    def after_task(self, f):
+    def on_postrun(self, f):
         """Registers a function to run after processing the task.
         The registered function will run regardless of condition that
         the task is successful or failed. You can attach some cleanup code
         here i.e. closing sockets or deleting files.
 
         """
-        self.connect_signal(signals.after_task, f)
+        self.connect_signal(task_postrun, f)
         return f
 
-    def on_return(self, f):
+    def on_success(self, f):
         """Registers a function to run after the task has returned.
         The registered function will only be run if the task is successful."""
-        self.connect_signal(signals.on_return, f)
+        self.connect_signal(task_success, f)
         return f
 
-    def on_exception(self, f):
+    def on_failure(self, f):
         """Registers a function to run if task raises an exception."""
-        self.connect_signal(signals.on_exception, f)
+        self.connect_signal(task_failure, f)
         return f
 
     def connect_signal(self, signal, handler):

@@ -1,7 +1,7 @@
 from time import sleep
 
 from kuyruk import Kuyruk, Task
-from kuyruk.signals import before_task, after_task, on_return
+from kuyruk.events import task_prerun, task_postrun, task_success
 
 
 kuyruk = Kuyruk()
@@ -62,8 +62,7 @@ def task_with_functions(message):
     return 42
 
 
-# @before_task.connect_via(kuyruk2)
-@kuyruk2.before_task
+@kuyruk2.on_prerun
 def function1(sender, task, args, kwargs):
     print 'function1'
     print sender, task, args, kwargs
@@ -73,27 +72,23 @@ def function1(sender, task, args, kwargs):
     assert kwargs == {}
 
 
-# @before_task.connect_via(task_with_functions)
-@task_with_functions.before_task
+@task_with_functions.on_prerun
 def function2(sender, task, args, kwargs):
     print 'function2'
 
 
-# @on_return.connect_via(task_with_functions)
-@task_with_functions.on_return
+@task_with_functions.on_success
 def function3(sender, task, args, kwargs, return_value):
     print 'function3'
     assert return_value == 42
 
 
-# @after_task.connect_via(task_with_functions)
-@task_with_functions.after_task
+@task_with_functions.on_postrun
 def function4(sender, task, args, kwargs):
     print 'function4'
 
 
-# @after_task.connect_via(kuyruk2)
-@kuyruk2.after_task
+@kuyruk2.on_postrun
 def function5(sender, task, args, kwargs):
     print 'function5'
 
@@ -122,7 +117,7 @@ class DatabaseTask(Task):
     _session = None
 
     def setup(self):
-        self.connect_signal(after_task, self.close_session)
+        self.connect_signal(task_postrun, self.close_session)
 
     @property
     def session(self):

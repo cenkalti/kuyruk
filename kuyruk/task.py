@@ -4,11 +4,11 @@ import logging
 from types import MethodType
 from datetime import datetime
 
-from kuyruk import signals, importer
+from kuyruk import events, importer
 from kuyruk.queue import Queue
+from kuyruk.events import EventMixin
 from kuyruk.helpers import profile
 from kuyruk.channel import LazyChannel
-from kuyruk.eventmixin import EventMixin
 
 logger = logging.getLogger(__name__)
 
@@ -113,17 +113,17 @@ class Task(EventMixin):
                     sender, task=self, args=args, kwargs=kwargs, **extra)
 
         try:
-            send_signal(signals.before_task, reversed(SENDERS))
+            send_signal(events.task_prerun, reversed(SENDERS))
             return_value = self.f(*args, **kwargs)  # call wrapped function
         except Exception:
             send_signal(
-                signals.on_exception, SENDERS, exc_info=sys.exc_info())
+                events.task_failure, SENDERS, exc_info=sys.exc_info())
             raise
         else:
             send_signal(
-                signals.on_return, SENDERS, return_value=return_value)
+                events.task_success, SENDERS, return_value=return_value)
         finally:
-            send_signal(signals.after_task, SENDERS)
+            send_signal(events.task_postrun, SENDERS)
 
     @property
     def name(self):
