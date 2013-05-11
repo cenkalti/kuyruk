@@ -1,5 +1,11 @@
+.. module:: kuyruk
+
 Events
 ------
+
+Kuyruk has signalling support via
+`Blinker <http://discorporate.us/projects/Blinker/>`_ library.
+Not to confuse with OS signals they are called "Events" in Kuyruk.
 
 If a function is registered as
 event handler it will be executed when the event is triggered.
@@ -20,24 +26,14 @@ executing the function and commiting it after the task is executed:
         session.commit()
 
 
-.. method:: before_task(task, args, kwargs)
+.. automethod:: Kuyruk.before_task
+Provides arguments:
 
-    Handler called before the task function is executed.
+* sender: Sender of the event
+* task: :class:`Task` instance
+* args: Positional arguments of the task
+* kwargs: Keyword arguments of the task
 
-    :param task: :class:`~kuyruk.task.Task` instance that is going to be executed.
-    :param args: Original arguments for the task.
-    :param kwargs: Original keyword arguments for the task.
-
-    The return value of this handler is ignored.
-
-
-.. method:: after_task(task, args, kwargs)
-
-    Handler called after the task function is executed.
-
-    :param task: :class:`~kuyruk.task.Task` instance that is going to be executed.
-    :param args: Original arguments for the task.
-    :param kwargs: Original keyword arguments for the task.
-
-    The return value of this handler is ignored.
-
+.. automethod:: Kuyruk.after_task
+.. automethod:: Kuyruk.on_return
+.. automethod:: Kuyruk.on_exception

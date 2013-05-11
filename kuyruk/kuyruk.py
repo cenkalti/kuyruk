@@ -15,13 +15,11 @@ class Kuyruk(EventMixin):
     values and provides a task decorator for user application and run method
     for workers.
 
+    :param config: A module that contains configuration options.
+        See :ref:`configuration-options` for default values.
+
     """
-
     def __init__(self, config=None, task_class=Task):
-        """
-        :param config: See config.py for default values.
-
-        """
         self.task_class = task_class
         self.config = Config()
         if config:
@@ -29,13 +27,17 @@ class Kuyruk(EventMixin):
 
     def task(self, queue='kuyruk', eager=False, retry=0, task_class=None):
         """Wrap functions with this decorator to convert them to background
-        tasks. After wrapping, normal calls will send a message to queue
-        instead of running the actual function.
+        tasks. After wrapping, calling the function will send a message to
+        queue instead of running the function.
 
-        :param queue: Queue name for the tasks
-        :param eager: Run task in process, do not use RabbitMQ
-        :param retry: Retry this times before give up
-        :return: Callable Task object wrapping the original function
+        :param queue: Queue name for the tasks.
+        :param eager: Run task in process, do not use RabbitMQ.
+        :param retry: Retry this times before give up.
+        :param task_class: Custom task class.
+            Must be a subclass of :class:`~Task`.
+            If this is :const:`None` then :attr:`Task.task_class` will be used.
+        :return: Callable :class:`~Task` object wrapping the original function.
+
         """
         def decorator():
             def inner(f):
@@ -53,12 +55,11 @@ class Kuyruk(EventMixin):
             return decorator()
 
     def run(self, queues=None):
-        """Run Kuyruk workers.
-        :param queues: queues str passed directly from command line
-        :return: None
+        """Run Kuyruk master process that will run the worker processes.
 
-        This function may exit() before returning if SIGINT or SIGTERM
-        received.
+        :param queues: Override queues with this ones. Specified in special
+            Kuyruk syntax.
+        :return: :const:`None`
 
         """
         master = Master(self.config)

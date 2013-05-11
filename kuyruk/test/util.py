@@ -13,7 +13,7 @@ from what import What
 from kuyruk.channel import LazyChannel
 from kuyruk.queue import Queue as RabbitQueue
 
-TIMEOUT = 30
+TIMEOUT = 5
 
 logger = logging.getLogger(__name__)
 

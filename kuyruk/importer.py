@@ -20,7 +20,7 @@ def import_task(module_name, class_name, function_name, path=None):
 
 def import_task_module(module_name, path=None):
     """Import module by searching main module, current working directory and
-    python path.
+    Python path.
 
     """
     logger.debug("Importing module %r" % module_name)

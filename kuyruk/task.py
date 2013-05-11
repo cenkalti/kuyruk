@@ -68,11 +68,12 @@ class Task(EventMixin):
 
     def send_to_queue(self, args, kwargs):
         """
-        Send this task to queue
+        Sends this task to queue.
 
-        :param args: Arguments that will be passed to task on execution
-        :param kwargs: Keyword arguments that will be passed to task on execution
-        :return: None
+        :param args: Arguments that will be passed to task on execution.
+        :param kwargs: Keyword arguments that will be passed to task
+            on execution.
+        :return: :const:`None`
 
         """
         desc = self.get_task_description(args, kwargs)
@@ -127,7 +128,7 @@ class Task(EventMixin):
     @property
     def name(self):
         """Location for the wrapped function.
-        This value is used to find the task by worker.
+        This value is by the worker to find the task.
 
         """
         if self.class_name:
@@ -146,7 +147,8 @@ class Task(EventMixin):
 
     @property
     def class_name(self):
-        """If this is a class task, return the name of the class."""
+        """Name of the class if this is a class task,
+        otherwise :const:`None`."""
         if self.cls:
             return self.cls.__name__
 

@@ -3,8 +3,6 @@ import logging
 
 from kuyruk.kuyruk import Kuyruk
 from kuyruk.task import Task
-from kuyruk.worker import Worker
-from kuyruk.queue import Queue
 from kuyruk.version import __version__
 
 try:

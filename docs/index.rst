@@ -1,26 +1,48 @@
-.. Kuyruk documentation master file, created by
-   sphinx-quickstart on Fri Apr 26 09:36:49 2013.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to Kuyruk's documentation!
+Kuyruk: A distributed task runner
 ==================================
 
-Contents:
+Welcome to Kuyruk’s documentation. This documentation covers the usage of the
+library and gives information about running workers.
+
+
+About Kuyruk
+------------
+
+Kuyruk is a simple and easy way of distributing tasks to run on servers.
+
+It uses `RabbitMQ <http://www.rabbitmq.com>`_ as message broker and depends on
+`Pika <http://pika.readthedocs.org/en/latest/>`_
+which is a pure-Python RabbitMQ client library.
+
+User's Guide
+------------
+
+.. toctree::
+   :maxdepth: 1
+
+   features
+   gettingstarted
+   configuration
+   workers
+   signals
+   events
+   extending
+   manager
+
+
+API Reference
+-------------
 
 .. toctree::
    :maxdepth: 2
 
-   Basics <README>
-   signals
-   events
+   api
 
 
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

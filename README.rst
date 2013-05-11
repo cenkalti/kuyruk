@@ -11,6 +11,8 @@ It uses `RabbitMQ <http://www.rabbitmq.com>`_ message broker for routing tasks.
 How to install?
 ---------------
 
+Kuyruk is available on PyPI.
+
 .. code-block:: bash
 
    $ pip install kuyruk
@@ -18,6 +20,9 @@ How to install?
 
 How to run tests?
 -----------------
+
+Normally you don't need this but it is easy. Make sure that RabbitMQ
+is running before running tests.
 
 .. code-block:: bash
 
