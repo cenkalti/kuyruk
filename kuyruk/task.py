@@ -74,12 +74,16 @@ class Task(EventMixin):
             queue.send(desc)
 
     def get_task_description(self, args, kwargs):
+        # For class tasks; replace the first argument with the id of the object
+        if self.cls:
+            args = list(args)
+            args[0] = args[0].id
+
         return {
             'module': self.module_name,
             'function': self.f.__name__,
             'class': self.class_name,
-            'object_id': args[0].id if self.cls else None,
-            'args': args[1:] if self.cls else args,
+            'args': args,
             'kwargs': kwargs,
             'timestamp': str(datetime.utcnow()),
             'retry': self.retry,

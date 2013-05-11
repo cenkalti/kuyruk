@@ -112,26 +112,25 @@ class Worker(KuyrukProcess):
         This is the method where user modules are loaded.
 
         """
-        module, function, cls, object_id, args, kwargs = (
+        module, function, cls, args, kwargs = (
             task_description['module'],
             task_description['function'],
             task_description['class'],
-            task_description['object_id'],
             task_description['args'],
             task_description['kwargs'])
-        task, cls = importer.import_task(
+        task = importer.import_task(
             module, cls, function, self.config.IMPORT_PATH)
 
-        # Fetch object and prepent to args if class task
-        if cls:
-            obj = cls.get(object_id)
+        # Fetch the object if class task
+        if task.cls:
+            obj = task.cls.get(args[0])
             if not obj:
                 logger.warning("<%s.%s id=%r> is not found",
-                               module, cls.__name__, object_id)
+                               module, task.cls.__name__, args[0])
                 return
 
             args = list(args)
-            args.insert(0, obj)
+            args[0] = obj
 
         logger.debug('Task %r will be executed with args=%s and kwargs=%s',
                      task, args, kwargs)

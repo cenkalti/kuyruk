@@ -14,12 +14,8 @@ def import_task(module_name, class_name, function_name, path=None):
     if class_name:
         cls = getattr(namespace, class_name)
         namespace = cls
-    else:
-        cls = None
 
-    task = getattr(namespace, function_name)
-    ImportResult = namedtuple('ImportResult', ['task', 'cls'])
-    return ImportResult(task=task, cls=cls)
+    return getattr(namespace, function_name)
 
 
 def import_task_module(module_name, path=None):
