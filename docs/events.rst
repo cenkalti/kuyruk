@@ -17,16 +17,16 @@ executing the function and commiting it after the task is executed:
 
 .. code-block:: python
 
-    @kuyruk.before_task
+    @kuyruk.on_prerun
     def new_session(task, args, kwargs):
         session.remove()
 
-    @kuyruk.after_task
+    @kuyruk.on_postrun
     def commit_session(task, args, kwargs):
         session.commit()
 
 
-.. automethod:: Kuyruk.before_task
+.. automethod:: Kuyruk.on_prerun
 Provides arguments:
 
 * sender: Sender of the event
@@ -34,6 +34,6 @@ Provides arguments:
 * args: Positional arguments of the task
 * kwargs: Keyword arguments of the task
 
-.. automethod:: Kuyruk.after_task
-.. automethod:: Kuyruk.on_return
-.. automethod:: Kuyruk.on_exception
+.. automethod:: Kuyruk.on_postrun
+.. automethod:: Kuyruk.on_success
+.. automethod:: Kuyruk.on_failure

@@ -60,3 +60,5 @@ default queue.
 .. code-block:: bash
 
    $ kuyruk
+
+For more information about workers see :ref:`workers`.
