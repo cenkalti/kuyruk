@@ -24,7 +24,10 @@ class Task(EventMixin):
         self.eager = eager
         self.retry = retry
         self.cls = None
-        self._connect_signal_handlers()
+        self.setup()
+
+    def setup(self):
+        pass
 
     def __repr__(self):
         return "<Task of %r>" % self.name
@@ -85,23 +88,23 @@ class Task(EventMixin):
     @profile
     def apply(self, args, kwargs):
         """Run the wrapped function and event handlers."""
-        SENDERS = (self, self.kuyruk)
+        SENDERS = (self, self.__class__, self.kuyruk)
 
         def send_signal(signal, senders, **extra):
             for sender in senders:
-                signal.send(sender, task=self,
-                            args=args, kwargs=kwargs, **extra)
+                signal.send(
+                    sender, task=self, args=args, kwargs=kwargs, **extra)
 
         try:
             send_signal(signals.before_task, reversed(SENDERS))
             return_value = self.f(*args, **kwargs)  # call wrapped function
         except Exception:
-            send_signal(signals.on_exception, SENDERS,
-                        exc_info=sys.exc_info())
+            send_signal(
+                signals.on_exception, SENDERS, exc_info=sys.exc_info())
             raise
         else:
-            send_signal(signals.on_return, SENDERS,
-                        return_value=return_value)
+            send_signal(
+                signals.on_return, SENDERS, return_value=return_value)
         finally:
             send_signal(signals.after_task, SENDERS)
 
@@ -124,30 +127,6 @@ class Task(EventMixin):
     def class_name(self):
         if self.cls:
             return self.cls.__name__
-
-    def _connect_signal_handlers(self):
-        signal_handlers = [
-            (signals.before_task, self.before_task_handler),
-            (signals.after_task, self.after_task_handler),
-            (signals.on_exception, self.on_exception_handler),
-            (signals.on_return, self.on_return_handler),
-        ]
-        for signal, handler in signal_handlers:
-            self.connect_signal(signal, handler)
-
-    # Override these from extending classes
-
-    def before_task_handler(self, task, args, kwargs):
-        pass
-
-    def after_task_handler(self, task, args, kwargs):
-        pass
-
-    def on_exception_handler(self, task, args, kwargs, exc_info):
-        pass
-
-    def on_return_handler(self, task, args, kwargs, return_value):
-        pass
 
 
 class TaskResult(object):

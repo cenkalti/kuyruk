@@ -137,6 +137,13 @@ class KuyrukTestCase(unittest.TestCase):
             master.expect('function4')
             master.expect('function5')
 
+    def test_extend(self):
+        """Extend task class"""
+        tasks.use_session()
+        with run_kuyruk() as master:
+            master.expect('Opening session')
+            master.expect('Closing session')
+
     def test_class_task(self):
         cat = tasks.Cat(1, 'Felix')
         self.assertTrue(isinstance(tasks.Cat.meow, Task))

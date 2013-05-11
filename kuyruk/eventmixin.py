@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 import logging
 from kuyruk import signals
-from functools import wraps
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +27,4 @@ class EventMixin(object):
         return f
 
     def connect_signal(self, signal, handler):
-        signal.connect(insert_sender(handler), sender=self, weak=False)
-
-
-def insert_sender(f):
-    @wraps(f)
-    def inner(*args, **kwargs):
-        return f(*args[1:], **kwargs)
-    return inner
+        signal.connect(handler, sender=self, weak=False)

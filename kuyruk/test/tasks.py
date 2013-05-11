@@ -1,6 +1,7 @@
 from time import sleep
 
-from kuyruk.kuyruk import Kuyruk, Task
+from kuyruk import Kuyruk, Task
+from kuyruk.signals import before_task, after_task, on_return
 
 
 kuyruk = Kuyruk()
@@ -61,33 +62,39 @@ def task_with_functions(message):
     return 42
 
 
+# @before_task.connect_via(kuyruk2)
 @kuyruk2.before_task
-def function1(task, args, kwargs):
+def function1(sender, task, args, kwargs):
     print 'function1'
-    print task, args, kwargs
+    print sender, task, args, kwargs
+    assert sender is kuyruk2
     assert isinstance(task, Task)
     assert args == ['hello world']
     assert kwargs == {}
 
 
+# @before_task.connect_via(task_with_functions)
 @task_with_functions.before_task
-def function2(task, args, kwargs):
+def function2(sender, task, args, kwargs):
     print 'function2'
 
 
+# @on_return.connect_via(task_with_functions)
 @task_with_functions.on_return
-def function3(task, args, kwargs, return_value):
+def function3(sender, task, args, kwargs, return_value):
     print 'function3'
     assert return_value == 42
 
 
+# @after_task.connect_via(task_with_functions)
 @task_with_functions.after_task
-def function4(task, args, kwargs):
+def function4(sender, task, args, kwargs):
     print 'function4'
 
 
+# @after_task.connect_via(kuyruk2)
 @kuyruk2.after_task
-def function5(task, args, kwargs):
+def function5(sender, task, args, kwargs):
     print 'function5'
 
 
@@ -108,3 +115,28 @@ class Cat(object):
     @kuyruk.task
     def meow(self, message):
         print "Felix says:", message
+
+
+class DatabaseTask(Task):
+
+    _session = None
+
+    def setup(self):
+        self.connect_signal(after_task, self.close_session)
+
+    @property
+    def session(self):
+        if self._session is None:
+            print 'Opening session'
+            self._session = object()
+        return self._session
+
+    def close_session(self, sender, task, args, kwargs):
+        if self._session:
+            print 'Closing session'
+            self._session = None
+
+
+@kuyruk.task(task_class=DatabaseTask)
+def use_session():
+    print use_session.session
