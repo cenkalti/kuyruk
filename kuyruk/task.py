@@ -27,12 +27,20 @@ class Task(EventMixin):
         self.setup()
 
     def setup(self):
+        """Convenience function for extending classes
+        that run after __init__."""
         pass
 
     def __repr__(self):
         return "<Task of %r>" % self.name
 
     def __call__(self, *args, **kwargs):
+        """When a fucntion is wrapped with a task decorator it will be
+        converted to a Task object. By overriding __call__ method we are
+        sending this task to queue instead of invoking the function
+        without changing the client code.
+
+        """
         if self.eager or self.kuyruk.config.EAGER:
             self.apply(args, kwargs)
         else:
@@ -74,6 +82,8 @@ class Task(EventMixin):
             queue.send(desc)
 
     def get_task_description(self, args, kwargs):
+        """Return the dictionary to be sent to the queue."""
+
         # For class tasks; replace the first argument with the id of the object
         if self.cls:
             args = list(args)
@@ -85,7 +95,7 @@ class Task(EventMixin):
             'class': self.class_name,
             'args': args,
             'kwargs': kwargs,
-            'timestamp': str(datetime.utcnow()),
+            'timestamp': datetime.utcnow(),
             'retry': self.retry,
         }
 
@@ -95,6 +105,8 @@ class Task(EventMixin):
         SENDERS = (self, self.__class__, self.kuyruk)
 
         def send_signal(signal, senders, **extra):
+            """Send a signal to each sender. This allows the user to
+            register for a specific sender."""
             for sender in senders:
                 signal.send(
                     sender, task=self, args=args, kwargs=kwargs, **extra)
@@ -114,14 +126,19 @@ class Task(EventMixin):
 
     @property
     def name(self):
+        """Location for the wrapped function.
+        This value is used to find the task by worker.
+
+        """
         if self.class_name:
-            return "%s:%s.%s" % (self.module_name, self.class_name,
-                                 self.f.__name__)
+            return "%s:%s.%s" % (
+                self.module_name, self.class_name, self.f.__name__)
         else:
             return "%s:%s" % (self.module_name, self.f.__name__)
 
     @property
     def module_name(self):
+        """Module name of the function wrapped."""
         name = self.f.__module__
         if name == '__main__':
             name = importer.get_main_module().name
@@ -129,12 +146,17 @@ class Task(EventMixin):
 
     @property
     def class_name(self):
+        """If this is a class task, return the name of the class."""
         if self.cls:
             return self.cls.__name__
 
 
 class TaskResult(object):
+    """Insance of this class is returned after the task is sent to queue.
+    Since Kuyruk does not support a result backend yet it will raise
+    exception on any attribute or item access.
 
+    """
     def __init__(self, task):
         self.task = task
 
