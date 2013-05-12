@@ -46,7 +46,10 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
     if save_failed_tasks:
         args.append('--save-failed-tasks')
 
-    master = What(*args, preexec_fn=os.setsid)
+    environ = os.environ.copy()
+    environ['COVERAGE_PROCESS_START'] = 'kuyruk/test/coveragerc'
+
+    master = What(*args, preexec_fn=os.setsid, env=environ)
     master.timeout = TIMEOUT
     try:
         yield master
