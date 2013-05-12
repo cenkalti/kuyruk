@@ -26,14 +26,47 @@ executing the function and commiting it after the task is executed:
         session.commit()
 
 
-.. automethod:: Kuyruk.on_prerun
-Provides arguments:
+These decorators below are available from both :class:`Kuyruk` and :class:`Task`
+instances.
 
-* sender: Sender of the event
-* task: :class:`Task` instance
-* args: Positional arguments of the task
-* kwargs: Keyword arguments of the task
+.. automethod:: Kuyruk.on_prerun
+    :noindex:
+
+    Provides arguments:
+
+    * sender: Sender of the event
+    * task: :class:`Task` instance
+    * args: Positional arguments of the task
+    * kwargs: Keyword arguments of the task
 
 .. automethod:: Kuyruk.on_postrun
+    :noindex:
+
+    Provides arguments:
+
+    * sender: Sender of the event
+    * task: :class:`Task` instance
+    * args: Positional arguments of the task
+    * kwargs: Keyword arguments of the task
+
 .. automethod:: Kuyruk.on_success
+    :noindex:
+
+    Provides arguments:
+
+    * sender: Sender of the event
+    * task: :class:`Task` instance
+    * args: Positional arguments of the task
+    * kwargs: Keyword arguments of the task
+    * return_value: Return value of the task
+
 .. automethod:: Kuyruk.on_failure
+    :noindex:
+
+    Provides arguments:
+
+    * sender: Sender of the event
+    * task: :class:`Task` instance
+    * args: Positional arguments of the task
+    * kwargs: Keyword arguments of the task
+    * exc_info: Exception info returned from ``sys.exc_info()``

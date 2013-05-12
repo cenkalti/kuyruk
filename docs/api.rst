@@ -16,11 +16,3 @@ Task Object
 .. autoclass:: Task
    :members:
    :inherited-members:
-
-
-Config Object
--------------
-
-.. autoclass:: kuyruk.config.Config
-   :members:
-   :inherited-members:
