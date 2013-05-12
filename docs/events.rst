@@ -1,5 +1,3 @@
-.. module:: kuyruk
-
 Events
 ------
 
@@ -29,7 +27,7 @@ executing the function and commiting it after the task is executed:
 These decorators below are available from both :class:`Kuyruk` and :class:`Task`
 instances.
 
-.. automethod:: Kuyruk.on_prerun
+.. automethod:: kuyruk.Kuyruk.on_prerun
     :noindex:
 
     Provides arguments:
@@ -39,7 +37,7 @@ instances.
     * args: Positional arguments of the task
     * kwargs: Keyword arguments of the task
 
-.. automethod:: Kuyruk.on_postrun
+.. automethod:: kuyruk.Kuyruk.on_postrun
     :noindex:
 
     Provides arguments:
@@ -49,7 +47,7 @@ instances.
     * args: Positional arguments of the task
     * kwargs: Keyword arguments of the task
 
-.. automethod:: Kuyruk.on_success
+.. automethod:: kuyruk.Kuyruk.on_success
     :noindex:
 
     Provides arguments:
@@ -60,7 +58,7 @@ instances.
     * kwargs: Keyword arguments of the task
     * return_value: Return value of the task
 
-.. automethod:: Kuyruk.on_failure
+.. automethod:: kuyruk.Kuyruk.on_failure
     :noindex:
 
     Provides arguments:

@@ -1,11 +1,7 @@
-.. _api:
-.. module:: kuyruk
-
-
 Kuyruk Object
 -------------
 
-.. autoclass:: Kuyruk
+.. autoclass:: kuyruk.Kuyruk
    :members:
    :inherited-members:
 
@@ -13,6 +9,6 @@ Kuyruk Object
 Task Object
 -----------
 
-.. autoclass:: Task
+.. autoclass:: kuyruk.Task
    :members:
    :inherited-members:

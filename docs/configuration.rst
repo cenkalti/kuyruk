@@ -1,5 +1,3 @@
-.. module:: kuyruk.config
-
 .. _configuration-options:
 
 Configuration
@@ -33,27 +31,27 @@ Example:
 Worker Settings
 -------------------------
 
-.. autoattribute:: Config.IMPORT_PATH
-.. autoattribute:: Config.IMPORTS
-.. autoattribute:: Config.EAGER
-.. autoattribute:: Config.MAX_LOAD
-.. autoattribute:: Config.MAX_RUN_TIME
-.. autoattribute:: Config.SAVE_FAILED_TASKS
-.. autoattribute:: Config.WORKERS
+.. autoattribute:: kuyruk.config.Config.IMPORT_PATH
+.. autoattribute:: kuyruk.config.Config.IMPORTS
+.. autoattribute:: kuyruk.config.Config.EAGER
+.. autoattribute:: kuyruk.config.Config.MAX_LOAD
+.. autoattribute:: kuyruk.config.Config.MAX_RUN_TIME
+.. autoattribute:: kuyruk.config.Config.SAVE_FAILED_TASKS
+.. autoattribute:: kuyruk.config.Config.WORKERS
 
 
 Connection Settings
 -------------------------
 
-.. autoattribute:: Config.RABBIT_HOST
-.. autoattribute:: Config.RABBIT_PORT
-.. autoattribute:: Config.RABBIT_USER
-.. autoattribute:: Config.RABBIT_PASSWORD
+.. autoattribute:: kuyruk.config.Config.RABBIT_HOST
+.. autoattribute:: kuyruk.config.Config.RABBIT_PORT
+.. autoattribute:: kuyruk.config.Config.RABBIT_USER
+.. autoattribute:: kuyruk.config.Config.RABBIT_PASSWORD
 
 
 Manager Settings
 -------------------------
 
-.. autoattribute:: Config.MANAGER_HOST
-.. autoattribute:: Config.MANAGER_PORT
-.. autoattribute:: Config.MANAGER_HTTP_PORT
+.. autoattribute:: kuyruk.config.Config.MANAGER_HOST
+.. autoattribute:: kuyruk.config.Config.MANAGER_PORT
+.. autoattribute:: kuyruk.config.Config.MANAGER_HTTP_PORT

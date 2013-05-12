@@ -1,5 +1,3 @@
-.. module:: kuyruk
-
 Getting Started
 ===============
 
@@ -21,8 +19,8 @@ Kuyruk is available on PyPI. You can install it via pip.
 Defining Tasks
 --------------
 
-Instantiate a :class:`~Kuyruk` object somewhere.
-Then just put a :meth:`~Kuyruk.task` decorator on top of your function that you
+Instantiate a :class:`~kuyruk.Kuyruk` object somewhere.
+Then just put a :meth:`~kuyruk.Kuyruk.task` decorator on top of your function that you
 want to run in background. After decorating, when you call the function it
 will send the task to default queue instead of invoking it. Since Kuyruk does
 not support a result backend yet you should not be using the return value of
@@ -40,14 +38,14 @@ the function.
 
 
 For more information on defining tasks see the documentation on
-:meth:`~Kuyruk.task` decorator.
+:meth:`~kuyruk.Kuyruk.task` decorator.
 
 
 Sending Task to RabbitMQ
 ------------------------
 
 Kuyuk requires no change in client code. After wrapping a function with
-:meth:`~Kuyruk.task` decorator calling the function as usual will send a
+:meth:`~kuyruk.Kuyruk.task` decorator calling the function as usual will send a
 message to the queue instead of running the function.
 
 
