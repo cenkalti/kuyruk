@@ -72,4 +72,4 @@ default queue.
 
 Where is the documentation?
 ---------------------------
-Here it is: http://kuyruk.readthedocs.org/en/latest/
+Here it is: http://kuyruk.readthedocs.org
