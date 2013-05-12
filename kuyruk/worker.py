@@ -112,21 +112,15 @@ class Worker(KuyrukProcess):
         This is the method where user modules are loaded.
 
         """
-        module, function, cls, args, kwargs = (
-            task_description['module'],
-            task_description['function'],
-            task_description['class'],
-            task_description['args'],
-            task_description['kwargs'])
-        task = importer.import_task(
-            module, cls, function, self.config.IMPORT_PATH)
+        task = self.import_task(task_description)
+        args, kwargs = task_description['args'], task_description['kwargs']
 
         # Fetch the object if class task
         if task.cls:
             obj = task.cls.get(args[0])
             if not obj:
                 logger.warning("<%s.%s id=%r> is not found",
-                               module, task.cls.__name__, args[0])
+                               task.module_name, task.cls.__name__, args[0])
                 return
 
             args = list(args)
@@ -136,6 +130,14 @@ class Worker(KuyrukProcess):
                      task, args, kwargs)
         result = task.apply(args, kwargs)
         logger.debug('Result: %r', result)
+
+    def import_task(self, task_description):
+        module, function, cls = (
+            task_description['module'],
+            task_description['function'],
+            task_description['class'])
+        return importer.import_task(
+            module, cls, function, self.config.IMPORT_PATH)
 
     def is_master_alive(self):
         try:
