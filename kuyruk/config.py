@@ -78,16 +78,11 @@ class Config(object):
     """Manager HTTP port that the Flask application will run on."""
 
     def from_object(self, obj):
-        """Populate Config from an object.
-        Configuration options must be prefixed with "KUYRUK\_".
-        They are stripped when the :class:`~kuyruk.config.Config`
-        object is populated.
-
-        """
+        """Populate Config from an object."""
         for key in dir(obj):
-            if key.startswith('KUYRUK_'):
+            if key.isupper():
                 value = getattr(obj, key)
-                setattr(self, key[7:], value)
+                setattr(self, key, value)
         logger.info("Config is loaded from %r", obj)
 
     def from_pyfile(self, filename):
