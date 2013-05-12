@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import logging
+import kuyruk.exceptions
 from kuyruk.task import Task
 from kuyruk.master import Master
 from kuyruk.config import Config
@@ -18,6 +19,8 @@ class Kuyruk(EventMixin):
         See :ref:`configuration-options` for default values.
 
     """
+    Reject = kuyruk.exceptions.Reject  # Shortcut for raising from tasks
+
     def __init__(self, config=None, task_class=Task):
         self.task_class = task_class
         self.config = Config()
@@ -64,11 +67,3 @@ class Kuyruk(EventMixin):
         master = Master(self.config)
         master.override_queues = queues
         master.run()
-
-    class Reject(Exception):
-        """
-        The task should raise this if it does not want to process the message.
-        In this case message will be requeued and delivered to another worker.
-
-        """
-        pass

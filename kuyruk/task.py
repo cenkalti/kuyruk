@@ -103,8 +103,6 @@ class Task(EventMixin):
     @profile
     def apply(self, args, kwargs):
         """Run the wrapped function and event handlers."""
-        SENDERS = (self, self.__class__, self.kuyruk)
-
         def send_signal(signal, senders, **extra):
             """Send a signal to each sender. This allows the user to
             register for a specific sender."""
@@ -112,6 +110,8 @@ class Task(EventMixin):
                 signal.send(
                     sender, task=self, args=args, kwargs=kwargs, **extra)
 
+        SENDERS = (self, self.__class__, self.kuyruk)
+        logger.debug("Applying %r, args=%r, kwargs=%r", self, args, kwargs)
         try:
             send_signal(events.task_prerun, reversed(SENDERS))
             return_value = self.f(*args, **kwargs)  # call wrapped function

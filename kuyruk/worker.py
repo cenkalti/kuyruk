@@ -12,6 +12,7 @@ from kuyruk.channel import LazyChannel
 from kuyruk.process import KuyrukProcess
 from kuyruk.helpers import start_daemon_thread
 from kuyruk.consumer import Consumer
+from kuyruk.exceptions import Reject, ObjectNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -67,27 +68,26 @@ class Worker(KuyrukProcess):
             importer.import_task_module(module, self.config.IMPORT_PATH)
 
     def process_task(self, message):
-        from kuyruk import Kuyruk
-
         task_description = message.get_object()
         try:
-            self.import_and_call_task(task_description)
-        # sleep() calls below prevent cpu burning
-        except Kuyruk.Reject:
+            self.apply_task(task_description)
+        except Reject:
             logger.warning('Task is rejected')
-            sleep(1)
+            sleep(1)  # Prevent cpu burning
             message.reject()
+        except ObjectNotFound:
+            self.handle_not_found(message, task_description)
         except Exception:
-            logger.error('Task raised an exception')
-            logger.error(traceback.format_exc())
-            sleep(1)
             self.handle_exception(message, task_description)
         else:
             logger.info('Task is successful')
             message.ack()
+
         logger.debug("Processing task is finished")
 
     def handle_exception(self, message, task_description):
+        logger.error('Task raised an exception')
+        logger.error(traceback.format_exc())
         retry_count = task_description.get('retry', 0)
         if retry_count:
             logger.debug('Retry count: %s', retry_count)
@@ -100,18 +100,32 @@ class Worker(KuyrukProcess):
             if self.config.SAVE_FAILED_TASKS:
                 self.save_failed_task(task_description)
 
+    def handle_not_found(self, message, task_description):
+        """Called if the task is class task but the object with the given id
+        is not found. The default action is logging the error and acking
+        the message.
+
+        """
+        logger.error(
+            "<%s.%s id=%r> is not found",
+            task_description['module'],
+            task_description['class'],
+            task_description['args'][0])
+        message.ack()
+
     def save_failed_task(self, task_description):
+        """Saves the task to "kuyruk_failed" queue. Failed tasks can be
+        investigated later and requeued with "kuyruk-reuqueue" tool.
+
+        """
         logger.info('Saving failed task')
         task_description['queue'] = self.queue_name
         failed_queue = Queue('kuyruk_failed', self.channel)
         failed_queue.send(task_description)
         logger.debug('Saved')
 
-    def import_and_call_task(self, task_description):
-        """Call task function.
-        This is the method where user modules are loaded.
-
-        """
+    def apply_task(self, task_description):
+        """Call task function."""
         task = self.import_task(task_description)
         args, kwargs = task_description['args'], task_description['kwargs']
 
@@ -119,19 +133,14 @@ class Worker(KuyrukProcess):
         if task.cls:
             obj = task.cls.get(args[0])
             if not obj:
-                logger.warning("<%s.%s id=%r> is not found",
-                               task.module_name, task.cls.__name__, args[0])
-                return
-
-            args = list(args)
+                raise ObjectNotFound
             args[0] = obj
 
-        logger.debug('Task %r will be executed with args=%s and kwargs=%s',
-                     task, args, kwargs)
         result = task.apply(args, kwargs)
         logger.debug('Result: %r', result)
 
     def import_task(self, task_description):
+        """This is the method where user modules are loaded."""
         module, function, cls = (
             task_description['module'],
             task_description['function'],

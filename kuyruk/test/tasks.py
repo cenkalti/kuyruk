@@ -1,7 +1,7 @@
 from time import sleep
 
 from kuyruk import Kuyruk, Task
-from kuyruk.events import task_prerun, task_postrun, task_success
+from kuyruk.events import task_postrun
 
 
 kuyruk = Kuyruk()
