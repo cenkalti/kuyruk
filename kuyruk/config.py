@@ -9,6 +9,8 @@ class Config(object):
     class attributes.
 
     """
+    def __init__(self):
+        self.filename = None
 
     # Worker options
 
@@ -48,9 +50,13 @@ class Config(object):
 
         {'host1.example.com': 'a, 2*b'}
 
-    host1 will run 3 worker processes; 1 for "a" and 2 for "b" queue.
+    host1 will run 3 worker processes; 1 for "a" and 2 for "b" queue."""
 
-    """
+    LOGGING_LEVEL = 'INFO'
+    """Logging level of root logger."""
+
+    LOGGING_CONFIG = None
+    """INI style logging configuration file."""
 
     # Connection options
 
@@ -86,6 +92,7 @@ class Config(object):
         logger.info("Config is loaded from %r", obj)
 
     def from_pyfile(self, filename):
+        self.filename = filename
         d = imp.new_module('kuyruk_config')
         d.__file__ = filename
         try:

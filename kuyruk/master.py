@@ -1,14 +1,14 @@
 from __future__ import absolute_import
 import os
 import sys
+import errno
 import signal
 import socket
 import logging
 import itertools
-import multiprocessing
+import subprocess
 from time import time, sleep
 from setproctitle import setproctitle
-from kuyruk.worker import Worker
 from kuyruk.version import __version__
 from kuyruk.process import KuyrukProcess
 
@@ -23,15 +23,12 @@ class Master(KuyrukProcess):
     def __init__(self, config):
         super(Master, self).__init__(config)
         self.workers = []
-        self.override_queues = None
-        if self.config.MAX_LOAD is None:
-            self.config.MAX_LOAD = multiprocessing.cpu_count()
 
     def run(self):
         super(Master, self).run()
         setproctitle('kuyruk: master')
-        self.start_workers()
         self.maybe_start_manager_thread()
+        self.start_workers()
         self.wait_for_workers()
         logger.debug('End run master')
 
@@ -41,15 +38,10 @@ class Master(KuyrukProcess):
         queues = parse_queues_str(queues)
         logger.info('Starting to work on queues: %s', queues)
         for queue in queues:
-            worker = Worker(queue, self.config)
-            worker.start()
-            self.workers.append(worker)
+            self.spawn_new_worker(queue)
 
     def get_queues(self):
         """Return queues string."""
-        if self.override_queues:
-            return self.override_queues
-
         hostname = socket.gethostname()
         try:
             return self.config.WORKERS[hostname]
@@ -77,7 +69,7 @@ class Master(KuyrukProcess):
                     any_alive = True
                 elif not self.shutdown_pending.is_set():
                     worker.kill_pg()
-                    self.spawn_new_worker(worker)
+                    self.respawn_worker(worker)
                     any_alive = True
                 else:
                     self.workers.remove(worker)
@@ -87,17 +79,20 @@ class Master(KuyrukProcess):
                              "%i seconds passed" % (time() - start))
                 sleep(1)
 
-    def spawn_new_worker(self, worker):
+    def respawn_worker(self, worker):
         """Spawn a new process with parameters same as the old worker."""
         logger.debug("Spawning new worker")
-        new_worker = Worker(worker.queue_name, self.config)
-        new_worker.start()
-        self.workers.append(new_worker)
+        self.spawn_new_worker(worker.queue)
         self.workers.remove(worker)
         logger.debug(self.workers)
 
+    def spawn_new_worker(self, queue):
+        worker = WorkerProcess(self.config, queue)
+        worker.start()
+        self.workers.append(worker)
+
     def register_signals(self):
-        signal.signal(signal.SIGINT, self.handle_sigint)
+        super(Master, self).register_signals()
         signal.signal(signal.SIGTERM, self.handle_sigterm)
         signal.signal(signal.SIGQUIT, self.handle_sigquit)
         signal.signal(signal.SIGABRT, self.handle_sigabrt)
@@ -114,18 +109,10 @@ class Master(KuyrukProcess):
         logger.warning("Handling SIGABRT")
         self.abort()
 
-    def handle_sigint(self, signum, frame):
-        logger.warning("Handling SIGINT")
-        if sys.stdin.isatty() and not self.shutdown_pending.is_set():
-            self.warm_shutdown()
-        else:
-            self.cold_shutdown()
-        logger.debug("Handled SIGINT")
-
-    def warm_shutdown(self):
-        logger.warning("Warm shutdown")
-        self.shutdown_pending.set()
-        self.stop_workers()
+    def warm_shutdown(self, sigint=False):
+        super(Master, self).warm_shutdown(sigint)
+        if not sigint:
+            self.stop_workers()
 
     def cold_shutdown(self):
         logger.warning("Cold shutdown")
@@ -148,6 +135,43 @@ class Master(KuyrukProcess):
             'workers': len(self.workers),
             'load': os.getloadavg(),
         }
+
+
+class WorkerProcess(object):
+
+    def __init__(self, config, queue):
+        self.config = config
+        self.queue = queue
+        self.popen = None
+
+    def start(self):
+        """Runs the worker by starting another Python interpreter."""
+        command = [sys.executable, '-u', '-m', 'kuyruk.__main__']
+
+        # Pass each config value as command line option
+        from .__main__ import to_option
+        for key, value in vars(self.config).iteritems():
+            if key.isupper():
+                command.extend([to_option(key), str(value)])
+
+        command.extend(['worker', '--queue', self.queue])
+        self.popen = subprocess.Popen(
+            command, stdout=sys.stdout, stderr=sys.stderr, bufsize=1)
+
+    @property
+    def pid(self):
+        return self.popen.pid
+
+    def is_alive(self):
+        self.popen.poll()
+        return self.popen.returncode is None
+
+    def kill_pg(self):
+        try:
+            os.killpg(self.pid, signal.SIGKILL)
+        except OSError as e:
+            if e.errno != errno.ESRCH:  # No such process
+                raise
 
 
 def parse_queues_str(s):

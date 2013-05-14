@@ -35,9 +35,10 @@ class KuyrukTestCase(unittest.TestCase):
     def test_another_queue(self):
         """Run a task on different queue"""
         tasks.print_task2('hello another')
-        with run_kuyruk(queues='another_queue') as master:
+        with run_kuyruk(queue='another_queue') as master:
             master.expect('another_queue')
             master.expect('hello another')
+            master.expect('Committed transaction')
 
     def test_exception(self):
         """Errored task message is discarded"""
@@ -58,7 +59,7 @@ class KuyrukTestCase(unittest.TestCase):
         """If the worker is stuck on the task it can be stopped by
         invoking cold shutdown"""
         tasks.loop_forever()
-        with run_kuyruk(terminate=False) as master:
+        with run_kuyruk(process='master', terminate=False) as master:
             master.expect('looping forever')
             master.send_signal(signal.SIGINT)
             master.expect('Warm shutdown')
@@ -92,7 +93,7 @@ class KuyrukTestCase(unittest.TestCase):
 
         """
         _pid = lambda: get_pid('kuyruk: worker')
-        with run_kuyruk() as master:
+        with run_kuyruk(process='master') as master:
             master.expect('Start consuming')
             pid1 = _pid()
             os.kill(pid1, signal.SIGKILL)
@@ -110,6 +111,7 @@ class KuyrukTestCase(unittest.TestCase):
             master.expect('No retry left')
             master.expect('Saving failed task')
             master.expect('Saved')
+            master.expect('Committed transaction')
         assert is_empty('kuyruk')
         assert not is_empty('kuyruk_failed')
 

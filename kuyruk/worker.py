@@ -4,6 +4,7 @@ import socket
 import signal
 import logging
 import traceback
+import multiprocessing
 from time import sleep
 from setproctitle import setproctitle
 from kuyruk import importer
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class Worker(KuyrukProcess):
 
-    def __init__(self, queue_name, config):
+    def __init__(self, config, queue_name):
         """
         :param queue_name: Queue name that this worker gets the messages from
         :param config: Configuration object
@@ -31,6 +32,8 @@ class Worker(KuyrukProcess):
         self.queue = Queue(queue_name, self.channel, local=is_local)
         self.consumer = Consumer(self.queue)
         self.working = False
+        if self.config.MAX_LOAD is None:
+            self.config.MAX_LOAD = multiprocessing.cpu_count()
 
     def run(self):
         """Run worker until stop flag is set.
@@ -59,6 +62,7 @@ class Worker(KuyrukProcess):
                 self.working = True
                 self.process_task(message)
                 self.channel.tx_commit()
+                logger.debug("Committed transaction")
                 self.working = False
 
         logger.debug("End run worker")
@@ -182,20 +186,16 @@ class Worker(KuyrukProcess):
         self.warm_shutdown()
 
     def register_signals(self):
-        # SIGINT is ignored because when pressed Ctrl-C
-        # it is sent to both master and workers.
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        super(Worker, self).register_signals()
         signal.signal(signal.SIGTERM, self.handle_sigterm)
-        signal.signal(signal.SIGUSR1, print_stack)  # for debugging
 
     def handle_sigterm(self, signum, frame):
         logger.warning("Catched SIGTERM")
         self.warm_shutdown()
 
-    def warm_shutdown(self):
+    def warm_shutdown(self, sigint=False):
         """Shutdown gracefully."""
-        logger.warning("Shutting down worker gracefully")
-        self.shutdown_pending.set()
+        super(Worker, self).warm_shutdown(sigint)
         self.consumer.stop()
 
     def get_stats(self):
@@ -215,9 +215,3 @@ class Worker(KuyrukProcess):
                 'consumers': method.consumer_count,
             }
         }
-
-
-def print_stack(sig, frame):
-    print '=' * 70
-    print ''.join(traceback.format_stack())
-    print '-' * 70

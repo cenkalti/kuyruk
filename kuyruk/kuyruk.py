@@ -2,7 +2,6 @@ from __future__ import absolute_import
 import logging
 import kuyruk.exceptions
 from kuyruk.task import Task
-from kuyruk.master import Master
 from kuyruk.config import Config
 from kuyruk.events import EventMixin
 
@@ -12,8 +11,7 @@ logger = logging.getLogger(__name__)
 class Kuyruk(EventMixin):
     """
     Main class for Kuyruk distributed task queue. It holds the configuration
-    values and provides a task decorator for user application and run method
-    for workers.
+    values and provides a task decorator for user application
 
     :param config: A module that contains configuration options.
         See :ref:`configuration-options` for default values.
@@ -55,15 +53,3 @@ class Kuyruk(EventMixin):
         else:
             logger.debug('task with args')
             return decorator()
-
-    def run(self, queues=None):
-        """Run Kuyruk master process that will run the worker processes.
-
-        :param queues: Override queues with this ones. Specified in special
-            Kuyruk syntax.
-        :return: :const:`None`
-
-        """
-        master = Master(self.config)
-        master.override_queues = queues
-        master.run()

@@ -1,9 +1,10 @@
 import os
-import errno
+import sys
 import signal
 import logging
+import logging.config
 import threading
-import multiprocessing
+import traceback
 from time import time
 from .config import Config
 from .manager.client import ManagerClientThread
@@ -11,34 +12,50 @@ from .manager.client import ManagerClientThread
 logger = logging.getLogger(__name__)
 
 
-class KuyrukProcess(multiprocessing.Process):
+class KuyrukProcess(object):
 
     def __init__(self, config):
         assert isinstance(config, Config)
-        super(KuyrukProcess, self).__init__()
         self.config = config
-        self.manager_thread = None
         self.shutdown_pending = threading.Event()
+        self.manager_thread = None
+        self.popen = None
 
     def run(self):
+        self.setup_logging()
         self.register_signals()
         logger.debug('PID: %s PGID: %s', os.getpid(), os.getpgrp())
         self.started = time()
 
     def register_signals(self):
-        raise NotImplementedError
+        signal.signal(signal.SIGINT, self.handle_sigint)
+        signal.signal(signal.SIGUSR1, print_stack)  # for debugging
+
+    def handle_sigint(self, signum, frame):
+        logger.warning("Handling SIGINT")
+        if sys.stdin.isatty() and not self.shutdown_pending.is_set():
+            self.warm_shutdown(signum == signal.SIGINT)
+        else:
+            self.cold_shutdown()
+        logger.debug("Handled SIGINT")
+
+    def warm_shutdown(self, sigint):
+        logger.warning("Warm shutdown")
+        self.shutdown_pending.set()
+
+    def cold_shutdown(self):
+        logger.warning("Cold shutdown")
+        self.shutdown_pending.set()
+        os._exit(0)
 
     def maybe_start_manager_thread(self):
         if self.config.MANAGER_HOST:
-            self.start_manager_thread()
-
-    def start_manager_thread(self):
-        self.manager_thread = ManagerClientThread(
-            self.config.MANAGER_HOST,
-            self.config.MANAGER_PORT,
-            self.get_stats,
-            self.on_action)
-        self.manager_thread.start()
+            self.manager_thread = ManagerClientThread(
+                self.config.MANAGER_HOST,
+                self.config.MANAGER_PORT,
+                self.get_stats,
+                self.on_action)
+            self.manager_thread.start()
 
     def get_stats(self):
         raise NotImplementedError
@@ -54,9 +71,16 @@ class KuyrukProcess(multiprocessing.Process):
     def uptime(self):
         return int(time() - self.started)
 
-    def kill_pg(self):
-        try:
-            os.killpg(self.pid, signal.SIGKILL)
-        except OSError as e:
-            if e.errno != errno.ESRCH:  # No such process
-                raise
+    def setup_logging(self):
+        if self.config.LOGGING_CONFIG:
+            logging.config.fileConfig(self.config.LOGGING_CONFIG)
+        else:
+            logging.getLogger('pika').level = logging.WARNING
+            level = getattr(logging, self.config.LOGGING_LEVEL)
+            logging.basicConfig(level=level)
+
+
+def print_stack(sig, frame):
+    print '=' * 70
+    print ''.join(traceback.format_stack())
+    print '-' * 70

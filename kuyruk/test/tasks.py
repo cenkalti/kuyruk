@@ -135,3 +135,9 @@ class DatabaseTask(Task):
 @kuyruk.task(task_class=DatabaseTask)
 def use_session():
     print use_session.session
+
+
+@kuyruk.task
+def spawn_process(args=['sleep', '60']):
+    import subprocess
+    subprocess.check_call(args)

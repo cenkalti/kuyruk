@@ -48,7 +48,7 @@ def custom_path(path):
 
 
 def get_main_module():
-    """:return main module and module name pair"""
+    """Returns main module and module name pair."""
     main_module = sys.modules['__main__']
     if not hasattr(main_module, '__file__'):
         # if run from interactive shell

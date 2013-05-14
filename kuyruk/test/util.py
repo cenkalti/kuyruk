@@ -13,7 +13,7 @@ from what import What
 from kuyruk.channel import LazyChannel
 from kuyruk.queue import Queue as RabbitQueue
 
-TIMEOUT = 30
+TIMEOUT = 10
 
 logger = logging.getLogger(__name__)
 
@@ -32,34 +32,36 @@ def is_empty(queue):
 
 
 @contextmanager
-def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
+def run_kuyruk(queue='kuyruk', save_failed_tasks=False, terminate=True,
+               process='worker'):
     assert not_running()
     args = [
         sys.executable, '-u',
         '-m', 'kuyruk.__main__',  # run main module
-        '--max-load', '999',
+        '--max-load', '999',  # do not pause because of load
     ]
     args.extend(['--logging-level=DEBUG'])
-    if queues:
-        args.extend(['--queues', queues])
-
     if save_failed_tasks:
-        args.append('--save-failed-tasks')
+        args.extend(['--save-failed-tasks', 'True'])
+
+    args.append(process)
+    if process == 'worker':
+        args.extend(['--queue', queue])
 
     environ = os.environ.copy()
     environ['COVERAGE_PROCESS_START'] = 'kuyruk/test/coveragerc'
 
-    master = What(*args, preexec_fn=os.setsid, env=environ)
-    master.timeout = TIMEOUT
+    popen = What(*args, preexec_fn=os.setsid, env=environ)
+    popen.timeout = TIMEOUT
     try:
-        yield master
+        yield popen
 
         if terminate:
-            # Send SIGTERM to master for gracefull shutdown
-            master.terminate()
-            master.expect('End run master')
+            # Send SIGTERM to worker for gracefull shutdown
+            popen.terminate()
+            popen.expect("End run %s" % process)
 
-        master.expect_exit()
+        popen.expect_exit()
 
     finally:
         # We need to make sure that not any process of kuyruk is running
@@ -67,18 +69,18 @@ def run_kuyruk(queues=None, save_failed_tasks=False, terminate=True):
 
         # Kill master process and wait until it is dead
         try:
-            master.kill()
-            master.wait()
+            popen.kill()
+            popen.wait()
         except OSError as e:
             if e.errno != errno.ESRCH:  # No such process
                 raise
 
-        logger.debug('Master return code: %s', master.returncode)
+        logger.debug('Worker return code: %s', popen.returncode)
 
         # Kill worker processes by sending SIGKILL to their process group id
         try:
-            logger.info('Killing process group: %s', master.pid)
-            os.killpg(master.pid, signal.SIGTERM)
+            logger.info('Killing process group: %s', popen.pid)
+            os.killpg(popen.pid, signal.SIGTERM)
         except OSError as e:
             if e.errno != errno.ESRCH:  # No such process
                 raise
@@ -95,7 +97,13 @@ def is_running():
 
 
 def run_requeue():
-    w = What(sys.executable, '-u', '-m', 'kuyruk.requeue')
+    args = [
+        sys.executable, '-u',
+        '-m', 'kuyruk.__main__',
+        '--logging-level=DEBUG',
+        'requeue'
+    ]
+    w = What(*args)
     w.expect_exit(0, TIMEOUT)
 
 

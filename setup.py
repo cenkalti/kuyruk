@@ -41,8 +41,6 @@ setup(
     entry_points={
         'console_scripts': [
             'kuyruk = kuyruk.__main__:main',
-            'kuyruk-requeue-failed-tasks = kuyruk.requeue:main',
-            'kuyruk-manager = kuyruk.manager.__main__:main',
         ],
     },
     classifiers=[
