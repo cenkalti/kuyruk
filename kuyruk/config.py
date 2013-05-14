@@ -56,29 +56,23 @@ class Config(object):
     """Logging level of root logger."""
 
     LOGGING_CONFIG = None
-    """INI style logging configuration file."""
+    """INI style logging configuration file.
+    This has pecedence over ``LOGGING_LEVEL``."""
 
     # Connection options
 
     RABBIT_HOST = 'localhost'
-    """RabbitMQ host."""
-
     RABBIT_PORT = 5672
-    """RabbitMQ port."""
-
     RABBIT_USER = 'guest'
-    """RabbitMQ user."""
-
     RABBIT_PASSWORD = 'guest'
-    """RabbitMQ password."""
 
     # Manager options
 
     MANAGER_HOST = None
-    """Kuyruk Manager host that the workers will connect and send stats."""
+    """Manager host that the workers will connect and send stats."""
 
     MANAGER_PORT = 16501
-    """Manager port."""
+    """Manager port that the workers will connect and send stats."""
 
     MANAGER_HTTP_PORT = 16500
     """Manager HTTP port that the Flask application will run on."""

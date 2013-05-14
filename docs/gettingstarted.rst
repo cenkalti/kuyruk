@@ -41,22 +41,22 @@ For more information on defining tasks see the documentation on
 :meth:`~kuyruk.Kuyruk.task` decorator.
 
 
-Sending Task to RabbitMQ
-------------------------
+Sending the Task to RabbitMQ
+----------------------------
 
 Kuyuk requires no change in client code. After wrapping a function with
 :meth:`~kuyruk.Kuyruk.task` decorator calling the function as usual will send a
 message to the queue instead of running the function.
 
 
-Running Worker
---------------
-
-Running the binary ``kuyruk`` is enough for processing the tasks in the
-default queue.
+Running a Worker
+----------------
 
 .. code-block:: bash
 
-   $ kuyruk
+    $ kuyruk worker
+
+Running the above command is enough for processing the tasks in the
+default queue.
 
 For more information about workers see :ref:`workers`.

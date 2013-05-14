@@ -1,7 +1,7 @@
 from time import sleep
 
 from kuyruk import Kuyruk, Task
-from kuyruk.events import task_postrun
+from kuyruk.events import task_prerun, task_postrun
 
 
 kuyruk = Kuyruk()
@@ -114,22 +114,17 @@ class Cat(object):
 
 class DatabaseTask(Task):
 
-    _session = None
-
     def setup(self):
+        self.connect_signal(task_prerun, self.open_session)
         self.connect_signal(task_postrun, self.close_session)
 
-    @property
-    def session(self):
-        if self._session is None:
-            print 'Opening session'
-            self._session = object()
-        return self._session
+    def open_session(self, sender, task, args, kwargs):
+        print 'Opening session'
+        self.session = object()
 
     def close_session(self, sender, task, args, kwargs):
-        if self._session:
-            print 'Closing session'
-            self._session = None
+        print 'Closing session'
+        self.session = None
 
 
 @kuyruk.task(task_class=DatabaseTask)
