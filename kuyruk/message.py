@@ -13,6 +13,7 @@ class Message(object):
         """
         :param message: return value of pika.Channel.basic_get
         :param queue: kuyruk.queue.Queue instance
+
         """
         self.queue = queue
         self.method = message[0]

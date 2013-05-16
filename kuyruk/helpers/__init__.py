@@ -83,3 +83,11 @@ def profile(f):
         logger.info("%r finished in %i seconds." % (f, end - start))
         return result
     return inner
+
+
+def synchronized(f):
+    """Run the method with lock."""
+    def inner(self, *args, **kw):
+        with self.lock:
+            return f(self, *args, **kw)
+    return inner

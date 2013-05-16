@@ -13,7 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 class KuyrukProcess(object):
+    """Base class for Master and Worker classes.
+    Contains some shared code betwee these 2 classes.
 
+    """
     def __init__(self, config):
         assert isinstance(config, Config)
         self.config = config
@@ -32,6 +35,10 @@ class KuyrukProcess(object):
         signal.signal(signal.SIGUSR1, print_stack)  # for debugging
 
     def handle_sigint(self, signum, frame):
+        """If running from terminal pressing Ctrl-C will initiate a warm
+        shutdown. The second interrupt will do a cold shutdown.
+
+        """
         logger.warning("Handling SIGINT")
         if sys.stdin.isatty() and not self.shutdown_pending.is_set():
             self.warm_shutdown(signum == signal.SIGINT)
@@ -58,6 +65,8 @@ class KuyrukProcess(object):
             self.manager_thread.start()
 
     def get_stats(self):
+        """Returns the stats for sending to Kuyruk Manager.
+        Called by the manager thread. (self.manager_thread)"""
         raise NotImplementedError
 
     def on_action(self, sock, action):

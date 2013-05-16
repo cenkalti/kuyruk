@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import os
+import errno
 import socket
 import logging
 import traceback
@@ -11,6 +12,7 @@ import pika.exceptions
 
 from kuyruk.message import Message
 from kuyruk.channel import LazyChannel
+from kuyruk.helpers import synchronized
 
 logger = logging.getLogger(__name__)
 
@@ -38,13 +40,6 @@ def require_declare(f):
                 self.declare()
                 return f(self, *args, **kwargs)
             raise
-    return inner
-
-
-def synchronized(f):
-    def inner(self, *args, **kw):
-        with self.lock:
-            return f(self, *args, **kw)
     return inner
 
 
@@ -128,6 +123,7 @@ class Queue(object):
 
     @synchronized
     def delete(self):
+        """Deletes queue. Does not raise exception if queue is not found."""
         logger.warning('Deleting queue')
         try:
             return self.channel.queue_delete(queue=self.name)
@@ -152,7 +148,7 @@ class Queue(object):
             self.channel.connection.process_data_events()
         except Exception as e:
             logger.debug(e)
-            if e.args[0] == 4:  # Interrupted system call
+            if e.args[0] == errno.EINTR:  # Interrupted system call
                 # Happens when a signal is received. No harm.
                 pass
             else:

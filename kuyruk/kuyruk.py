@@ -41,7 +41,9 @@ class Kuyruk(EventMixin):
         """
         def decorator():
             def inner(f):
+                # Function may be wrapped with no-arg decorator
                 queue_ = 'kuyruk' if callable(queue) else queue
+
                 task_class_ = task_class or self.task_class
                 return task_class_(
                     f, self, queue=queue_, eager=eager, retry=retry)

@@ -3,7 +3,8 @@ import logging
 
 from kuyruk.kuyruk import Kuyruk
 from kuyruk.task import Task
-from kuyruk.version import __version__
+
+__version__ = '0.12.0'
 
 try:
     # not available in python 2.6

@@ -2,11 +2,10 @@ from __future__ import absolute_import
 import ast
 import logging
 import argparse
-from kuyruk import requeue, manager
+from kuyruk import __version__, requeue, manager
 from kuyruk.worker import Worker
 from kuyruk.master import Master
 from kuyruk.config import Config
-from kuyruk.version import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +22,13 @@ def master(config, args):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-v', '--version', action='version', version=__version__)
+
+    # Add common options
+    parser.add_argument(
+        '-v', '--version', action='version', version=__version__)
     parser.add_argument(
         '--config',
         help='Python file containing Kuyruk configuration parameters')
-
     add_config_options(parser)
 
     subparsers = parser.add_subparsers(help='sub-command name')
