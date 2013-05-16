@@ -62,12 +62,12 @@ using the return value of the function.
 How to run the worker?
 ----------------------
 
-Running the binary ``kuyruk`` is enough for processing the tasks in the
-default queue.
+Running the worker command with no parameters is enough for
+processing the tasks in the default queue.
 
 .. code-block:: bash
 
-   $ kuyruk
+   $ kuyruk worker
 
 
 Where is the documentation?
