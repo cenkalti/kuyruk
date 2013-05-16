@@ -1,4 +1,0 @@
-Manager
-=======
-
-TODO

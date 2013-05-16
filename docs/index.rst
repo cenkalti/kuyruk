@@ -23,11 +23,10 @@ User's Guide
    features
    gettingstarted
    configuration
-   workers
+   commands
    signals
    events
    extending
-   manager
 
 
 API Reference
