@@ -23,13 +23,10 @@ class LazyChannel(object):
             config.RABBIT_USER, config.RABBIT_PASSWORD)
 
     def __getattr__(self, item):
+        """Open the channel on first access."""
         if not self.is_open:
             self.open()
         return getattr(self.channel, item)
-
-    def __del__(self):
-        if self.is_open:
-            self.close()
 
     def __enter__(self):
         return self
