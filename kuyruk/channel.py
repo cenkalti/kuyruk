@@ -1,3 +1,5 @@
+import errno
+import select
 import logging
 
 import pika
@@ -59,3 +61,16 @@ class LazyChannel(object):
             self.channel.close()
             self.connection.close()
             logger.info('%r closed', self)
+
+    def tx_commit(self):
+        # When a signal is received while tx_commit() is running
+        # select.poll() throws an exception, complaining that syscall has
+        # interrupted. This while loop ensures that the trx is commited
+        # without raising an error.
+        while True:
+            try:
+                self.channel.tx_commit()
+                break
+            except select.error as e:
+                if e.args[0] != errno.EINTR:
+                    raise
