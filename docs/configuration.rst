@@ -31,6 +31,7 @@ Example:
 Worker Settings
 -------------------------
 
+.. autoattribute:: kuyruk.config.Config.WORKER_CLASS
 .. autoattribute:: kuyruk.config.Config.IMPORT_PATH
 .. autoattribute:: kuyruk.config.Config.IMPORTS
 .. autoattribute:: kuyruk.config.Config.EAGER
