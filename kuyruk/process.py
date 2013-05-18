@@ -85,7 +85,7 @@ class KuyrukProcess(object):
             logging.config.fileConfig(self.config.LOGGING_CONFIG)
         else:
             logging.getLogger('pika').level = logging.WARNING
-            level = getattr(logging, self.config.LOGGING_LEVEL)
+            level = getattr(logging, self.config.LOGGING_LEVEL.upper())
             logging.basicConfig(level=level)
 
 
