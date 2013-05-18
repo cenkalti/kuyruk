@@ -110,7 +110,8 @@ class Worker(KuyrukProcess):
             self.handle_not_found(message, task_description)
         except Exception:
             if self.sentry:
-                ident = self.sentry.get_ident(self.sentry.captureException())
+                ident = self.sentry.get_ident(self.sentry.captureException(
+                    extra={'task_description': task_description}))
                 logger.error("Exception caught; reference is %s", ident)
             self.handle_exception(message, task_description)
         else:
