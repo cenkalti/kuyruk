@@ -95,3 +95,10 @@ class Config(object):
             e.strerror = 'Unable to load configuration file (%s)' % e.strerror
             raise
         self.from_object(d)
+
+    def export(self, path):
+        with open(path, 'w') as f:
+            for attr in dir(self):
+                if attr.isupper() and not attr.startswith('_'):
+                    value = getattr(self, attr)
+                    f.write("%s = %r\n" % (attr, value))
