@@ -31,7 +31,7 @@ class Config(object):
     MAX_LOAD = None
     """Stop consuming queue when the load goes above this level."""
 
-    MAX_RUN_TIME = None
+    MAX_WORKER_RUN_TIME = None
     """Gracefully shutdown worker after running this seconds.
     Master will detect that the worker is exited and will spawn a new
     worker with identical config.

@@ -36,7 +36,7 @@ Worker Settings
 .. autoattribute:: kuyruk.config.Config.IMPORTS
 .. autoattribute:: kuyruk.config.Config.EAGER
 .. autoattribute:: kuyruk.config.Config.MAX_LOAD
-.. autoattribute:: kuyruk.config.Config.MAX_RUN_TIME
+.. autoattribute:: kuyruk.config.Config.MAX_WORKER_RUN_TIME
 .. autoattribute:: kuyruk.config.Config.SAVE_FAILED_TASKS
 .. autoattribute:: kuyruk.config.Config.QUEUES
 .. autoattribute:: kuyruk.config.Config.LOGGING_CONFIG

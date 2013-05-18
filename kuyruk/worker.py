@@ -209,11 +209,11 @@ class Worker(KuyrukProcess):
             sleep(1)
 
     def shutdown_timer(self):
-        """Counts down from MAX_RUN_TIME. When it reaches zero sutdown
+        """Counts down from MAX_WORKER_RUN_TIME. When it reaches zero sutdown
         gracefully.
 
         """
-        seconds = self.config.MAX_RUN_TIME
+        seconds = self.config.MAX_WORKER_RUN_TIME
         if seconds > 0:
             sleep(seconds)
             logger.warning('Run time reached zero, cancelling consume.')
