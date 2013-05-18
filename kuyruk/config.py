@@ -10,9 +10,6 @@ class Config(object):
     class attributes.
 
     """
-    def __init__(self):
-        self.filename = None
-
     # Worker options
 
     IMPORT_PATH = None
@@ -88,7 +85,6 @@ class Config(object):
 
     def from_pyfile(self, filename):
         """Loads values from a Python file."""
-        self.filename = filename
         d = imp.new_module('kuyruk_config')
         d.__file__ = filename
         try:

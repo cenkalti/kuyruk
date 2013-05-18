@@ -14,7 +14,7 @@ class Kuyruk(EventMixin):
     values and provides a task decorator for user application
 
     :param config: A module that contains configuration options.
-        See :ref:`configuration-options` for default values.
+                   See :ref:`configuration-options` for default values.
 
     """
     Reject = kuyruk.exceptions.Reject  # Shortcut for raising from tasks
