@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class Master(KuyrukProcess):
-    """
-    Master worker implementation that coordinates queue workers.
+    """Spawns multiple worker and supervises them by reading the list of queues
+    from configuration.
 
     """
     def __init__(self, config):
@@ -170,6 +170,10 @@ class WorkerProcess(object):
         return self.popen.returncode is None
 
     def kill_pg(self):
+        """Kills the process with their children. Does not raise exception
+        if the process is not alive.
+
+        """
         try:
             os.killpg(self.pid, signal.SIGKILL)
         except OSError as e:
