@@ -65,7 +65,6 @@ class Worker(KuyrukProcess):
                 logger.debug("Committed transaction")
                 self.working = False
 
-        events.worker_shutdown.send(self)
         logger.debug("End run worker")
 
     def import_modules(self):
