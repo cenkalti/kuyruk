@@ -58,8 +58,6 @@ def main():
     # Parse arguments
     args = parser.parse_args()
     config = create_config(args)
-    if args.delete_config:
-        os.unlink(config.filename)
 
     # Run the sub-command function
     args.func(config, args)
@@ -91,6 +89,9 @@ def create_config(args):
                 except ValueError:
                     pass
                 setattr(config, key, value)
+
+    if args.delete_config:
+        os.unlink(args.config)
 
     return config
 
