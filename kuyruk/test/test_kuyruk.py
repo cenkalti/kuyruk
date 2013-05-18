@@ -158,3 +158,9 @@ class KuyrukTestCase(unittest.TestCase):
     def test_task_name(self):
         self.assertEqual(tasks.Cat.meow.name, 'kuyruk.test.tasks:Cat.meow')
         self.assertEqual(tasks.print_task.name, 'kuyruk.test.tasks:print_task')
+
+    def test_timeout(self):
+        """Timeout long running task"""
+        tasks.sleeping_task(2)
+        with run_kuyruk() as master:
+            master.expect('raise Timeout')

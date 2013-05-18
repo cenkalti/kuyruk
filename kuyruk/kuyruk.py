@@ -25,7 +25,8 @@ class Kuyruk(EventMixin):
         if config:
             self.config.from_object(config)
 
-    def task(self, queue='kuyruk', eager=False, retry=0, task_class=None):
+    def task(self, queue='kuyruk', eager=False, retry=0, task_class=None,
+             max_run_time=None):
         """Wrap functions with this decorator to convert them to background
         tasks. After wrapping, calling the function will send a message to
         queue instead of running the function.
@@ -36,6 +37,8 @@ class Kuyruk(EventMixin):
         :param task_class: Custom task class.
             Must be a subclass of :class:`~Task`.
             If this is :const:`None` then :attr:`Task.task_class` will be used.
+        :param max_run_time: Maximum allowed time in seconds for task to
+            complete.
         :return: Callable :class:`~Task` object wrapping the original function.
 
         """
@@ -46,7 +49,9 @@ class Kuyruk(EventMixin):
 
                 task_class_ = task_class or self.task_class
                 return task_class_(
-                    f, self, queue=queue_, eager=eager, retry=retry)
+                    f, self,
+                    queue=queue_, eager=eager,
+                    retry=retry, max_run_time=max_run_time)
             return inner
 
         if callable(queue):

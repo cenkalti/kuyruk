@@ -47,7 +47,7 @@ def rejecting_task():
     raise kuyruk.Reject
 
 
-@kuyruk.task
+@kuyruk.task(max_run_time=1)
 def sleeping_task(seconds):
     sleep(seconds)
 
