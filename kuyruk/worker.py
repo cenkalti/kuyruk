@@ -19,12 +19,13 @@ logger = logging.getLogger(__name__)
 
 
 class Worker(KuyrukProcess):
+    """Consumes messages from a queue and runs tasks.
 
+    :param queue_name: The queue name to work on
+    :param config: A :class:`~kuyurk.config.Config` object
+
+    """
     def __init__(self, config, queue_name):
-        """
-        :param queue_name: Queue name that this worker gets the messages from
-        :param config: Configuration object
-        """
         super(Worker, self).__init__(config)
         self.channel = LazyChannel.from_config(config)
         self.queue_name = queue_name
@@ -32,14 +33,18 @@ class Worker(KuyrukProcess):
         self.queue = Queue(queue_name, self.channel, local=is_local)
         self.consumer = Consumer(self.queue)
         self.working = False
+        self.daemon_threads = [
+            self.watch_master,
+            self.watch_load,
+            self.shutdown_timer,
+        ]
         if self.config.MAX_LOAD is None:
             self.config.MAX_LOAD = multiprocessing.cpu_count()
 
     def run(self):
-        """Run worker until stop flag is set.
-
-        Since Worker class is derived from multiprocessing.Process,
-        it will be invoked when worker.start() is called.
+        """Runs the worker and opens a connection to RabbitMQ.
+        After connection is opened, starts consuming messages.
+        Consuming is cancelled if an external signal is received.
 
         """
         super(Worker, self).run()
@@ -48,30 +53,39 @@ class Worker(KuyrukProcess):
         self.channel.basic_qos(prefetch_count=1)
         self.channel.tx_select()
         self.import_modules()
-
-        # Start threads
-        start_daemon_thread(self.watch_master)
-        start_daemon_thread(self.watch_load)
+        self.start_daemon_threads()
         self.maybe_start_manager_thread()
-        if self.config.MAX_RUN_TIME > 0:
-            start_daemon_thread(self.shutdown_timer)
+        self.consume_messages()
+        logger.debug("End run worker")
 
-        # Consume messages
+    def consume_messages(self):
+        """Consumes messages from the queue and run tasks until
+        consumer is cancelled via a signal or another thread.
+
+        """
         with self.consumer.consume() as messages:
             for message in messages:
                 self.working = True
-                self.process_task(message)
+                self.process_message(message)
                 self.channel.tx_commit()
                 logger.debug("Committed transaction")
                 self.working = False
 
-        logger.debug("End run worker")
+    def start_daemon_threads(self):
+        """Start the function as threads listed in self.daemon_thread."""
+        for f in self.daemon_threads:
+            start_daemon_thread(f)
 
     def import_modules(self):
+        """Import modules defined in the configuration.
+        This method is called before start consuming messages.
+
+        """
         for module in self.config.IMPORTS:
             importer.import_module(module, self.config.IMPORT_PATH)
 
-    def process_task(self, message):
+    def process_message(self, message):
+        """Processes the message received from the queue."""
         task_description = message.get_object()
         try:
             self.apply_task(task_description)
@@ -90,6 +104,7 @@ class Worker(KuyrukProcess):
         logger.debug("Processing task is finished")
 
     def handle_exception(self, message, task_description):
+        """Handles the exception while processing the message."""
         logger.error('Task raised an exception')
         logger.error(traceback.format_exc())
         retry_count = task_description.get('retry', 0)
@@ -118,8 +133,8 @@ class Worker(KuyrukProcess):
         message.ack()
 
     def save_failed_task(self, task_description):
-        """Saves the task to "kuyruk_failed" queue. Failed tasks can be
-        investigated later and requeued with "kuyruk-reuqueue" tool.
+        """Saves the task to ``kuyruk_failed`` queue. Failed tasks can be
+        investigated later and requeued with ``kuyruk reuqueue`` command.
 
         """
         logger.info('Saving failed task')
@@ -129,7 +144,7 @@ class Worker(KuyrukProcess):
         logger.debug('Saved')
 
     def apply_task(self, task_description):
-        """Call task function."""
+        """Imports and runs the wrapped function in task."""
         task = self.import_task(task_description)
         args, kwargs = task_description['args'], task_description['kwargs']
 
@@ -181,15 +196,18 @@ class Worker(KuyrukProcess):
         gracefully.
 
         """
-        sleep(self.config.MAX_RUN_TIME)
-        logger.warning('Run time reached zero, cancelling consume.')
-        self.warm_shutdown()
+        seconds = self.config.MAX_RUN_TIME
+        if seconds > 0:
+            sleep(seconds)
+            logger.warning('Run time reached zero, cancelling consume.')
+            self.warm_shutdown()
 
     def register_signals(self):
         super(Worker, self).register_signals()
         signal.signal(signal.SIGTERM, self.handle_sigterm)
 
     def handle_sigterm(self, signum, frame):
+        """Initiates a warm shutdown."""
         logger.warning("Catched SIGTERM")
         self.warm_shutdown()
 
