@@ -39,10 +39,11 @@ class Config(object):
     """Save failed tasks to a queue (named kuyruk_failed) for inspecting and
     requeueing later."""
 
-    WORKERS = {}
+    QUEUES = {}
     """You can specify the hostnames and correspondant queues here.
-    By default all workers starts a single process to run tasks from
-    the default queue (named kuyruk).
+    Master starts workers by getting the list of queues from this dictionary
+    by hostname. If the hostname is not found in the keys then the master
+    start a single worker to run on default queue (``kuyruk``).
 
     Keys are hostnames (socket.gethostname()), values are comma seperated
     list of queue names.

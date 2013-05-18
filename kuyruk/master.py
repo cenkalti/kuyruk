@@ -45,7 +45,7 @@ class Master(KuyrukProcess):
         """Return queues string."""
         hostname = socket.gethostname()
         try:
-            return self.config.WORKERS[hostname]
+            return self.config.QUEUES[hostname]
         except KeyError:
             logger.warning('No queues specified for host %r. '
                            'Listening on default queue: "kuyruk"', hostname)
