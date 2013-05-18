@@ -5,6 +5,7 @@ import errno
 import signal
 import socket
 import logging
+import tempfile
 import itertools
 import subprocess
 from time import time, sleep
@@ -146,15 +147,16 @@ class WorkerProcess(object):
 
     def start(self):
         """Runs the worker by starting another Python interpreter."""
-        command = [sys.executable, '-u', '-m', 'kuyruk.__main__']
+        # Pass configuration values to the worker
+        fd, path = tempfile.mkstemp()
+        self.config.export(fd)
 
-        # Pass each config value as command line option
-        from .__main__ import to_option
-        for key, value in vars(self.config).iteritems():
-            if key.isupper():
-                command.extend([to_option(key), str(value)])
-
-        command.extend(['worker', '--queue', self.queue])
+        command = [
+            'kuyruk',
+            '--config', path,
+            'worker',
+            '--queue', self.queue
+        ]
         self.popen = subprocess.Popen(
             command, stdout=sys.stdout, stderr=sys.stderr, bufsize=1)
 

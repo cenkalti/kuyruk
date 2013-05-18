@@ -1,3 +1,4 @@
+import os
 import imp
 import logging
 
@@ -78,7 +79,7 @@ class Config(object):
     """Manager HTTP port that the Flask application will run on."""
 
     def from_object(self, obj):
-        """Populate Config from an object."""
+        """Loads values from an object."""
         for key in dir(obj):
             if key.isupper():
                 value = getattr(obj, key)
@@ -86,6 +87,7 @@ class Config(object):
         logger.info("Config is loaded from %r", obj)
 
     def from_pyfile(self, filename):
+        """Loads values from a Python file."""
         self.filename = filename
         d = imp.new_module('kuyruk_config')
         d.__file__ = filename
@@ -96,9 +98,22 @@ class Config(object):
             raise
         self.from_object(d)
 
-    def export(self, path):
-        with open(path, 'w') as f:
+    def export(self, file_or_path):
+        """Exports values to a file."""
+        if isinstance(file_or_path, file):
+            f = file_or_path
+        elif isinstance(file_or_path, int):
+            f = os.fdopen(file_or_path, 'w')
+        elif isinstance(file_or_path, basestring):
+            f = open(file_or_path, 'w')
+        else:
+            raise TypeError("Argument must be a fd, file object or path: %r" %
+                            file_or_path)
+
+        try:
             for attr in dir(self):
                 if attr.isupper() and not attr.startswith('_'):
                     value = getattr(self, attr)
                     f.write("%s = %r\n" % (attr, value))
+        finally:
+            f.close()
