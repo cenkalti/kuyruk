@@ -13,7 +13,7 @@ from kuyruk.channel import LazyChannel
 from kuyruk.process import KuyrukProcess
 from kuyruk.helpers import start_daemon_thread
 from kuyruk.consumer import Consumer
-from kuyruk.exceptions import Reject, ObjectNotFound
+from kuyruk.exceptions import Reject, ObjectNotFound, Timeout
 
 try:
     import raven
@@ -108,6 +108,8 @@ class Worker(KuyrukProcess):
             message.reject()
         except ObjectNotFound:
             self.handle_not_found(message, task_description)
+        except Timeout:
+            self.handle_timeout(message, task_description)
         except Exception:
             if self.sentry:
                 ident = self.sentry.get_ident(self.sentry.captureException(
@@ -148,6 +150,14 @@ class Worker(KuyrukProcess):
             task_description['class'],
             task_description['args'][0])
         message.ack()
+
+    def handle_timeout(self, message, task_description):
+        """Called when the task is timed out while running the wrapped
+        function.
+
+        """
+        logger.error('Task has timed out.')
+        self.handle_exception(message, task_description)
 
     def save_failed_task(self, task_description):
         """Saves the task to ``kuyruk_failed`` queue. Failed tasks can be
