@@ -10,10 +10,12 @@ class Config(object):
     class attributes.
 
     """
-    # Worker options
+    # Worker Options
+    ################
 
     WORKER_CLASS = 'kuyruk.worker.Worker'
-    """Worker implementation class."""
+    """Worker implementation class. It can be replaced with a subclass of
+    :class:`~kuyruk.worker.Worker` to change specific behavior."""
 
     IMPORT_PATH = None
     """Worker imports tasks from this directory."""
@@ -62,9 +64,11 @@ class Config(object):
     This has pecedence over ``LOGGING_LEVEL``."""
 
     SENTRY_DSN = None
-    """Send exceptions to Sentry."""
+    """Send exceptions to Sentry. Raven must be installed in order that
+    this feature to work."""
 
-    # Connection options
+    # Connection Options
+    ####################
 
     RABBIT_HOST = 'localhost'
     RABBIT_PORT = 5672
@@ -72,7 +76,8 @@ class Config(object):
     RABBIT_USER = 'guest'
     RABBIT_PASSWORD = 'guest'
 
-    # Manager options
+    # Manager Options
+    #################
 
     MANAGER_HOST = None
     """Manager host that the workers will connect and send stats."""
