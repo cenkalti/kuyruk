@@ -154,6 +154,7 @@ class WorkerProcess(object):
         command = [
             'kuyruk',
             '--config', path,
+            '--delete-config',
             'worker',
             '--queue', self.queue
         ]

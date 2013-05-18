@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import os
 import ast
 import logging
 import argparse
@@ -29,6 +30,9 @@ def main():
     parser.add_argument(
         '--config',
         help='Python file containing Kuyruk configuration parameters')
+    parser.add_argument(
+        '-d', '--delete-config', action='store_true',
+        help='delete config after loading (used internally)')
     add_config_options(parser)
 
     subparsers = parser.add_subparsers(help='sub-command name')
@@ -54,6 +58,8 @@ def main():
     # Parse arguments
     args = parser.parse_args()
     config = create_config(args)
+    if args.delete_config:
+        os.unlink(config.filename)
 
     # Run the sub-command function
     args.func(config, args)
