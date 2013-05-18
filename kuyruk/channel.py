@@ -9,10 +9,11 @@ logger = logging.getLogger(__name__)
 
 class LazyChannel(object):
 
-    def __init__(self, host='localhost', port=5672,
+    def __init__(self, host='localhost', port=5672, virtual_host='/',
                  user='guest', password='guest'):
         self.host = host
         self.port = port
+        self.virtual_host = virtual_host
         self.user = user
         self.password = password
         self.connection = None
@@ -21,7 +22,7 @@ class LazyChannel(object):
     @classmethod
     def from_config(cls, config):
         return cls(
-            config.RABBIT_HOST, config.RABBIT_PORT,
+            config.RABBIT_HOST, config.RABBIT_PORT, config.RABBIT_VIRTUAL_HOST,
             config.RABBIT_USER, config.RABBIT_PASSWORD)
 
     def __getattr__(self, item):
@@ -47,6 +48,7 @@ class LazyChannel(object):
         parameters = pika.ConnectionParameters(
             host=self.host,
             port=self.port,
+            virtual_host=self.virtual_host,
             credentials=credentials,
             heartbeat_interval=600,
             socket_timeout=2,

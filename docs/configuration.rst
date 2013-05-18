@@ -48,6 +48,7 @@ Connection Settings
 
 .. autoattribute:: kuyruk.config.Config.RABBIT_HOST
 .. autoattribute:: kuyruk.config.Config.RABBIT_PORT
+.. autoattribute:: kuyruk.config.Config.RABBIT_VIRTUAL_HOST
 .. autoattribute:: kuyruk.config.Config.RABBIT_USER
 .. autoattribute:: kuyruk.config.Config.RABBIT_PASSWORD
 
