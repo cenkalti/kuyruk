@@ -44,7 +44,8 @@ class Task(EventMixin):
         if self.eager or self.kuyruk.config.EAGER:
             self.apply(args, kwargs)
         else:
-            self.send_to_queue(args, kwargs)
+            host = kwargs.pop('kuyruk_host', None)
+            self.send_to_queue(args, kwargs, host=host)
 
         return TaskResult(self)
 
@@ -66,20 +67,29 @@ class Task(EventMixin):
             return MethodType(self.__call__, obj, objtype)
         return self
 
-    def send_to_queue(self, args, kwargs):
+    def send_to_queue(self, args, kwargs, host=None):
         """
         Sends this task to queue.
 
         :param args: Arguments that will be passed to task on execution.
         :param kwargs: Keyword arguments that will be passed to task
             on execution.
+        :param host: Send this task to specific host. ``host`` will be
+            appended to the queue name.
         :return: :const:`None`
 
         """
+        if host:
+            queue = "%s_%s" % (self.queue, host)
+            local = False
+        else:
+            queue = self.queue
+            local = self.local
+
         desc = self.get_task_description(args, kwargs)
         channel = LazyChannel.from_config(self.kuyruk.config)
         with channel:
-            queue = Queue(self.queue, channel, self.local)
+            queue = Queue(queue, channel, local)
             queue.send(desc)
 
     def get_task_description(self, args, kwargs):
