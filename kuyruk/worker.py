@@ -15,6 +15,11 @@ from kuyruk.helpers import start_daemon_thread
 from kuyruk.consumer import Consumer
 from kuyruk.exceptions import Reject, ObjectNotFound
 
+try:
+    import raven
+except ImportError:
+    raven = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -40,6 +45,14 @@ class Worker(KuyrukProcess):
         ]
         if self.config.MAX_LOAD is None:
             self.config.MAX_LOAD = multiprocessing.cpu_count()
+
+        if self.config.SENTRY_DSN:
+            if raven is None:
+                raise ImportError('Cannot import raven. Please install it with '
+                                  '"pip install raven".')
+            self.sentry = raven.Client(self.config.SENTRY_DSN)
+        else:
+            self.sentry = None
 
     def run(self):
         """Runs the worker and opens a connection to RabbitMQ.
@@ -96,6 +109,8 @@ class Worker(KuyrukProcess):
         except ObjectNotFound:
             self.handle_not_found(message, task_description)
         except Exception:
+            if self.sentry:
+                self.sentry.captureException()
             self.handle_exception(message, task_description)
         else:
             logger.info('Task is successful')

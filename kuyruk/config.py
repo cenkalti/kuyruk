@@ -61,6 +61,9 @@ class Config(object):
     """INI style logging configuration file.
     This has pecedence over ``LOGGING_LEVEL``."""
 
+    SENTRY_DSN = None
+    """Send exceptions to Sentry."""
+
     # Connection options
 
     RABBIT_HOST = 'localhost'

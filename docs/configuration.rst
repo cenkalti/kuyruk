@@ -41,6 +41,7 @@ Worker Settings
 .. autoattribute:: kuyruk.config.Config.QUEUES
 .. autoattribute:: kuyruk.config.Config.LOGGING_CONFIG
 .. autoattribute:: kuyruk.config.Config.LOGGING_LEVEL
+.. autoattribute:: kuyruk.config.Config.SENTRY_DSN
 
 
 Connection Settings
