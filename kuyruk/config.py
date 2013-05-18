@@ -37,6 +37,9 @@ class Config(object):
     worker with identical config.
     Can be used to force loading of new application code."""
 
+    MAX_TASK_RUN_TIME = None
+    """Fail the task if it takes more than this seconds."""
+
     SAVE_FAILED_TASKS = False
     """Save failed tasks to a queue (named kuyruk_failed) for inspecting and
     requeueing later."""

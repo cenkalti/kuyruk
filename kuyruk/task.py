@@ -1,28 +1,32 @@
 from __future__ import absolute_import
 import sys
+import signal
 import logging
 from types import MethodType
 from datetime import datetime
+from contextlib import contextmanager
 
 from kuyruk import events, importer
 from kuyruk.queue import Queue
 from kuyruk.events import EventMixin
 from kuyruk.helpers import profile
 from kuyruk.channel import LazyChannel
+from kuyruk.exceptions import Timeout
 
 logger = logging.getLogger(__name__)
 
 
 class Task(EventMixin):
 
-    def __init__(self, f, kuyruk, queue='kuyruk',
-                 local=False, eager=False, retry=0):
+    def __init__(self, f, kuyruk, queue='kuyruk', local=False,
+                 eager=False, retry=0, max_run_time=None):
         self.f = f
         self.kuyruk = kuyruk
         self.queue = queue
         self.local = local
         self.eager = eager
         self.retry = retry
+        self.max_run_time = max_run_time
         self.cls = None
         self.setup()
 
@@ -124,7 +128,12 @@ class Task(EventMixin):
         logger.debug("Applying %r, args=%r, kwargs=%r", self, args, kwargs)
         try:
             send_signal(events.task_prerun, reversed(SENDERS))
-            return_value = self.f(*args, **kwargs)  # call wrapped function
+
+            with time_limit(
+                    self.max_run_time or
+                    self.kuyruk.config.MAX_TASK_RUN_TIME or 0):
+                # Call wrapped function
+                return_value = self.f(*args, **kwargs)
         except Exception:
             send_signal(
                 events.task_failure, SENDERS, exc_info=sys.exc_info())
@@ -186,3 +195,15 @@ class TaskResult(object):
 
     def __str__(self):
         return self.__repr__()
+
+
+@contextmanager
+def time_limit(seconds):
+    def signal_handler(signum, frame):
+        raise Timeout
+    signal.signal(signal.SIGALRM, signal_handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
