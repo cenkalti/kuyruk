@@ -12,7 +12,7 @@ class Config(object):
     """
     # Worker options
 
-    WORKER_CLASS = 'kuyruk.Worker'
+    WORKER_CLASS = 'kuyruk.worker.Worker'
     """Worker implementation class."""
 
     IMPORT_PATH = None
