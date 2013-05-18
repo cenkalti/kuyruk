@@ -28,10 +28,10 @@ def main():
     parser.add_argument(
         '-v', '--version', action='version', version=__version__)
     parser.add_argument(
-        '--config',
+        '-c', '--config',
         help='Python file containing Kuyruk configuration parameters')
     parser.add_argument(
-        '-d', '--delete-config', action='store_true',
+        '--delete-config', action='store_true',
         help='delete config after loading (used internally)')
     add_config_options(parser)
 
