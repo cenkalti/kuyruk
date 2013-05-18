@@ -152,7 +152,7 @@ class WorkerProcess(object):
         self.config.export(fd)
 
         command = [
-            'kuyruk',
+            sys.executable, '-u', '-m', 'kuyruk.__main__',
             '--config', path,
             '--delete-config',
             'worker',

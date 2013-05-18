@@ -85,7 +85,13 @@ def run_kuyruk(queue='kuyruk', save_failed_tasks=False, terminate=True,
             if e.errno != errno.ESRCH:  # No such process
                 raise
 
-        wait_while(lambda: get_pids('kuyruk:'))
+        try:
+            wait_while(lambda: get_pids('kuyruk:'))
+        except KeyboardInterrupt:
+            print popen.get_output()
+            # Do not raise KeyboardInterrupt here because nose does not print
+            # captured stdout and logging on KeyboardInterrupt
+            raise Exception
 
 
 def not_running():
