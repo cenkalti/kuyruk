@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 def import_task(module_name, class_name, function_name, path=None):
     """Find and return the function for given function name."""
-    namespace = import_task_module(module_name, path)
+    namespace = import_module(module_name, path)
     if class_name:
         cls = getattr(namespace, class_name)
         namespace = cls
@@ -18,7 +18,7 @@ def import_task(module_name, class_name, function_name, path=None):
     return getattr(namespace, function_name)
 
 
-def import_task_module(module_name, path=None):
+def import_module(module_name, path=None):
     """Import module by searching main module, current working directory and
     Python path.
 
@@ -33,6 +33,12 @@ def import_task_module(module_name, path=None):
 
     with custom_path(path):
         return importlib.import_module(module_name)
+
+
+def import_class_str(s):
+    module, cls = s.rsplit('.', 1)
+    module = import_module(module)
+    return getattr(module, cls)
 
 
 @contextmanager

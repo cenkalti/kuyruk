@@ -65,11 +65,12 @@ class Worker(KuyrukProcess):
                 logger.debug("Committed transaction")
                 self.working = False
 
+        events.worker_shutdown.send(self)
         logger.debug("End run worker")
 
     def import_modules(self):
         for module in self.config.IMPORTS:
-            importer.import_task_module(module, self.config.IMPORT_PATH)
+            importer.import_module(module, self.config.IMPORT_PATH)
 
     def process_task(self, message):
         task_description = message.get_object()

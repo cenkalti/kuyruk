@@ -3,8 +3,7 @@ import os
 import ast
 import logging
 import argparse
-from kuyruk import __version__, requeue, manager
-from kuyruk.worker import Worker
+from kuyruk import __version__, requeue, manager, importer
 from kuyruk.master import Master
 from kuyruk.config import Config
 
@@ -12,7 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 def worker(config, args):
-    w = Worker(config, args.queue)
+    worker_class = importer.import_class_str(config.WORKER_CLASS)
+    w = worker_class(config, args.queue)
     w.run()
 
 

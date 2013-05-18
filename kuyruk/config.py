@@ -12,6 +12,9 @@ class Config(object):
     """
     # Worker options
 
+    WORKER_CLASS = 'kuyruk.Worker'
+    """Worker implementation class."""
+
     IMPORT_PATH = None
     """Worker imports tasks from this directory."""
 

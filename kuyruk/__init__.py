@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import logging
 
 from kuyruk.kuyruk import Kuyruk
+from kuyruk.worker import Worker
 from kuyruk.task import Task
 
 __version__ = '0.12.0'
