@@ -4,6 +4,7 @@ import logging
 from kuyruk.kuyruk import Kuyruk
 from kuyruk.worker import Worker
 from kuyruk.task import Task
+from kuyruk.config import Config
 
 __version__ = '0.12.0'
 

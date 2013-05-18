@@ -20,3 +20,11 @@ Worker Class
 .. autoclass:: kuyruk.Worker
    :members:
    :inherited-members:
+
+
+Config Class
+------------
+
+.. autoclass:: kuyruk.Config
+   :members:
+   :inherited-members:

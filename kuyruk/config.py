@@ -74,10 +74,19 @@ class Config(object):
     ####################
 
     RABBIT_HOST = 'localhost'
+    """RabbitMQ host."""
+
     RABBIT_PORT = 5672
+    """RabbitMQ port."""
+
     RABBIT_VIRTUAL_HOST = '/'
+    """RabbitMQ virtual host."""
+
     RABBIT_USER = 'guest'
+    """RabbitMQ user."""
+
     RABBIT_PASSWORD = 'guest'
+    """RabbitMQ password."""
 
     # Manager Options
     #################
