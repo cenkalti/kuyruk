@@ -38,12 +38,6 @@ API Reference
    api
 
 
-Development
------------
-
-   TODO
-
-
 Indices and tables
 ------------------
 
