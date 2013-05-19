@@ -41,7 +41,7 @@ def main():
     parser_worker = subparsers.add_parser('worker', help='run a worker')
     parser_worker.set_defaults(func=worker)
     parser_worker.add_argument(
-        '--queue', default='kuyruk', help='consume tasks from')
+        '-q', '--queue', default='kuyruk', help='consume tasks from')
 
     # Parser for the "master" sub-command
     parser_master = subparsers.add_parser('master', help='run a master')
