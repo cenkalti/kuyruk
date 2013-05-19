@@ -1,9 +1,11 @@
 import os
+import socket
 import unittest
 import tempfile
 
 from ..config import Config
 import config as user_config
+from ..master import parse_queues_str
 
 
 class ConfigTestCase(unittest.TestCase):
@@ -36,3 +38,10 @@ class ConfigTestCase(unittest.TestCase):
         config.from_pyfile(path)
         assert config.RABBIT_PORT == 1234
         os.unlink(path)
+
+    def test_queues_string(self):
+        s = " a,b, c, 2*d, e*3, 2*@f "
+        hostname = socket.gethostname()
+        queues = parse_queues_str(s)
+        assert queues == list(['a', 'b', 'c', 'd', 'd', 'e', 'e', 'e',
+                               'f.%s' % hostname, 'f.%s' % hostname])
