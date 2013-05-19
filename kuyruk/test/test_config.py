@@ -40,8 +40,5 @@ class ConfigTestCase(unittest.TestCase):
         os.unlink(path)
 
     def test_queues_string(self):
-        s = " a,b, c, 2*d, e*3, 2*@f "
-        hostname = socket.gethostname()
-        queues = parse_queues_str(s)
-        assert queues == list(['a', 'b', 'c', 'd', 'd', 'e', 'e', 'e',
-                               'f.%s' % hostname, 'f.%s' % hostname])
+        assert parse_queues_str(" a,b, c, 2*d, e*3, 2*@f ") == list([
+            'a', 'b', 'c', 'd', 'd', 'e', 'e', 'e', '@f', '@f'])
