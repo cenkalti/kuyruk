@@ -43,6 +43,9 @@ class Master(KuyrukProcess):
 
     def get_queues(self):
         """Return queues string."""
+        if isinstance(self.config.QUEUES, basestring):
+            return self.config.QUEUES
+
         hostname = socket.gethostname()
         try:
             return self.config.QUEUES[hostname]
@@ -189,11 +192,11 @@ def parse_queues_str(s):
     :return: list of queue names
     """
     queues = (q.strip() for q in s.split(','))
-    queues = itertools.chain.from_iterable(parse_count(q) for q in queues)
-    return [parse_local(q) for q in queues]
+    queues = itertools.chain.from_iterable(expand_count(q) for q in queues)
+    return [expand_local(q) for q in queues]
 
 
-def parse_count(q):
+def expand_count(q):
     parts = q.split('*', 1)
     if len(parts) > 1:
         try:
@@ -203,7 +206,7 @@ def parse_count(q):
     return [parts[0]]
 
 
-def parse_local(q):
+def expand_local(q):
     if q.startswith('@'):
         return "%s.%s" % (q[1:], socket.gethostname())
     return q
