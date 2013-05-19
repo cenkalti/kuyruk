@@ -58,5 +58,3 @@ Running a Worker
 
 Running the above command is enough for processing the tasks in the
 default queue.
-
-For more information about workers see :ref:`workers`.
