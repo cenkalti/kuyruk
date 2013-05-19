@@ -24,8 +24,11 @@ Kuyruk is available on PyPI.
 How to run tests?
 -----------------
 
-Normally you don't need this but it is easy. Make sure that RabbitMQ
-is running before running tests.
+Normally you don't need this but it is easy.
+``kuyruk/test`` directory contains files of both unit and integration tests.
+Make sure that RabbitMQ is running before running tests.
+Tests also run on `Travis CI <https://travis-ci.org/cenkalti/kuyruk>`_
+automatically on push.
 
 .. code-block:: bash
 
