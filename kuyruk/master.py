@@ -47,9 +47,10 @@ class Master(KuyrukProcess):
         try:
             return self.config.QUEUES[hostname]
         except KeyError:
-            logger.warning('No queues specified for host %r. '
-                           'Listening on default queue: "kuyruk"', hostname)
-            return 'kuyruk'
+            logger.warning(
+                'No queues specified for host %r. '
+                'Listening on default queues.', hostname)
+            return 'kuyruk, kuyruk_%s' % hostname
 
     def stop_workers(self, kill=False):
         """Send stop signal to all workers."""

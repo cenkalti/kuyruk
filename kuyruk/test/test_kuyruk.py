@@ -92,15 +92,24 @@ class KuyrukTestCase(unittest.TestCase):
         worker will spawn a new master worker.
 
         """
-        _pid = lambda: get_pid('kuyruk: worker')
+        def get_worker_pids():
+            pids = get_pids('kuyruk: worker')
+            assert len(pids) == 2
+            return pids
+
         with run_kuyruk(process='master') as master:
             master.expect('Start consuming')
-            pid1 = _pid()
-            os.kill(pid1, signal.SIGKILL)
+            master.expect('Start consuming')
+            pids_old = get_worker_pids()
+            for pid in pids_old:
+                os.kill(pid, signal.SIGKILL)
             master.expect('Spawning new worker')
             master.expect('Start consuming')
-            pid2 = _pid()
-        assert pid2 > pid1
+            master.expect('Start consuming')
+            pids_new = get_worker_pids()
+
+        assert pids_new[0] > pids_old[0]  # kuyruk
+        assert pids_new[1] > pids_old[1]  # kuryuk.localhost
 
     def test_save_failed(self):
         """Failed tasks are saved to another queue"""
