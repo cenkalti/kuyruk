@@ -84,7 +84,7 @@ class Task(EventMixin):
 
         """
         if host:
-            queue = "%s_%s" % (self.queue, host)
+            queue = "%s.%s" % (self.queue, host)
             local = False
         else:
             queue = self.queue

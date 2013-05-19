@@ -50,7 +50,7 @@ class Master(KuyrukProcess):
             logger.warning(
                 'No queues specified for host %r. '
                 'Listening on default queues.', hostname)
-            return 'kuyruk, kuyruk_%s' % hostname
+            return 'kuyruk, kuyruk.%s' % hostname
 
     def stop_workers(self, kill=False):
         """Send stop signal to all workers."""
@@ -205,5 +205,5 @@ def parse_count(q):
 
 def parse_local(q):
     if q.startswith('@'):
-        return "%s_%s" % (q[1:], socket.gethostname())
+        return "%s.%s" % (q[1:], socket.gethostname())
     return q

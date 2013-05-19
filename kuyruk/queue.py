@@ -57,7 +57,7 @@ class Queue(object):
         self.lock = RLock()
 
         if self.local:
-            self.name = "%s_%s" % (self.name, socket.gethostname())
+            self.name = "%s.%s" % (self.name, socket.gethostname())
 
     @synchronized
     def __len__(self):
