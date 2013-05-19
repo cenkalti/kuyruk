@@ -46,6 +46,8 @@ def main():
     # Parser for the "master" sub-command
     parser_master = subparsers.add_parser('master', help='run a master')
     parser_master.set_defaults(func=master)
+    parser_master.add_argument(
+        '-q', '--queues', help='comma seperated list of queues')
 
     # Parser for the "requeue" sub-command
     parser_master = subparsers.add_parser('requeue', help='requeue failed tasks')
