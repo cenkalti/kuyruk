@@ -33,8 +33,9 @@ class Worker(KuyrukProcess):
     def __init__(self, config, queue_name):
         super(Worker, self).__init__(config)
         self.channel = LazyChannel.from_config(config)
-        self.queue_name = queue_name
         is_local = queue_name.startswith('@')
+        queue_name = queue_name.lstrip('@')
+        self.queue_name = queue_name
         self.queue = Queue(queue_name, self.channel, local=is_local)
         self.consumer = Consumer(self.queue)
         self.working = False

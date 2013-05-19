@@ -192,8 +192,7 @@ def parse_queues_str(s):
     :return: list of queue names
     """
     queues = (q.strip() for q in s.split(','))
-    queues = itertools.chain.from_iterable(expand_count(q) for q in queues)
-    return [expand_local(q) for q in queues]
+    return list(itertools.chain.from_iterable(expand_count(q) for q in queues))
 
 
 def expand_count(q):
@@ -204,9 +203,3 @@ def expand_count(q):
         except ValueError:
             return int(parts[1]) * [parts[0]]
     return [parts[0]]
-
-
-def expand_local(q):
-    if q.startswith('@'):
-        return "%s.%s" % (q[1:], socket.gethostname())
-    return q
