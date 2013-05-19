@@ -86,7 +86,7 @@ def create_config(args):
             if hasattr(Config, key):
                 try:
                     value = ast.literal_eval(value)
-                except ValueError:
+                except (ValueError, SyntaxError):
                     pass
                 setattr(config, key, value)
 
