@@ -7,9 +7,6 @@ It uses `RabbitMQ <http://www.rabbitmq.com>`_ as message broker and depends on
 `Pika <http://pika.readthedocs.org/en/latest/>`_
 which is a pure-Python RabbitMQ client library.
 
-.. image:: https://travis-ci.org/cenkalti/kuyruk.png
-   :target: https://travis-ci.org/cenkalti/kuyruk
-
 
 How to install?
 ---------------
@@ -29,6 +26,9 @@ Normally you don't need this but it is easy.
 Make sure that RabbitMQ is running before running tests.
 Tests also run on `Travis CI <https://travis-ci.org/cenkalti/kuyruk>`_
 automatically on push.
+
+.. image:: https://travis-ci.org/cenkalti/kuyruk.png
+   :target: https://travis-ci.org/cenkalti/kuyruk
 
 .. code-block:: bash
 
