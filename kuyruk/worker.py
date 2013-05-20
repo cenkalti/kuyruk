@@ -170,6 +170,7 @@ class Worker(KuyrukProcess):
         logger.info('Saving failed task')
         task_description['queue'] = self.queue_name
         task_description['hostname'] = socket.gethostname()
+        task_description['exception'] = traceback.format_exc()
         failed_queue = Queue('kuyruk_failed', self.channel)
         failed_queue.send(task_description)
         logger.debug('Saved')
