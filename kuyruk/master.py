@@ -53,7 +53,7 @@ class Master(KuyrukProcess):
             logger.warning(
                 'No queues specified for host %r. '
                 'Listening on default queues.', hostname)
-            return self.config.QUEUES_DEFAULT
+            return self.config.DEFAULT_QUEUES
 
     def shutdown_workers(self, kill=False):
         """Sends shutdown signal to all workers."""

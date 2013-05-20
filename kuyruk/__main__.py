@@ -22,7 +22,7 @@ def master(config, args):
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(conflict_handler='resolve')
 
     # Add common options
     parser.add_argument(
@@ -70,7 +70,7 @@ def add_config_options(parser):
     config_group = parser.add_argument_group('override values in config')
 
     # Add every attribute in Config as command line option
-    for key in sorted(dir(Config), reverse=True):
+    for key in sorted(dir(Config)):
         if key.isupper():
             config_group.add_argument(to_option(key))
 
