@@ -102,7 +102,9 @@ class Worker(KuyrukProcess):
         """Processes the message received from the queue."""
         task_description = message.get_object()
         try:
-            self.apply_task(task_description)
+            task = self.import_task(task_description)
+            args, kwargs = task_description['args'], task_description['kwargs']
+            self.apply_task(task, args, kwargs)
         except Reject:
             logger.warning('Task is rejected')
             sleep(1)  # Prevent cpu burning
@@ -171,17 +173,16 @@ class Worker(KuyrukProcess):
         failed_queue.send(task_description)
         logger.debug('Saved')
 
-    def apply_task(self, task_description):
+    def apply_task(self, task, args, kwargs):
         """Imports and runs the wrapped function in task."""
-        task = self.import_task(task_description)
-        args, kwargs = task_description['args'], task_description['kwargs']
 
         # Fetch the object if class task
         if task.cls:
-            obj = task.cls.get(args[0])
-            if not obj:
-                raise ObjectNotFound
-            args[0] = obj
+            if not isinstance(args[0], task.cls):
+                obj = task.cls.get(args[0])
+                if not obj:
+                    raise ObjectNotFound
+                args[0] = obj
 
         result = task.apply(args, kwargs)
         logger.debug('Result: %r', result)

@@ -65,7 +65,7 @@ class Queue(object):
 
     @synchronized
     def declare(self):
-        logger.info('Declaring queue: %s', self.name)
+        logger.debug('Declaring queue: %s', self.name)
         return self.channel.queue_declare(
             queue=self.name, durable=True,
             exclusive=False, auto_delete=False)
