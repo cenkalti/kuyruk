@@ -53,7 +53,7 @@ class Master(KuyrukProcess):
             logger.warning(
                 'No queues specified for host %r. '
                 'Listening on default queues.', hostname)
-            return 'kuyruk, kuyruk.%s' % hostname
+            return 'kuyruk, @kuyruk'
 
     def stop_workers(self, kill=False):
         """Send stop signal to all workers."""
