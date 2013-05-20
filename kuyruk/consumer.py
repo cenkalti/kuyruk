@@ -104,6 +104,7 @@ class MessageIterator(object):
         return self
 
     def next(self):
+        logger.info('Waiting for new message...')
         while not self._stop.is_set():
             try:
                 message = self.messages.get(timeout=0.1)
