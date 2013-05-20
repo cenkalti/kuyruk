@@ -46,6 +46,13 @@ def action():
     return redirect_back()
 
 
+@app.route('/action_all', methods=['POST'])
+def action_all():
+    for addr, client in get_sockets(request.args['type']).iteritems():
+        client.actions.put((request.form['action'], (), {}))
+    return redirect_back()
+
+
 @app.context_processor
 def inject_helpers():
     return {

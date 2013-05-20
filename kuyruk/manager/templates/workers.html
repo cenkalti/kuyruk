@@ -31,8 +31,22 @@
                     {{ action_button(addr, 'cold_shutdown', 'Cold Shutdown') }}
                 </td>
             </tr>
-            {% else %}
             {% endfor %}
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>
+                    {{ action_button_all('worker', 'warm_shutdown', 'Warm Shutdown All') }}
+                    {{ action_button_all('worker', 'cold_shutdown', 'Cold Shutdown All') }}
+                </td>
+            </tr>
         </table>
         Count: {{ sockets|count }}
     </form>
