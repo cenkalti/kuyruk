@@ -163,7 +163,8 @@ class WorkerProcess(object):
             '--queue', self.queue
         ]
         self.popen = subprocess.Popen(
-            command, stdout=sys.stdout, stderr=sys.stderr, bufsize=1)
+            command, stdout=sys.stdout, stderr=sys.stderr,
+            bufsize=1, close_fds=True)
 
     @property
     def pid(self):
