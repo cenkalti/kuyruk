@@ -34,7 +34,7 @@ class Master(KuyrukProcess):
         logger.debug('End run master')
 
     def start_workers(self):
-        """Start a new worker for each queue"""
+        """Starts a new worker for each queue."""
         queues = self.get_queues()
         queues = parse_queues_str(queues)
         logger.info('Starting to work on queues: %s', queues)
@@ -42,7 +42,7 @@ class Master(KuyrukProcess):
             self.spawn_new_worker(queue)
 
     def get_queues(self):
-        """Return queues string."""
+        """Returns queues string by reading from configuration."""
         if isinstance(self.config.QUEUES, basestring):
             return self.config.QUEUES
 
@@ -53,16 +53,16 @@ class Master(KuyrukProcess):
             logger.warning(
                 'No queues specified for host %r. '
                 'Listening on default queues.', hostname)
-            return 'kuyruk, @kuyruk'
+            return self.config.QUEUES_DEFAULT
 
-    def stop_workers(self, kill=False):
-        """Send stop signal to all workers."""
+    def shutdown_workers(self, kill=False):
+        """Sends shutdown signal to all workers."""
         for worker in self.workers:
             os.kill(worker.pid, signal.SIGKILL if kill else signal.SIGTERM)
 
     def wait_for_workers(self):
-        """Loop until any of the self.workers is alive.
-        If a worker is dead and Kuyruk is running state, spawn a new worker.
+        """Loops until any of the self.workers is alive.
+        If a worker is dead and Kuyruk is running state, spawns a new worker.
 
         """
         start = time()
@@ -85,7 +85,7 @@ class Master(KuyrukProcess):
                 sleep(1)
 
     def respawn_worker(self, worker):
-        """Spawn a new process with parameters same as the old worker."""
+        """Spawns a new process with parameters same as the old worker."""
         logger.debug("Spawning new worker")
         self.spawn_new_worker(worker.queue)
         self.workers.remove(worker)
@@ -117,20 +117,20 @@ class Master(KuyrukProcess):
     def warm_shutdown(self, sigint=False):
         super(Master, self).warm_shutdown(sigint)
         if not sigint:
-            self.stop_workers()
+            self.shutdown_workers()
 
     def cold_shutdown(self):
         logger.warning("Cold shutdown")
         self.shutdown_pending.set()
-        self.stop_workers(kill=True)
+        self.shutdown_workers(kill=True)
 
     def abort(self):
-        """Exit immediately making workers orphan."""
+        """Exits immediately making workers orphan."""
         logger.warning("Aborting")
         os._exit(1)
 
     def get_stats(self):
-        """Generate stats to be sent to manager."""
+        """Generates stats to be sent to manager."""
         return {
             'type': 'master',
             'hostname': socket.gethostname(),
@@ -186,7 +186,7 @@ class WorkerProcess(object):
 
 
 def parse_queues_str(s):
-    """Parse command line queues string.
+    """Parses command line queues string.
 
     :param s: Command line or configuration queues string
     :return: list of queue names

@@ -59,6 +59,10 @@ class Config(object):
 
     host1 will run 3 worker processes; 1 for "a" and 2 for "b" queue."""
 
+    QUEUES_DEFAULT = 'kuyruk, @kuyruk'
+    """If the hostname is not found in :attr:`~kuyruk.Config.QUEUES`
+    this value will be used as default."""
+
     LOGGING_LEVEL = 'INFO'
     """Logging level of root logger."""
 
