@@ -231,7 +231,7 @@ class Worker(KuyrukProcess):
 
     def watch_master(self):
         """Watch the master and shutdown gracefully when it is dead."""
-        while not self.shutdown_pending.is_set():
+        while True:
             if not self.is_master_alive():
                 logger.critical('Master is dead')
                 self.warm_shutdown()
