@@ -35,7 +35,6 @@ class Worker(KuyrukProcess):
         self.channel = LazyChannel.from_config(config)
         is_local = queue_name.startswith('@')
         queue_name = queue_name.lstrip('@')
-        self.queue_name = queue_name
         self.queue = Queue(queue_name, self.channel, local=is_local)
         self.consumer = Consumer(self.queue)
         self.working = False
@@ -62,7 +61,7 @@ class Worker(KuyrukProcess):
 
         """
         super(Worker, self).run()
-        setproctitle("kuyruk: worker on %s" % self.queue_name)
+        setproctitle("kuyruk: worker on %s" % self.queue.name)
         self.queue.declare()
         self.channel.basic_qos(prefetch_count=1)
         self.channel.tx_select()
@@ -179,7 +178,7 @@ class Worker(KuyrukProcess):
 
         """
         logger.info('Saving failed task')
-        task_description['queue'] = self.queue_name
+        task_description['queue'] = self.queue.name
         task_description['hostname'] = socket.gethostname()
         task_description['exception'] = traceback.format_exc()
         failed_queue = Queue('kuyruk_failed', self.channel)
