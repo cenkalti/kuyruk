@@ -13,7 +13,7 @@ from kuyruk.channel import LazyChannel
 from kuyruk.process import KuyrukProcess
 from kuyruk.helpers import start_daemon_thread
 from kuyruk.consumer import Consumer
-from kuyruk.exceptions import Reject, ObjectNotFound, Timeout
+from kuyruk.exceptions import Reject, ObjectNotFound, Timeout, InvalidTask
 
 try:
     import raven
@@ -100,7 +100,11 @@ class Worker(KuyrukProcess):
 
     def process_message(self, message):
         """Processes the message received from the queue."""
-        task_description = message.get_object()
+        try:
+            task_description = message.get_object()
+        except Exception:
+            raise InvalidTask
+
         try:
             task = self.import_task(task_description)
             args, kwargs = task_description['args'], task_description['kwargs']
@@ -113,6 +117,8 @@ class Worker(KuyrukProcess):
             self.handle_not_found(message, task_description)
         except Timeout:
             self.handle_timeout(message, task_description)
+        except InvalidTask:
+            self.handle_invalid(message, task_description)
         except Exception:
             self.handle_exception(message, task_description)
         else:
@@ -133,11 +139,7 @@ class Worker(KuyrukProcess):
             self.queue.send(task_description)
         else:
             logger.debug('No retry left')
-            if self.sentry:
-                ident = self.sentry.get_ident(self.sentry.captureException(
-                    extra={'task_description': task_description}))
-                logger.error("Exception caught; reference is %s", ident)
-
+            self.capture_exception(task_description)
             message.discard()
             if self.config.SAVE_FAILED_TASKS:
                 self.save_failed_task(task_description)
@@ -163,6 +165,12 @@ class Worker(KuyrukProcess):
         logger.error('Task has timed out.')
         self.handle_exception(message, task_description)
 
+    def handle_invalid(self, message, task_description):
+        """Called when the message from queue is invalid."""
+        logger.error("Invalid message.")
+        self.capture_exception(task_description)
+        message.discard()
+
     def save_failed_task(self, task_description):
         """Saves the task to ``kuyruk_failed`` queue. Failed tasks can be
         investigated later and requeued with ``kuyruk reuqueue`` command.
@@ -181,6 +189,9 @@ class Worker(KuyrukProcess):
 
         # Fetch the object if class task
         if task.cls:
+            if not args:
+                raise InvalidTask
+
             if not isinstance(args[0], task.cls):
                 obj = task.cls.get(args[0])
                 if not obj:
@@ -198,6 +209,13 @@ class Worker(KuyrukProcess):
             task_description['class'])
         return importer.import_task(
             module, cls, function, self.config.IMPORT_PATH)
+
+    def capture_exception(self, task_description):
+        """Sends the exceptin in current stack to Sentry."""
+        if self.sentry:
+            ident = self.sentry.get_ident(self.sentry.captureException(
+                extra={'task_description': task_description}))
+            logger.error("Exception caught; reference is %s", ident)
 
     def is_master_alive(self):
         ppid = os.getppid()

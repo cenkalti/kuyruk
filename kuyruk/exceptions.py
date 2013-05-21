@@ -21,3 +21,8 @@ class ObjectNotFound(KuyrukError):
 class Timeout(KuyrukError):
     """Raised if a task exceeds it's allowed run time."""
     pass
+
+
+class InvalidTask(KuyrukError):
+    """Raised when the message from queue is not valid."""
+    pass
