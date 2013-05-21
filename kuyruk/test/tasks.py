@@ -68,7 +68,7 @@ def function1(sender, task, args, kwargs):
     print sender, task, args, kwargs
     assert sender is kuyruk2
     assert isinstance(task, Task)
-    assert args == ['hello world']
+    assert list(args) == ['hello world']
     assert kwargs == {}
 
 
