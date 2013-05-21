@@ -105,6 +105,8 @@ class Worker(KuyrukProcess):
         except Exception:
             raise InvalidTask
 
+        logger.info("Processing task: %r", task_description)
+
         try:
             task = self.import_task(task_description)
             args, kwargs = task_description['args'], task_description['kwargs']
