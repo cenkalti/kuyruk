@@ -200,8 +200,12 @@ class Worker(KuyrukProcess):
             module, cls, function, self.config.IMPORT_PATH)
 
     def is_master_alive(self):
+        ppid = os.getppid()
+        if ppid == 1:
+            return False
+
         try:
-            os.kill(os.getppid(), 0)
+            os.kill(ppid, 0)
             return True
         except OSError:
             return False
