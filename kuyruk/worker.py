@@ -215,7 +215,11 @@ class Worker(KuyrukProcess):
         """Sends the exceptin in current stack to Sentry."""
         if self.sentry:
             ident = self.sentry.get_ident(self.sentry.captureException(
-                extra={'task_description': task_description}))
+                extra={
+                    'task_description': task_description,
+                    'hostname': socket.gethostname(),
+                    'pid': os.getpid(),
+                    'uptime': self.uptime}))
             logger.error("Exception caught; reference is %s", ident)
 
     def is_master_alive(self):
