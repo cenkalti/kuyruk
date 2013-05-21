@@ -218,7 +218,7 @@ class Worker(KuyrukProcess):
                     raise ObjectNotFound
                 args[0] = obj
 
-        result = task.apply(args, kwargs)
+        result = task.apply(*args, **kwargs)
         logger.debug('Result: %r', result)
 
     def import_task(self, task_description):

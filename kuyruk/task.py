@@ -46,7 +46,7 @@ class Task(EventMixin):
 
         """
         if self.eager or self.kuyruk.config.EAGER:
-            self.apply(args, kwargs)
+            self.apply(*args, **kwargs)
         else:
             host = kwargs.pop('kuyruk_host', None)
             self.send_to_queue(args, kwargs, host=host)
@@ -115,7 +115,7 @@ class Task(EventMixin):
         }
 
     @profile
-    def apply(self, args, kwargs):
+    def apply(self, *args, **kwargs):
         """Run the wrapped function and event handlers."""
         def send_signal(signal, senders, **extra):
             """Send a signal to each sender. This allows the user to
