@@ -6,6 +6,7 @@ import logging
 import traceback
 import multiprocessing
 from time import sleep
+from functools import wraps
 from setproctitle import setproctitle
 from kuyruk import importer
 from kuyruk.queue import Queue
@@ -23,6 +24,23 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+def set_current_task(f):
+    """Save current task and it's arguments in self so we can send them to
+    manager as stats."""
+    @wraps(f)
+    def inner(self, task, args, kwargs):
+        self.current_task = task
+        self.current_args = args
+        self.current_kwargs = kwargs
+        try:
+            return f(self, task, args, kwargs)
+        finally:
+            self.current_task = None
+            self.current_args = None
+            self.current_kwargs = None
+    return inner
+
+
 class Worker(KuyrukProcess):
     """Consumes messages from a queue and runs tasks.
 
@@ -37,7 +55,9 @@ class Worker(KuyrukProcess):
         queue_name = queue_name.lstrip('@')
         self.queue = Queue(queue_name, self.channel, local=is_local)
         self.consumer = Consumer(self.queue)
-        self.working = False
+        self.current_task = None
+        self.current_args = None
+        self.current_kwargs = None
         self.daemon_threads = [
             self.watch_master,
             self.watch_load,
@@ -78,11 +98,9 @@ class Worker(KuyrukProcess):
         """
         with self.consumer.consume() as messages:
             for message in messages:
-                self.working = True
                 self.process_message(message)
                 self.channel.tx_commit()
                 logger.debug("Committed transaction")
-                self.working = False
 
     def start_daemon_threads(self):
         """Start the function as threads listed in self.daemon_thread."""
@@ -185,6 +203,7 @@ class Worker(KuyrukProcess):
         failed_queue.send(task_description)
         logger.debug('Saved')
 
+    @set_current_task
     def apply_task(self, task, args, kwargs):
         """Imports and runs the wrapped function in task."""
 
@@ -278,13 +297,18 @@ class Worker(KuyrukProcess):
     def get_stats(self):
         """Generate stats to be sent to manager."""
         method = self.queue.declare().method
+        try:
+            current_task = self.current_task.name
+        except AttributeError:
+            current_task = None
+
         return {
             'type': 'worker',
             'hostname': socket.gethostname(),
             'uptime': self.uptime,
             'pid': os.getpid(),
             'ppid': os.getppid(),
-            'working': self.working,
+            'current_task': current_task,
             'consuming': self.consumer.consuming,
             'queue': {
                 'name': method.queue,

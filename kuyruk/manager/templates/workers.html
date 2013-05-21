@@ -12,7 +12,7 @@
                 <th>PPID</th>
                 <th>Queue</th>
                 <th>Consuming</th>
-                <th>Working</th>
+                <th>Current Task</th>
                 <th>Actions</th>
             </tr>
             {% for addr, master in sockets|dictsort(by='value') %}
@@ -25,7 +25,7 @@
                 <td>{{ master.stats.ppid }}</td>
                 <td>{{ master.stats.queue.name }}</td>
                 <td>{{ master.stats.consuming }}</td>
-                <td>{{ master.stats.working }}</td>
+                <td>{{ master.stats.current_task }}</td>
                 <td>
                     {{ action_button(addr, 'warm_shutdown', 'Warm Shutdown') }}
                     {{ action_button(addr, 'cold_shutdown', 'Cold Shutdown') }}
