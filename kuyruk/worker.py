@@ -114,10 +114,6 @@ class Worker(KuyrukProcess):
         except Timeout:
             self.handle_timeout(message, task_description)
         except Exception:
-            if self.sentry:
-                ident = self.sentry.get_ident(self.sentry.captureException(
-                    extra={'task_description': task_description}))
-                logger.error("Exception caught; reference is %s", ident)
             self.handle_exception(message, task_description)
         else:
             logger.info('Task is successful')
@@ -137,6 +133,11 @@ class Worker(KuyrukProcess):
             self.queue.send(task_description)
         else:
             logger.debug('No retry left')
+            if self.sentry:
+                ident = self.sentry.get_ident(self.sentry.captureException(
+                    extra={'task_description': task_description}))
+                logger.error("Exception caught; reference is %s", ident)
+
             message.discard()
             if self.config.SAVE_FAILED_TASKS:
                 self.save_failed_task(task_description)
