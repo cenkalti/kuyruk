@@ -1,9 +1,19 @@
 import socket
 from datetime import datetime
-from flask import Flask, render_template, redirect, request, url_for
+from flask import Flask, render_template, redirect, request, url_for, json
 from kuyruk.helpers import human_time
+from kuyruk.helpers.json_datetime import JSONDecoder
 
 app = Flask(__name__)
+
+
+def get_redis():
+    import redis
+    return redis.StrictRedis(
+        host=app.config['REDIS_HOST'],
+        port=app.config['REDIS_PORT'],
+        db=app.config['REDIS_DB'],
+        password=app.config['REDIS_PASSWORD'])
 
 
 @app.route('/')
@@ -19,6 +29,14 @@ def masters():
 @app.route('/workers')
 def workers():
     return render_template('workers.html', sockets=get_sockets('worker'))
+
+
+@app.route('/failed-tasks')
+def failed_tasks():
+    tasks = get_redis().hvals('failed_tasks')
+    decoder = JSONDecoder()
+    tasks = map(decoder.decode, tasks)
+    return render_template('failed_tasks.html', tasks=tasks)
 
 
 def get_sockets(type_):

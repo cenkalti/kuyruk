@@ -15,6 +15,7 @@ from kuyruk.process import KuyrukProcess
 from kuyruk.helpers import start_daemon_thread
 from kuyruk.consumer import Consumer
 from kuyruk.exceptions import Reject, ObjectNotFound, Timeout, InvalidTask
+from kuyruk.helpers.json_datetime import JSONEncoder
 
 try:
     import raven
@@ -218,7 +219,7 @@ class Worker(KuyrukProcess):
         task_description['exception'] = traceback.format_exc()
         if 'id' in task_description:
             self.redis.hset('failed_tasks', task_description['id'],
-                            task_description)
+                            JSONEncoder().encode(task_description))
         else:
             # TODO remove after migration
             logger.debug("No id in task description. Saving to queue.")
