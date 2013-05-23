@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import sys
 import signal
 import logging
+from uuid import uuid1
 from types import MethodType
 from datetime import datetime
 from contextlib import contextmanager
