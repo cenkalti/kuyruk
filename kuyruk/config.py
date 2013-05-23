@@ -98,10 +98,10 @@ class Config(object):
     REDIS_PORT = 6379
     """Redis port."""
 
-    REDID_DB = 0
+    REDIS_DB = 0
     """Redis database."""
 
-    REDID_PASSWORD = 0
+    REDIS_PASSWORD = None
     """Redis password."""
 
     # Manager Options

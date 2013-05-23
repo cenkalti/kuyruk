@@ -86,8 +86,8 @@ class Worker(KuyrukProcess):
             self.redis = redis.StrictRedis(
                 host=self.config.REDIS_HOST,
                 port=self.config.REDIS_PORT,
-                db=self.config.REDID_DB,
-                password=self.config.REDID_PASSWORD)
+                db=self.config.REDIS_DB,
+                password=self.config.REDIS_PASSWORD)
         else:
             self.redis = None
 
