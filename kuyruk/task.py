@@ -45,13 +45,15 @@ class Task(EventMixin):
         without changing the client code.
 
         """
+        task_result = TaskResult(self)
+
         if self.eager or self.kuyruk.config.EAGER:
-            self.apply(*args, **kwargs)
+            task_result.result = self.apply(*args, **kwargs)
         else:
             host = kwargs.pop('kuyruk_host', None)
-            self.send_to_queue(args, kwargs, host=host)
+            task_result.id = self.send_to_queue(args, kwargs, host=host)
 
-        return TaskResult(self)
+        return task_result
 
     def __get__(self, obj, objtype):
         """If the task is accessed from an instance via attribute syntax
@@ -91,10 +93,13 @@ class Task(EventMixin):
             local = self.local
 
         desc = self.get_task_description(args, kwargs)
+        desc['id'] = uuid1().hex
         channel = LazyChannel.from_config(self.kuyruk.config)
         with channel:
             queue = Queue(queue, channel, local)
             queue.send(desc)
+
+        return desc['id']
 
     def get_task_description(self, args, kwargs):
         """Return the dictionary to be sent to the queue."""

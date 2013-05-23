@@ -92,6 +92,18 @@ class Config(object):
     RABBIT_PASSWORD = 'guest'
     """RabbitMQ password."""
 
+    REDIS_HOST = 'localhost'
+    """Redis host."""
+
+    REDIS_PORT = 6379
+    """Redis port."""
+
+    REDID_DB = 0
+    """Redis database."""
+
+    REDID_PASSWORD = 0
+    """Redis password."""
+
     # Manager Options
     #################
 

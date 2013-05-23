@@ -21,6 +21,11 @@ try:
 except ImportError:
     raven = None
 
+try:
+    import redis
+except ImportError:
+    redis = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -73,6 +78,18 @@ class Worker(KuyrukProcess):
             self.sentry = raven.Client(self.config.SENTRY_DSN)
         else:
             self.sentry = None
+
+        if self.config.SAVE_FAILED_TASKS:
+            if redis is None:
+                raise ImportError('Cannot import redis. Please install it with '
+                                  '"pip install redis".')
+            self.redis = redis.StrictRedis(
+                host=self.config.REDIS_HOST,
+                port=self.config.REDIS_PORT,
+                db=self.config.REDID_DB,
+                password=self.config.REDID_PASSWORD)
+        else:
+            self.redis = None
 
     def run(self):
         """Runs the worker and opens a connection to RabbitMQ.
@@ -199,8 +216,14 @@ class Worker(KuyrukProcess):
         task_description['queue'] = self.queue.name
         task_description['hostname'] = socket.gethostname()
         task_description['exception'] = traceback.format_exc()
-        failed_queue = Queue('kuyruk_failed', self.channel)
-        failed_queue.send(task_description)
+        if 'id' in task_description:
+            self.redis.hset('failed_tasks', task_description['id'],
+                            task_description)
+        else:
+            # TODO remove after migration
+            logger.debug("No id in task description. Saving to queue.")
+            failed_queue = Queue('kuyruk_failed', self.channel)
+            failed_queue.send(task_description)
         logger.debug('Saved')
 
     @set_current_task
