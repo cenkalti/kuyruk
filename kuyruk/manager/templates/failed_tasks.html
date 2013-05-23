@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+
+{% block body %}
+    <form method="POST">
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Module</th>
+                <th>Class</th>
+                <th>Function</th>
+                <th>Args</th>
+                <th>Kwargs</th>
+                <th>Hostname</th>
+                <th>Queue</th>
+                <th>Timestamp</th>
+            </tr>
+            {% for task in tasks %}
+            <tr>
+                <td>{{ task.id }}</td>
+                <td>{{ task.module }}</td>
+                <td>{{ task.class|default('', true) }}</td>
+                <td>{{ task.function }}</td>
+                <td>{{ task.args }}</td>
+                <td>{{ task.kwargs }}</td>
+                <td>{{ task.hostname }}</td>
+                <td>{{ task.queue }}</td>
+                <td>{{ task.timestamp }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        Count: {{ tasks|count }}
+    </form>
+{% endblock %}
