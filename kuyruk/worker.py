@@ -6,6 +6,7 @@ import logging
 import traceback
 import multiprocessing
 from time import sleep
+from datetime import datetime
 from functools import wraps
 from setproctitle import setproctitle
 from kuyruk import importer
@@ -274,11 +275,15 @@ class Worker(KuyrukProcess):
         gracefully.
 
         """
-        seconds = self.config.MAX_WORKER_RUN_TIME
-        if seconds > 0:
-            sleep(seconds)
-            logger.warning('Run time reached zero, cancelling consume.')
-            self.warm_shutdown()
+        if not self.config.MAX_WORKER_RUN_TIME:
+            return
+
+        while True:
+            sleep(1)
+            passed = datetime.utcnow() - self.started
+            if passed > self.config.MAX_WORKER_RUN_TIME:
+                logger.warning('Run time reached zero')
+                self.warm_shutdown()
 
     def register_signals(self):
         super(Worker, self).register_signals()
