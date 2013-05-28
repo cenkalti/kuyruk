@@ -1,11 +1,8 @@
 import Queue
 from pprint import pformat
-from collections import namedtuple
 from SocketServer import ThreadingTCPServer, BaseRequestHandler
 from kuyruk.manager.messaging import message_loop
 from kuyruk.helpers.total_ordering import total_ordering
-
-Master = namedtuple('Master', 'socket uptime')
 
 
 class ManagerServer(ThreadingTCPServer):
