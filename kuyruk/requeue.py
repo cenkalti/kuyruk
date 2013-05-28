@@ -1,5 +1,8 @@
 from __future__ import absolute_import
+import json
 import logging
+
+import redis
 
 from kuyruk.channel import LazyChannel
 from kuyruk.queue import Queue
@@ -7,28 +10,31 @@ from kuyruk.queue import Queue
 logger = logging.getLogger(__name__)
 
 
-def run(config, args):
-    channel = LazyChannel.from_config(config)
-    channel.tx_select()
-    failed_queue = Queue('kuyruk_failed', channel)
+class Requeuer(object):
 
-    count = 0
-    while 1:
-        tag, task_description = failed_queue.receive()
-        if task_description is None:
-            break
+    def __init__(self, config):
+        self.config = config
+        self.redis = redis.StrictRedis(
+            host=self.config.REDIS_HOST,
+            port=self.config.REDIS_PORT,
+            db=self.config.REDIS_DB,
+            password=self.config.REDIS_PASSWORD)
 
-        print "Requeueing task: %r" % task_description
-        requeue(task_description, channel)
-        failed_queue.ack(tag)
-        channel.tx_commit()
-        count += 1
+    def run(self):
+        tasks = self.redis.hvals('failed_tasks')
+        channel = LazyChannel.from_config(self.config)
+        with channel:
+            for task in tasks:
+                task = json.loads(task)
+                print "Requeueing task: %r" % task
+                Requeuer.requeue(task, channel, self.redis)
 
-    print "%i failed tasks are requeued." % count
+        print "%i failed tasks have been requeued." % len(tasks)
 
-
-def requeue(task_description, channel):
-    queue_name = task_description['queue']
-    del task_description['queue']
-    task_queue = Queue(queue_name, channel)
-    task_queue.send(task_description)
+    @staticmethod
+    def requeue(task_description, channel, redis):
+        queue_name = task_description['queue']
+        del task_description['queue']
+        task_queue = Queue(queue_name, channel)
+        task_queue.send(task_description)
+        redis.hdel('failed_tasks', task_description['id'])

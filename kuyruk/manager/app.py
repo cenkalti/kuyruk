@@ -4,7 +4,7 @@ from datetime import datetime
 
 from flask import Flask, render_template, redirect, request, url_for
 
-from kuyruk.requeue import requeue
+from kuyruk.requeue import Requeuer
 from kuyruk.channel import LazyChannel
 from kuyruk.helpers import human_time
 from kuyruk.helpers.json_datetime import JSONDecoder
@@ -95,7 +95,7 @@ def requeue_task():
     with channel:
         for desc in tasks:
             desc = json.loads(desc)
-            requeue(desc, channel)
+            Requeuer.requeue(desc, channel, redis)
 
     return redirect_back()
 
