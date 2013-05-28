@@ -339,6 +339,8 @@ class Worker(KuyrukProcess):
             'pid': os.getpid(),
             'ppid': os.getppid(),
             'current_task': current_task,
+            'current_args': self.current_args,
+            'current_kwargs': self.current_kwargs,
             'consuming': self.consumer.consuming,
             'queue': {
                 'name': method.queue,
