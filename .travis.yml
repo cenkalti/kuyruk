@@ -4,6 +4,7 @@ python:
   - "2.7"
 install:
   - "pip install --use-mirrors -e ."
+  - "pip install --use-mirrors -r requirements-extra.txt"
   - "pip install --use-mirrors -r kuyruk/test/requirements.txt"
   # Deal with issue on Travis builders re: multiprocessing.Queue :(
   - "sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm"
@@ -11,6 +12,7 @@ script:
   - python setup.py nosetests
 services:
   - rabbitmq
+  - redis-server
 branches:
   only:
     - master
