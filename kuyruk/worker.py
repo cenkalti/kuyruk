@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import os
+import sys
 import socket
 import signal
 import logging
@@ -217,6 +218,10 @@ class Worker(KuyrukProcess):
         task_description['queue'] = self.queue.name
         task_description['hostname'] = socket.gethostname()
         task_description['exception'] = traceback.format_exc()
+        exc_type = sys.exc_info()[0]
+        task_description['exception_type'] = "%s.%s" % (
+            exc_type.__module__, exc_type.__name__)
+
         if 'id' in task_description:
             self.redis.hset('failed_tasks', task_description['id'],
                             JSONEncoder().encode(task_description))
