@@ -264,6 +264,7 @@ class Worker(KuyrukProcess):
                     'pid': os.getpid(),
                     'uptime': self.uptime}))
             logger.error("Exception caught; reference is %s", ident)
+            task_description['sentry_id'] = ident
 
     def is_master_alive(self):
         ppid = os.getppid()

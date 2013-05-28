@@ -80,6 +80,16 @@ def inject_helpers():
     }
 
 
+@app.template_filter('sentry_url')
+def do_sentry_url(sentry_id):
+    if sentry_id:
+        url = app.config['SENTRY_PROJECT_URL']
+        if not url.endswith('/'):
+            url += '/'
+        url += 'search?q=%s' % sentry_id
+        return url
+
+
 def redirect_back():
     referrer = request.headers.get('Referer')
     if referrer:

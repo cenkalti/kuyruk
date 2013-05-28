@@ -74,6 +74,9 @@ class Config(object):
     """Send exceptions to Sentry. Raven must be installed in order that
     this feature to work."""
 
+    SENTRY_PROJECT_URL = None
+    """Sentry project URL. Required to generate links to Sentry in Manager."""
+
     # Connection Options
     ####################
 

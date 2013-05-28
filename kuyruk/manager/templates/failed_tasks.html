@@ -1,10 +1,18 @@
 {% extends "layout.html" %}
 
+{% macro sentry_link(id, title='Exception') %}
+    {% set url = id|sentry_url %}
+    {% if url %}
+        <a href="{{ url }}">{{ title }}</a>
+    {% endif %}
+{%- endmacro %}
+
 {% block body %}
     <form method="POST">
         <table>
             <tr>
-                <th>ID</th>
+                <th>Task ID</th>
+                <th>Sentry Link</th>
                 <th>Module</th>
                 <th>Class</th>
                 <th>Function</th>
@@ -17,6 +25,7 @@
             {% for task in tasks %}
             <tr>
                 <td>{{ task.id }}</td>
+                <td>{{ sentry_link(task.sentry_id) }}</td>
                 <td>{{ task.module }}</td>
                 <td>{{ task.class|default('', true) }}</td>
                 <td>{{ task.function }}</td>
