@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import os
+import sys
 import socket
 import signal
 import logging
@@ -16,11 +17,17 @@ from kuyruk.process import KuyrukProcess
 from kuyruk.helpers import start_daemon_thread
 from kuyruk.consumer import Consumer
 from kuyruk.exceptions import Reject, ObjectNotFound, Timeout, InvalidTask
+from kuyruk.helpers.json_datetime import JSONEncoder
 
 try:
     import raven
 except ImportError:
     raven = None
+
+try:
+    import redis
+except ImportError:
+    redis = None
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +81,18 @@ class Worker(KuyrukProcess):
             self.sentry = raven.Client(self.config.SENTRY_DSN)
         else:
             self.sentry = None
+
+        if self.config.SAVE_FAILED_TASKS:
+            if redis is None:
+                raise ImportError('Cannot import redis. Please install it with '
+                                  '"pip install redis".')
+            self.redis = redis.StrictRedis(
+                host=self.config.REDIS_HOST,
+                port=self.config.REDIS_PORT,
+                db=self.config.REDIS_DB,
+                password=self.config.REDIS_PASSWORD)
+        else:
+            self.redis = None
 
     def run(self):
         """Runs the worker and opens a connection to RabbitMQ.
@@ -200,8 +219,18 @@ class Worker(KuyrukProcess):
         task_description['queue'] = self.queue.name
         task_description['hostname'] = socket.gethostname()
         task_description['exception'] = traceback.format_exc()
-        failed_queue = Queue('kuyruk_failed', self.channel)
-        failed_queue.send(task_description)
+        exc_type = sys.exc_info()[0]
+        task_description['exception_type'] = "%s.%s" % (
+            exc_type.__module__, exc_type.__name__)
+
+        if 'id' in task_description:
+            self.redis.hset('failed_tasks', task_description['id'],
+                            JSONEncoder().encode(task_description))
+        else:
+            # TODO remove after migration
+            logger.debug("No id in task description. Saving to queue.")
+            failed_queue = Queue('kuyruk_failed', self.channel)
+            failed_queue.send(task_description)
         logger.debug('Saved')
 
     @set_current_task
@@ -241,6 +270,7 @@ class Worker(KuyrukProcess):
                     'pid': os.getpid(),
                     'uptime': self.uptime}))
             logger.error("Exception caught; reference is %s", ident)
+            task_description['sentry_id'] = ident
 
     def is_master_alive(self):
         ppid = os.getppid()
@@ -314,6 +344,8 @@ class Worker(KuyrukProcess):
             'pid': os.getpid(),
             'ppid': os.getppid(),
             'current_task': current_task,
+            'current_args': self.current_args,
+            'current_kwargs': self.current_kwargs,
             'consuming': self.consumer.consuming,
             'queue': {
                 'name': method.queue,

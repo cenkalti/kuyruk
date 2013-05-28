@@ -3,6 +3,8 @@ import inspect
 import logging
 import unittest
 
+import redis
+
 import tasks
 from kuyruk import Task
 from kuyruk.task import TaskResult
@@ -109,10 +111,10 @@ class KuyrukTestCase(unittest.TestCase):
             pids_new = get_worker_pids()
 
         assert pids_new[0] > pids_old[0]  # kuyruk
-        assert pids_new[1] > pids_old[1]  # kuryuk.localhost
+        assert pids_new[1] > pids_old[1]  # kuyruk.localhost
 
     def test_save_failed(self):
-        """Failed tasks are saved to another queue"""
+        """Failed tasks are saved to Redis"""
         delete_queue('kuyruk_failed')
         tasks.raise_exception()
         with run_kuyruk(save_failed_tasks=True) as master:
@@ -121,11 +123,13 @@ class KuyrukTestCase(unittest.TestCase):
             master.expect('Saving failed task')
             master.expect('Saved')
             master.expect('Committed transaction')
+
         assert is_empty('kuyruk')
-        assert not is_empty('kuyruk_failed')
+        r = redis.StrictRedis()
+        assert r.hvals('failed_tasks')
 
         run_requeue()
-        assert is_empty('kuyruk_failed')
+        assert not r.hvals('failed_tasks')
         assert not is_empty('kuyruk')
 
     def test_dead_master(self):

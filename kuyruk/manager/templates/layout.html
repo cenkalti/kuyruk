@@ -23,7 +23,8 @@
     <nav>
         <a href="{{ url_for('masters') }}">Masters</a> |
         <a href="{{ url_for('workers') }}">Workers</a> |
-        <a href="{{ url_for('queues') }}">Queues</a>
+        <a href="{{ url_for('queues') }}">Queues</a> |
+        <a href="{{ url_for('failed_tasks') }}">Failed Tasks</a>
     </nav>
     <br>
     {% block body %}

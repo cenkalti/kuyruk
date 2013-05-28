@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+
+{% macro sentry_link(id, title) %}
+    {% set url = id|sentry_url %}
+    {% if url %}
+        <a href="{{ url }}">{{ title }}</a>
+    {% endif %}
+{%- endmacro %}
+
+{% macro requeue_button(task_id, title) %}
+    <button type="submit" name='task_id'
+            value="{{ task_id }}"
+            formaction="{{ url_for('requeue_task') }}">
+        {{ title }}</button>
+{% endmacro -%}
+
+{% block body %}
+    <form method="POST">
+        <table>
+            <tr>
+                <th>Task ID</th>
+                <th>Requeue Count</th>
+                <th>Sentry Link</th>
+                <th>Module</th>
+                <th>Class</th>
+                <th>Function</th>
+                <th>Args</th>
+                <th>Kwargs</th>
+                <th>Hostname</th>
+                <th>Queue</th>
+                <th>Timestamp</th>
+                <th>Actions</th>
+            </tr>
+            {% for task in tasks %}
+            <tr>
+                <td>{{ task.id }}</td>
+                <td>{{ task.requeue_count|default(0) }}</td>
+                <td>{{ sentry_link(task.sentry_id, task.exception_type) }}</td>
+                <td>{{ task.module }}</td>
+                <td>{{ task.class|default('', true) }}</td>
+                <td>{{ task.function }}</td>
+                <td>{{ task.args }}</td>
+                <td>{{ task.kwargs }}</td>
+                <td>{{ task.hostname }}</td>
+                <td>{{ task.queue }}</td>
+                <td>{{ task.timestamp }}</td>
+                <td>
+                    {{ requeue_button(task.id, 'Requeue') }}
+                </td>
+            </tr>
+            {% endfor %}
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>
+                    {{ requeue_button('ALL', 'Requeue All') }}
+                </td>
+            </tr>
+        </table>
+        Count: {{ tasks|count }}
+    </form>
+{% endblock %}
