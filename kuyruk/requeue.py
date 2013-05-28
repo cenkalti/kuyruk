@@ -2,8 +2,6 @@ from __future__ import absolute_import
 import json
 import logging
 
-import redis
-
 from kuyruk.channel import LazyChannel
 from kuyruk.queue import Queue
 
@@ -13,6 +11,7 @@ logger = logging.getLogger(__name__)
 class Requeuer(object):
 
     def __init__(self, config):
+        import redis
         self.config = config
         self.redis = redis.StrictRedis(
             host=self.config.REDIS_HOST,
