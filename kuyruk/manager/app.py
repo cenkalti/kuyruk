@@ -1,6 +1,11 @@
+import json
 import socket
 from datetime import datetime
-from flask import Flask, render_template, redirect, request, url_for, json
+
+from flask import Flask, render_template, redirect, request, url_for
+
+from kuyruk.requeue import requeue
+from kuyruk.channel import LazyChannel
 from kuyruk.helpers import human_time
 from kuyruk.helpers.json_datetime import JSONDecoder
 
@@ -68,6 +73,30 @@ def action():
 def action_all():
     for addr, client in get_sockets(request.args['type']).iteritems():
         client.actions.put((request.form['action'], (), {}))
+    return redirect_back()
+
+
+@app.route('/requeue', methods=['POST'])
+def requeue_task():
+    task_id = request.form['task_id']
+    redis = get_redis()
+
+    if task_id == 'ALL':
+        tasks = redis.hvals('failed_tasks')
+    else:
+        tasks = [redis.hget('failed_tasks', task_id)]
+
+    channel = LazyChannel(
+        app.config['RABBIT_HOST'],
+        app.config['RABBIT_PORT'],
+        app.config['RABBIT_VIRTUAL_HOST'],
+        app.config['RABBIT_USER'],
+        app.config['RABBIT_PASSWORD'])
+    with channel:
+        for desc in tasks:
+            desc = json.loads(desc)
+            requeue(desc, channel)
+
     return redirect_back()
 
 

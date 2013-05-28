@@ -7,6 +7,13 @@
     {% endif %}
 {%- endmacro %}
 
+{% macro requeue_button(task_id, title) %}
+    <button type="submit" name='task_id'
+            value="{{ task_id }}"
+            formaction="{{ url_for('requeue_task') }}">
+        {{ title }}</button>
+{% endmacro -%}
+
 {% block body %}
     <form method="POST">
         <table>
@@ -21,6 +28,7 @@
                 <th>Hostname</th>
                 <th>Queue</th>
                 <th>Timestamp</th>
+                <th>Actions</th>
             </tr>
             {% for task in tasks %}
             <tr>
@@ -34,8 +42,26 @@
                 <td>{{ task.hostname }}</td>
                 <td>{{ task.queue }}</td>
                 <td>{{ task.timestamp }}</td>
+                <td>
+                    {{ requeue_button(task.id, 'Requeue') }}
+                </td>
             </tr>
             {% endfor %}
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>
+                    {{ requeue_button('ALL', 'Requeue') }}
+                </td>
+            </tr>
         </table>
         Count: {{ tasks|count }}
     </form>

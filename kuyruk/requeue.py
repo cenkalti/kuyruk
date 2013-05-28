@@ -19,14 +19,16 @@ def run(config, args):
             break
 
         print "Requeueing task: %r" % task_description
-
-        queue_name = task_description['queue']
-        del task_description['queue']
-        task_queue = Queue(queue_name, channel)
-        task_queue.send(task_description)
-
+        requeue(task_description, channel)
         failed_queue.ack(tag)
         channel.tx_commit()
         count += 1
 
     print "%i failed tasks are requeued." % count
+
+
+def requeue(task_description, channel):
+    queue_name = task_description['queue']
+    del task_description['queue']
+    task_queue = Queue(queue_name, channel)
+    task_queue.send(task_description)
