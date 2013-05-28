@@ -34,6 +34,8 @@ class Requeuer(object):
     def requeue(task_description, channel, redis):
         queue_name = task_description['queue']
         del task_description['queue']
+        count = task_description.get('requeue_count', 0)
+        task_description['requeue_count'] = count + 1
         task_queue = Queue(queue_name, channel)
         task_queue.send(task_description)
         redis.hdel('failed_tasks', task_description['id'])

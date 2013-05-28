@@ -19,6 +19,7 @@
         <table>
             <tr>
                 <th>Task ID</th>
+                <th>Requeue Count</th>
                 <th>Sentry Link</th>
                 <th>Module</th>
                 <th>Class</th>
@@ -33,6 +34,7 @@
             {% for task in tasks %}
             <tr>
                 <td>{{ task.id }}</td>
+                <td>{{ task.requeue_count|default(0) }}</td>
                 <td>{{ sentry_link(task.sentry_id, task.exception_type) }}</td>
                 <td>{{ task.module }}</td>
                 <td>{{ task.class|default('', true) }}</td>
@@ -48,6 +50,7 @@
             </tr>
             {% endfor %}
             <tr>
+                <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
