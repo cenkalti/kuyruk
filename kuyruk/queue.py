@@ -158,3 +158,15 @@ class Queue(object):
     @synchronized
     def sleep(self, seconds):
         self.channel.connection.sleep(seconds)
+
+    @synchronized
+    def basic_qos(self, *args, **kwargs):
+        return self.channel.basic_qos(*args, **kwargs)
+
+    @synchronized
+    def tx_select(self, *args, **kwargs):
+        return self.channel.tx_select(*args, **kwargs)
+
+    @synchronized
+    def tx_commit(self, *args, **kwargs):
+        return self.channel.tx_commit(*args, **kwargs)

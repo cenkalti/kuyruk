@@ -102,8 +102,8 @@ class Worker(KuyrukProcess):
         super(Worker, self).run()
         setproctitle("kuyruk: worker on %s" % self.queue.name)
         self.queue.declare()
-        self.channel.basic_qos(prefetch_count=1)
-        self.channel.tx_select()
+        self.queue.basic_qos(prefetch_count=1)
+        self.queue.tx_select()
         self.import_modules()
         self.start_daemon_threads()
         self.maybe_start_manager_thread()
@@ -118,7 +118,7 @@ class Worker(KuyrukProcess):
         with self.consumer.consume() as messages:
             for message in messages:
                 self.process_message(message)
-                self.channel.tx_commit()
+                self.queue.tx_commit()
                 logger.debug("Committed transaction")
 
     def start_daemon_threads(self):
@@ -222,19 +222,14 @@ class Worker(KuyrukProcess):
         task_description['exception_type'] = "%s.%s" % (
             exc_type.__module__, exc_type.__name__)
 
-        if 'id' in task_description:
-            try:
-                self.redis.hset('failed_tasks', task_description['id'],
-                                JSONEncoder().encode(task_description))
-            except Exception:
-                if self.sentry:
-                    self.sentry.captureException()
-        else:
-            # TODO remove after migration
-            logger.debug("No id in task description. Saving to queue.")
-            failed_queue = Queue('kuyruk_failed', self.channel)
-            failed_queue.send(task_description)
-        logger.debug('Saved')
+        try:
+            self.redis.hset('failed_tasks', task_description['id'],
+                            JSONEncoder().encode(task_description))
+            logger.debug('Saved')
+        except Exception:
+            logger.error('Cannot save failed task to Redis!')
+            if self.sentry:
+                self.sentry.captureException()
 
     @set_current_task
     def apply_task(self, task, args, kwargs):
