@@ -95,14 +95,7 @@ class Task(EventMixin):
 
         channel = LazyChannel.from_config(self.kuyruk.config)
         queue = Queue(queue, channel, local)
-
         desc = self.get_task_description(args, kwargs, queue.name)
-        desc['queue'] = queue.name
-        desc['args'] = args
-        desc['kwargs'] = kwargs
-        desc['id'] = uuid1().hex
-        desc['timestamp'] = datetime.utcnow()
-
         with channel:
             queue.send(desc)
 
@@ -117,10 +110,15 @@ class Task(EventMixin):
             args[0] = args[0].id
 
         return {
+            'queue': queue,
+            'args': args,
+            'kwargs': kwargs,
             'module': self.module_name,
             'function': self.f.__name__,
             'class': self.class_name,
             'retry': self.retry,
+            'id': uuid1().hex,
+            'timestamp': datetime.utcnow(),
         }
 
     @profile
