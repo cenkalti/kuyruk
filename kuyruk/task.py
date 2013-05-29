@@ -95,6 +95,7 @@ class Task(EventMixin):
 
         desc = self.get_task_description(args, kwargs)
         desc['id'] = uuid1().hex
+        desc['queue'] = queue
         channel = LazyChannel.from_config(self.kuyruk.config)
         with channel:
             queue = Queue(queue, channel, local)
