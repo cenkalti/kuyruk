@@ -39,7 +39,16 @@ class Manager(Flask):
 
         @self.route('/workers')
         def workers():
-            return render_template('workers.html', sockets=get_sockets('worker'))
+            sockets = get_sockets('worker')
+            sockets2 = {}
+            ppid = request.args.get('ppid', None, int)
+            if ppid:
+                for addr, worker in sockets.iteritems():
+                    if worker.stats.get('ppid', '') == ppid:
+                        sockets2[addr] = worker
+            else:
+                sockets2 = sockets
+            return render_template('workers.html', sockets=sockets2)
 
         @self.route('/failed-tasks')
         def failed_tasks():

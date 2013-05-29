@@ -20,7 +20,11 @@
                 <td>{{ addr[0] }}</td>
                 <td>{{ addr[1] }}</td>
                 <td>{{ human_time(master.stats.uptime) }}</td>
-                <td>{{ master.stats.pid }}</td>
+                <td>
+                    <a href="{{ url_for('workers', ppid=master.stats.pid) }}">
+                        {{ master.stats.pid }}
+                    </a>
+                </td>
                 <td>{{ master.stats.version }}</td>
                 <td>{{ master.stats.workers }}</td>
                 <td>
