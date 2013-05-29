@@ -9,7 +9,7 @@ import multiprocessing
 from time import time, sleep
 from functools import wraps
 from setproctitle import setproctitle
-from kuyruk import importer
+from kuyruk import __version__, importer
 from kuyruk.queue import Queue
 from kuyruk.channel import LazyChannel
 from kuyruk.process import KuyrukProcess
@@ -341,6 +341,7 @@ class Worker(KuyrukProcess):
             'uptime': self.uptime,
             'pid': os.getpid(),
             'ppid': os.getppid(),
+            'version': __version__,
             'current_task': current_task,
             'current_args': self.current_args,
             'current_kwargs': self.current_kwargs,
