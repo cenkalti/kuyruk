@@ -93,17 +93,22 @@ class Task(EventMixin):
             queue = self.queue
             local = self.local
 
-        desc = self.get_task_description(args, kwargs)
-        desc['id'] = uuid1().hex
-        desc['queue'] = queue
         channel = LazyChannel.from_config(self.kuyruk.config)
+        queue = Queue(queue, channel, local)
+
+        desc = self.get_task_description(args, kwargs, queue.name)
+        desc['queue'] = queue.name
+        desc['args'] = args
+        desc['kwargs'] = kwargs
+        desc['id'] = uuid1().hex
+        desc['timestamp'] = datetime.utcnow()
+
         with channel:
-            queue = Queue(queue, channel, local)
             queue.send(desc)
 
         return desc['id']
 
-    def get_task_description(self, args, kwargs):
+    def get_task_description(self, args, kwargs, queue):
         """Return the dictionary to be sent to the queue."""
 
         # For class tasks; replace the first argument with the id of the object
@@ -115,9 +120,6 @@ class Task(EventMixin):
             'module': self.module_name,
             'function': self.f.__name__,
             'class': self.class_name,
-            'args': args,
-            'kwargs': kwargs,
-            'timestamp': datetime.utcnow(),
             'retry': self.retry,
         }
 
