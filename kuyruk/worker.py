@@ -224,8 +224,12 @@ class Worker(KuyrukProcess):
             exc_type.__module__, exc_type.__name__)
 
         if 'id' in task_description:
-            self.redis.hset('failed_tasks', task_description['id'],
-                            JSONEncoder().encode(task_description))
+            try:
+                self.redis.hset('failed_tasks', task_description['id'],
+                                JSONEncoder().encode(task_description))
+            except Exception:
+                if self.sentry:
+                    self.sentry.captureException()
         else:
             # TODO remove after migration
             logger.debug("No id in task description. Saving to queue.")
