@@ -1,5 +1,5 @@
 Flask>=0.9
--e git+git@github.com:pika/pika.git@8b69e5afadff4b887f60a168ab2cae8d5ae19322#egg=pika
+pika>=0.9.12, !=0.9.13
 setproctitle>=1.1.7
 blinker>=1.2
 argparse>=1.2.1
