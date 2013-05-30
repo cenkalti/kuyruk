@@ -23,7 +23,12 @@
                 <td>{{ master.stats.hostname }}</td>
                 <td>{{ addr[0] }}</td>
                 <td>{{ addr[1] }}</td>
-                <td>{{ human_time(master.stats.uptime) }}</td>
+                <td
+                  {% if config['MAX_WORKER_RUN_TIME'] and master.stats.uptime > config['MAX_WORKER_RUN_TIME'] %}
+                    style="background-color: yellow"
+                  {% endif %}>
+                  {{ human_time(master.stats.uptime) }}
+                </td>
                 <td>{{ master.stats.pid }}</td>
                 <td>{{ master.stats.ppid }}</td>
                 <td>{{ master.stats.version }}</td>
