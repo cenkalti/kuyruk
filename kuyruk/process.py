@@ -5,6 +5,7 @@ import logging
 import logging.config
 import threading
 import traceback
+import subprocess
 from time import time
 from .config import Config
 from .manager.client import ManagerClientThread
@@ -25,10 +26,21 @@ class KuyrukProcess(object):
         self.popen = None
 
     def run(self):
+        if self.config.CLOSE_FDS is True:
+            self.patch_popen()
+
         self.setup_logging()
         self.register_signals()
         logger.debug('PID: %s PGID: %s', os.getpid(), os.getpgrp())
         self.started = time()
+
+    def patch_popen(self):
+        original_init = subprocess.Popen.__init__
+        
+        @monkeypatch_method(subprocess.Popen)
+        def __init__(self, *args, **kwargs):
+            close_fds = kwargs.pop('close_fds', True)
+            original_init(self, *args, close_fds=close_fds, **kwargs)
 
     def register_signals(self):
         signal.signal(signal.SIGINT, self.handle_sigint)
@@ -93,3 +105,10 @@ def print_stack(sig, frame):
     print '=' * 70
     print ''.join(traceback.format_stack())
     print '-' * 70
+
+
+def monkeypatch_method(cls):
+    def decorator(func):
+        setattr(cls, func.__name__, func)
+        return func
+    return decorator
