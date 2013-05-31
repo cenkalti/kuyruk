@@ -1,6 +1,12 @@
 Kuyruk
 ======
 
+.. image:: https://travis-ci.org/cenkalti/kuyruk.png
+   :target: https://travis-ci.org/cenkalti/kuyruk
+
+.. image:: https://pypip.in/v/Kuyruk/badge.png
+        :target: https://crate.io/packages/Kuyruk
+
 Kuyruk is a simple and easy way of distributing tasks to run on servers.
 
 It uses `RabbitMQ <http://www.rabbitmq.com>`_ as message broker and depends on
@@ -26,9 +32,6 @@ Normally you don't need this but it is easy.
 Make sure that RabbitMQ is running before running tests.
 Tests also run on `Travis CI <https://travis-ci.org/cenkalti/kuyruk>`_
 automatically on push.
-
-.. image:: https://travis-ci.org/cenkalti/kuyruk.png
-   :target: https://travis-ci.org/cenkalti/kuyruk
 
 .. code-block:: bash
 
