@@ -49,7 +49,7 @@ def run_kuyruk(queue='kuyruk', save_failed_tasks=False, terminate=True,
         args.extend(['--queue', queue])
 
     environ = os.environ.copy()
-    environ['COVERAGE_PROCESS_START'] = 'kuyruk/test/coveragerc'
+    environ['COVERAGE_PROCESS_START'] = '.coveragerc'
 
     popen = What(*args, preexec_fn=os.setsid, env=environ)
     popen.timeout = TIMEOUT
