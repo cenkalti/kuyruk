@@ -35,6 +35,7 @@ class KuyrukProcess(object):
         self.started = time()
 
     def patch_popen(self):
+        """Patch subprocess.Popen constructor to close_fds by default."""
         original_init = subprocess.Popen.__init__
 
         @monkeypatch_method(subprocess.Popen)
