@@ -36,7 +36,7 @@ class KuyrukProcess(object):
 
     def patch_popen(self):
         original_init = subprocess.Popen.__init__
-        
+
         @monkeypatch_method(subprocess.Popen)
         def __init__(self, *args, **kwargs):
             close_fds = kwargs.pop('close_fds', True)
