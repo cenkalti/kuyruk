@@ -6,7 +6,7 @@ install:
   - pip install --use-mirrors -e .
   - pip install --use-mirrors -r requirements-extra.txt
   - pip install --use-mirrors -r kuyruk/test/requirements.txt
-  - pip install --use-mirrors coveralls
+  - pip install --use-mirrors python-coveralls
   # Deal with issue on Travis builders re: multiprocessing.Queue :(
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
 script:
