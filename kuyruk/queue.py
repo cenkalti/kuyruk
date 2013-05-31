@@ -164,9 +164,9 @@ class Queue(object):
         return self.channel.basic_qos(*args, **kwargs)
 
     @synchronized
-    def tx_select(self, *args, **kwargs):
-        return self.channel.tx_select(*args, **kwargs)
+    def tx_select(self):
+        return self.channel.tx_select()
 
     @synchronized
-    def tx_commit(self, *args, **kwargs):
-        return self.channel.tx_commit(*args, **kwargs)
+    def tx_commit(self):
+        return self.channel.tx_commit()
