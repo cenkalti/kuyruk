@@ -111,6 +111,10 @@ class Cat(object):
     def meow(self, message):
         print "Felix says:", message
 
+    @kuyruk.task
+    def raise_exception(self):
+        raise Exception
+
 
 class DatabaseTask(Task):
 

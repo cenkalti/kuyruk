@@ -164,9 +164,14 @@ class KuyrukTestCase(unittest.TestCase):
         self.assertTrue(isinstance(tasks.Cat.meow, Task))
         self.assertTrue(inspect.ismethod(cat.meow))
 
-        cat.meow('hello')
-        with run_kuyruk() as master:
-            master.expect('Felix says: hello')
+    def test_class_task_fail(self):
+        cat = tasks.Cat(1, 'Felix')
+
+        cat.raise_exception()
+        with run_kuyruk(save_failed_tasks=True) as master:
+            master.expect('raise Exception')
+            master.expect('Saving failed task')
+            master.expect('Saved')
 
     def test_task_name(self):
         self.assertEqual(tasks.Cat.meow.name, 'kuyruk.test.tasks:Cat.meow')

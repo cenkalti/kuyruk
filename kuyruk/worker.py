@@ -224,11 +224,18 @@ class Worker(KuyrukProcess):
             exc_type.__module__, exc_type.__name__)
 
         try:
+            # Convert object to id for class tasks
+            if task_description['class']:
+                args = task_description['args']
+                args[0] = args[0].id
+                task_description['args'] = args
+
             self.redis.hset('failed_tasks', task_description['id'],
                             JSONEncoder().encode(task_description))
             logger.debug('Saved')
         except Exception:
             logger.error('Cannot save failed task to Redis!')
+            logger.debug(traceback.format_exc())
             if self.sentry:
                 self.sentry.captureException()
 

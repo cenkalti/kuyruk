@@ -13,7 +13,11 @@ from what import What
 from kuyruk.channel import LazyChannel
 from kuyruk.queue import Queue as RabbitQueue
 
-TIMEOUT = 30
+
+if os.environ.get('TRAVIS', '') == 'true':
+    TIMEOUT = 30
+else:
+    TIMEOUT = 5
 
 logger = logging.getLogger(__name__)
 
