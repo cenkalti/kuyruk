@@ -14,7 +14,7 @@ which is a pure-Python RabbitMQ client library.
 How to install?
 ---------------
 
-Kuyruk is available on PyPI.
+Kuyruk is available on `PyPI <https://pypi.python.org/pypi/Kuyruk>`_.
 
 .. code-block:: bash
 
