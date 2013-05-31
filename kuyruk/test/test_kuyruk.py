@@ -106,8 +106,8 @@ class KuyrukTestCase(unittest.TestCase):
             for pid in pids_old:
                 os.kill(pid, signal.SIGKILL)
             master.expect('Spawning new worker')
-            master.expect('Start consuming')
-            master.expect('Start consuming')
+            master.expect('Waiting for new message')
+            master.expect('Waiting for new message')
             pids_new = get_worker_pids()
 
         assert pids_new[0] > pids_old[0]  # kuyruk
