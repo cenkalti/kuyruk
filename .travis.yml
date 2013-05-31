@@ -10,7 +10,7 @@ install:
   # Deal with issue on Travis builders re: multiprocessing.Queue :(
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
 script:
-  - coverage run --source=kuyruk setup.py nosetests
+  - python setup.py nosetests
 after_success:
   - coveralls
 services:
