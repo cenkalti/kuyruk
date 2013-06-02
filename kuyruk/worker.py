@@ -7,6 +7,7 @@ import logging
 import traceback
 import multiprocessing
 from time import time, sleep
+from datetime import datetime
 from functools import wraps
 from setproctitle import setproctitle
 import kuyruk
@@ -217,7 +218,10 @@ class Worker(KuyrukProcess):
         """
         logger.info('Saving failed task')
         task_description['queue'] = self.queue.name
-        task_description['hostname'] = socket.gethostname()
+        task_description['worker_hostname'] = socket.gethostname()
+        task_description['worker_pid'] = os.getpid()
+        task_description['worker_cmd'] = ' '.join(sys.argv)
+        task_description['worker_timestamp'] = datetime.utcnow()
         task_description['exception'] = traceback.format_exc()
         exc_type = sys.exc_info()[0]
         task_description['exception_type'] = "%s.%s" % (

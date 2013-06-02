@@ -24,9 +24,11 @@
                 <td>{{ addr[0] }}</td>
                 <td>{{ addr[1] }}</td>
                 <td
+                  {# Higlight over working workers #}
                   {% if config['MAX_WORKER_RUN_TIME'] and master.stats.uptime > config['MAX_WORKER_RUN_TIME'] %}
                     style="background-color: yellow"
                   {% endif %}>
+
                   {{ human_time(master.stats.uptime) }}
                 </td>
                 <td>{{ master.stats.pid }}</td>
@@ -43,6 +45,8 @@
                 </td>
             </tr>
             {% endfor %}
+
+            {% if not request.args.ppid %}
             <tr>
                 <td></td>
                 <td></td>
@@ -61,6 +65,7 @@
                     {{ action_button_all('worker', 'cold_shutdown', 'Cold Shutdown All') }}
                 </td>
             </tr>
+            {% endif %}
         </table>
         Count: {{ sockets|count }}
     </form>

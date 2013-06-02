@@ -1,6 +1,8 @@
 from __future__ import absolute_import
+import os
 import sys
 import signal
+import socket
 import logging
 from uuid import uuid1
 from types import MethodType
@@ -110,6 +112,7 @@ class Task(EventMixin):
             args[0] = args[0].id
 
         return {
+            'id': uuid1().hex,
             'queue': queue,
             'args': args,
             'kwargs': kwargs,
@@ -117,8 +120,10 @@ class Task(EventMixin):
             'function': self.f.__name__,
             'class': self.class_name,
             'retry': self.retry,
-            'id': uuid1().hex,
-            'timestamp': datetime.utcnow(),
+            'sender_timestamp': datetime.utcnow(),
+            'sender_hostname': socket.gethostname(),
+            'sender_pid': os.getpid(),
+            'sender_cmd': ' '.join(sys.argv),
         }
 
     @profile

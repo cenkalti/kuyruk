@@ -26,9 +26,10 @@
                 <th>Function</th>
                 <th>Args</th>
                 <th>Kwargs</th>
-                <th>Hostname</th>
+                <th>Worker Hostname</th>
                 <th>Queue</th>
-                <th>Timestamp</th>
+                <th>Sent</th>
+                <th>Failed</th>
                 <th>Actions</th>
             </tr>
             {% for task in tasks %}
@@ -41,15 +42,17 @@
                 <td>{{ task.function }}</td>
                 <td>{{ task.args }}</td>
                 <td>{{ task.kwargs }}</td>
-                <td>{{ task.hostname }}</td>
+                <td>{{ task.worker_hostname }}</td>
                 <td>{{ task.queue }}</td>
-                <td>{{ task.timestamp }}</td>
+                <td>{{ task.sender_timestamp }}</td>
+                <td>{{ task.worker_timestamp }}</td>
                 <td>
                     {{ requeue_button(task.id, 'Requeue') }}
                 </td>
             </tr>
             {% endfor %}
             <tr>
+                <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
