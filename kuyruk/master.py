@@ -4,6 +4,7 @@ import sys
 import errno
 import signal
 import socket
+import string
 import logging
 import tempfile
 import itertools
@@ -198,6 +199,7 @@ def parse_queues_str(s):
 
 def expand_count(q):
     parts = q.split('*', 1)
+    parts = map(string.strip, parts)
     if len(parts) > 1:
         try:
             return int(parts[0]) * [parts[1]]
