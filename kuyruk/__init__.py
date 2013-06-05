@@ -21,6 +21,9 @@ except ImportError:
 # Add NullHandler to prevent logging warnings on startup
 null_handler = NullHandler()
 logging.getLogger('kuyruk').addHandler(null_handler)
+
+
+# Pika should do this. Patch submitted to Pika.
 logging.getLogger('pika').addHandler(null_handler)
 
 
