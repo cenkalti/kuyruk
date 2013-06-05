@@ -13,7 +13,6 @@ from setproctitle import setproctitle
 import kuyruk
 from kuyruk import importer
 from kuyruk.queue import Queue
-from kuyruk.channel import LazyChannel
 from kuyruk.process import KuyrukProcess
 from kuyruk.helpers import start_daemon_thread
 from kuyruk.consumer import Consumer
@@ -57,9 +56,9 @@ class Worker(KuyrukProcess):
     :param config: A :class:`~kuyurk.config.Config` object
 
     """
-    def __init__(self, config, queue_name):
-        super(Worker, self).__init__(config)
-        self.channel = LazyChannel.from_config(config)
+    def __init__(self, kuyruk, queue_name):
+        super(Worker, self).__init__(kuyruk)
+        self.channel = self.kuyruk._channel()
         is_local = queue_name.startswith('@')
         queue_name = queue_name.lstrip('@')
         self.queue = Queue(queue_name, self.channel, local=is_local)

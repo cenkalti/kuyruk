@@ -10,7 +10,7 @@ from contextlib import contextmanager
 
 from what import What
 
-from kuyruk.channel import LazyChannel
+from kuyruk import Kuyruk
 from kuyruk.queue import Queue as RabbitQueue
 
 
@@ -24,13 +24,13 @@ logger = logging.getLogger(__name__)
 
 def delete_queue(*queues):
     """Delete queues from RabbitMQ"""
-    with LazyChannel() as channel:
+    with Kuyruk().channel() as channel:
         for name in queues:
             RabbitQueue(name, channel).delete()
 
 
 def is_empty(queue):
-    with LazyChannel() as channel:
+    with Kuyruk().channel() as channel:
         queue = RabbitQueue(queue, channel)
         return len(queue) == 0
 

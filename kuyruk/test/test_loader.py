@@ -4,8 +4,8 @@ import unittest
 
 from what import What
 
+from kuyruk import Kuyruk
 from kuyruk.queue import Queue
-from kuyruk.channel import LazyChannel
 from util import delete_queue
 
 
@@ -51,6 +51,6 @@ def assert_name(name):
 
 
 def get_name():
-    with LazyChannel() as channel:
+    with Kuyruk().channel() as channel:
         desc = Queue('kuyruk', channel).receive()[1]
         return '.'.join([desc['module'], desc['function']])

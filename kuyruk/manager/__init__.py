@@ -7,7 +7,6 @@ from flask import Flask, render_template, redirect, request, url_for
 from werkzeug.serving import run_simple
 
 from kuyruk.requeue import Requeuer
-from kuyruk.channel import LazyChannel
 from kuyruk.helpers import human_time, start_daemon_thread
 from kuyruk.manager.server import ManagerServer
 from kuyruk.helpers.json_datetime import JSONDecoder
@@ -17,11 +16,12 @@ logger = logging.getLogger(__name__)
 
 class Manager(Flask):
 
-    def __init__(self, config):
+    def __init__(self, kuyruk):
         super(Manager, self).__init__(__name__)
         self.debug = True
+        self.kuyruk = kuyruk
 
-        self.config.from_object(config)
+        self.config.from_object(kuyruk.config)
         if self.config['MANAGER_HOST'] is None:
             self.config['MANAGER_HOST'] = '127.0.0.1'
 
@@ -95,13 +95,7 @@ class Manager(Flask):
             else:
                 tasks = [redis.hget('failed_tasks', task_id)]
 
-            channel = LazyChannel(
-                self.config['RABBIT_HOST'],
-                self.config['RABBIT_PORT'],
-                self.config['RABBIT_VIRTUAL_HOST'],
-                self.config['RABBIT_USER'],
-                self.config['RABBIT_PASSWORD'])
-            with channel:
+            with self.kuyruk.channel() as channel:
                 for desc in tasks:
                     desc = json.loads(desc)
                     Requeuer.requeue(desc, channel, redis)

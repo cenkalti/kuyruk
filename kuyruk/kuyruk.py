@@ -1,5 +1,10 @@
 from __future__ import absolute_import
 import logging
+from contextlib import contextmanager
+
+import pika
+import pika.exceptions
+
 import kuyruk.exceptions
 from kuyruk.task import Task
 from kuyruk.config import Config
@@ -22,12 +27,14 @@ class Kuyruk(EventMixin):
     def __init__(self, config=None, task_class=Task):
         self.task_class = task_class
         self.config = Config()
+        self._connection = None
         if config:
             self.config.from_object(config)
 
     def task(self, queue='kuyruk', eager=False, retry=0, task_class=None,
              max_run_time=None):
-        """Wrap functions with this decorator to convert them to background
+        """
+        Wrap functions with this decorator to convert them to background
         tasks. After wrapping, calling the function will send a message to
         queue instead of running the function.
 
@@ -60,3 +67,51 @@ class Kuyruk(EventMixin):
         else:
             logger.debug('task with args')
             return decorator()
+
+    @property
+    def connection(self):
+        """Persistent connection object of instance."""
+        if self._connection is None:
+            self._connection = self._connect()
+        return self._connection
+
+    def _connect(self):
+        """Returns new connection object."""
+        parameters = pika.ConnectionParameters(
+            host=self.config.RABBIT_HOST,
+            port=self.config.RABBIT_PORT,
+            virtual_host=self.config.RABBIT_VIRTUAL_HOST,
+            credentials=pika.PlainCredentials(
+                self.config.RABBIT_USER,
+                self.config.RABBIT_PASSWORD),
+            heartbeat_interval=600,
+            socket_timeout=2,
+            connection_attempts=2)
+        connection = pika.BlockingConnection(parameters)
+        logger.info('Connected to RabbitMQ')
+        return connection
+
+    def _channel(self):
+        """Returns new channel object."""
+        try:
+            return self.connection.channel()
+        except pika.exceptions.ConnectionClosed:
+            logger.warning("Connection is closed. Reconnecting...")
+            self._connection.connect()
+            return self._connection.channel()
+
+    @contextmanager
+    def channel(self):
+        """
+        Yields a new channel object.
+        When exiting the context the channel will be closed.
+
+        """
+        ch = self._channel()
+        try:
+            yield ch
+        finally:
+            try:
+                ch.close()
+            except pika.exceptions.ChannelClosed:
+                logger.debug("Channel is already closed.")

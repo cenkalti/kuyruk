@@ -2,7 +2,6 @@ from __future__ import absolute_import
 import json
 import logging
 
-from kuyruk.channel import LazyChannel
 from kuyruk.queue import Queue
 
 logger = logging.getLogger(__name__)
@@ -10,19 +9,18 @@ logger = logging.getLogger(__name__)
 
 class Requeuer(object):
 
-    def __init__(self, config):
+    def __init__(self, kuyruk):
         import redis
-        self.config = config
+        self.kuyruk = kuyruk
         self.redis = redis.StrictRedis(
-            host=self.config.REDIS_HOST,
-            port=self.config.REDIS_PORT,
-            db=self.config.REDIS_DB,
-            password=self.config.REDIS_PASSWORD)
+            host=self.kuyruk.config.REDIS_HOST,
+            port=self.kuyruk.config.REDIS_PORT,
+            db=self.kuyruk.config.REDIS_DB,
+            password=self.kuyruk.config.REDIS_PASSWORD)
 
     def run(self):
         tasks = self.redis.hvals('failed_tasks')
-        channel = LazyChannel.from_config(self.config)
-        with channel:
+        with self.kuyruk.channel() as channel:
             for task in tasks:
                 task = json.loads(task)
                 print "Requeueing task: %r" % task

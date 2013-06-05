@@ -8,6 +8,7 @@ import traceback
 import subprocess
 from time import time
 from .config import Config
+from .kuyruk import Kuyruk
 from .manager.client import ManagerClientThread
 
 logger = logging.getLogger(__name__)
@@ -18,12 +19,16 @@ class KuyrukProcess(object):
     Contains some shared code betwee these 2 classes.
 
     """
-    def __init__(self, config):
-        assert isinstance(config, Config)
-        self.config = config
+    def __init__(self, kuyruk):
+        assert isinstance(kuyruk, Kuyruk)
+        self.kuyruk = kuyruk
         self.shutdown_pending = threading.Event()
         self.manager_thread = None
         self.popen = None
+
+    @property
+    def config(self):
+        return self.kuyruk.config
 
     def run(self):
         if self.config.CLOSE_FDS is True:

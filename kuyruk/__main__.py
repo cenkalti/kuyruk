@@ -4,6 +4,7 @@ import ast
 import logging
 import argparse
 from kuyruk import __version__, importer
+from kuyruk.kuyruk import Kuyruk
 from kuyruk.master import Master
 from kuyruk.config import Config
 from kuyruk.requeue import Requeuer
@@ -12,24 +13,24 @@ from kuyruk.manager import Manager
 logger = logging.getLogger(__name__)
 
 
-def worker(config, args):
-    worker_class = importer.import_class_str(config.WORKER_CLASS)
-    w = worker_class(config, args.queue)
+def worker(kuyruk, args):
+    worker_class = importer.import_class_str(kuyruk.config.WORKER_CLASS)
+    w = worker_class(kuyruk, args.queue)
     w.run()
 
 
-def master(config, args):
-    m = Master(config)
+def master(kuyruk, args):
+    m = Master(kuyruk)
     m.run()
 
 
-def requeue(config, args):
-    r = Requeuer(config)
+def requeue(kuyruk, args):
+    r = Requeuer(kuyruk)
     r.run()
 
 
-def manager(config, args):
-    m = Manager(config)
+def manager(kuyruk, args):
+    m = Manager(kuyruk)
     m.run()
 
 
@@ -72,9 +73,10 @@ def main():
     # Parse arguments
     args = parser.parse_args()
     config = create_config(args)
+    kuyruk = Kuyruk(config)
 
     # Run the sub-command function
-    args.func(config, args)
+    args.func(kuyruk, args)
 
 
 def add_config_options(parser):

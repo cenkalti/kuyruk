@@ -13,7 +13,6 @@ from kuyruk import events, importer
 from kuyruk.queue import Queue
 from kuyruk.events import EventMixin
 from kuyruk.helpers import profile
-from kuyruk.channel import LazyChannel
 from kuyruk.exceptions import Timeout
 
 logger = logging.getLogger(__name__)
@@ -95,10 +94,9 @@ class Task(EventMixin):
             queue = self.queue
             local = self.local
 
-        channel = LazyChannel.from_config(self.kuyruk.config)
-        queue = Queue(queue, channel, local)
-        desc = self.get_task_description(args, kwargs, queue.name)
-        with channel:
+        with self.kuyruk.channel() as channel:
+            queue = Queue(queue, channel, local)
+            desc = self.get_task_description(args, kwargs, queue.name)
             queue.send(desc)
 
         return desc['id']
