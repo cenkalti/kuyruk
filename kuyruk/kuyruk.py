@@ -93,11 +93,19 @@ class Kuyruk(EventMixin):
 
     def _channel(self):
         """Returns new channel object."""
+        CLOSED = (pika.exceptions.ConnectionClosed,
+                  pika.exceptions.ChannelClosed)
+
         try:
             return self.connection.channel()
-        except pika.exceptions.ConnectionClosed:
+        except CLOSED:
             logger.warning("Connection is closed. Reconnecting...")
-            self._connection.connect()
+            try:
+                self._connection.close()
+            except CLOSED:
+                logger.debug("Connection is already closed.")
+
+            self._connection = self._connect()
             return self._connection.channel()
 
     @contextmanager
