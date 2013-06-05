@@ -141,9 +141,10 @@ class Task(EventMixin):
         try:
             send_signal(events.task_prerun, reversed(SENDERS))
 
-            with time_limit(
-                    self.max_run_time or
-                    self.kuyruk.config.MAX_TASK_RUN_TIME or 0):
+            limit = (self.max_run_time
+                     or self.kuyruk.config.MAX_TASK_RUN_TIME
+                     or 0)
+            with time_limit(limit):
                 # Call wrapped function
                 return_value = self.f(*args, **kwargs)
         except Exception:
