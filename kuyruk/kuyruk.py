@@ -32,7 +32,7 @@ class Kuyruk(EventMixin):
             self.config.from_object(config)
 
     def task(self, queue='kuyruk', eager=False, retry=0, task_class=None,
-             max_run_time=None):
+             max_run_time=None, local=False):
         """
         Wrap functions with this decorator to convert them to background
         tasks. After wrapping, calling the function will send a message to
@@ -57,7 +57,7 @@ class Kuyruk(EventMixin):
                 task_class_ = task_class or self.task_class
                 return task_class_(
                     f, self,
-                    queue=queue_, eager=eager,
+                    queue=queue_, eager=eager, local=local,
                     retry=retry, max_run_time=max_run_time)
             return inner
 
