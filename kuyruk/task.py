@@ -62,12 +62,16 @@ class Task(EventMixin):
         """
         self.send_signal(events.task_presend, args, kwargs, reverse=True)
 
+        # These keyword argument allow the sender to override
+        # the destination of the message.
         host = kwargs.pop('kuyruk_host', None)
         local = kwargs.pop('kuyruk_local', None)
 
         if self.eager or self.kuyruk.config.EAGER:
+            # Run the task in process
             task_result = self.apply(*args, **kwargs)
         else:
+            # Send it to the queue
             task_result = TaskResult(self)
             task_result.id = self.send_to_queue(
                 args, kwargs, host=host, local=local)
@@ -91,6 +95,10 @@ class Task(EventMixin):
         """
         self.cls = objtype
         if obj:
+            # Class tasks needs to know what the object is so they can
+            # inject that object in front of args.
+            # We are returning a BoundTask instance here wrapping this task
+            # that will do the injection.
             logger.debug("Creating bound task with obj=%r", obj)
             return BoundTask(self, obj)
         return self
@@ -124,6 +132,9 @@ class Task(EventMixin):
             desc = self.get_task_description(args, kwargs, queue.name)
             queue.send(desc)
 
+        # We are returning the unique identifier of the task sent to queue
+        # so we can query the result backend for completion.
+        # TODO no result backend is available yet
         return desc['id']
 
     def get_task_description(self, args, kwargs, queue):
@@ -188,6 +199,9 @@ class Task(EventMixin):
         finally:
             send_signal(events.task_postrun)
 
+        # We are returning a TaskResult here because __call__ returns a
+        # TaskResult object too. Return value must be consistent whether
+        # task is sent to queue or executed in process with apply().
         return result
 
     @property
@@ -219,7 +233,11 @@ class Task(EventMixin):
 
 
 class BoundTask(Task):
+    """
+    This class wraps the Task and inject the bound object in front of args
+    when it is called.
 
+    """
     def __init__(self, task, obj):
         self.task = task
         self.obj = obj
@@ -228,12 +246,14 @@ class BoundTask(Task):
         """Delegates all attributes to real Task."""
         return getattr(self.task, item)
 
+    @wraps(Task.__call__)
     def __call__(self, *args, **kwargs):
         # Insert the bound object as a first argument to __call__
         args = list(args)
         args.insert(0, self.obj)
         return super(BoundTask, self).__call__(*args, **kwargs)
 
+    @wraps(Task.apply)
     def apply(self, *args, **kwargs):
         # apply() may be called directly. Insert the bound object only if
         # it is not inserted by __call__()
