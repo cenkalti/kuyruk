@@ -62,6 +62,12 @@ def task_with_functions(message):
     return 42
 
 
+@kuyruk2.on_presend
+def function0(sender, task, args, kwargs):
+    presend_called.append(1)
+presend_called = []
+
+
 @kuyruk2.on_prerun
 def function1(sender, task, args, kwargs):
     print 'function1'

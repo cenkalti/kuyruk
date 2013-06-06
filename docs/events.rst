@@ -68,3 +68,23 @@ instances.
     * args: Positional arguments of the task
     * kwargs: Keyword arguments of the task
     * exc_info: Exception info returned from ``sys.exc_info()``
+
+.. automethod:: kuyruk.Kuyruk.on_presend
+    :noindex:
+
+    Provides arguments:
+
+    * sender: Sender of the event
+    * task: :class:`Task` instance
+    * args: Positional arguments of the task
+    * kwargs: Keyword arguments of the task
+
+.. automethod:: kuyruk.Kuyruk.on_postsend
+    :noindex:
+
+    Provides arguments:
+
+    * sender: Sender of the event
+    * task: :class:`Task` instance
+    * args: Positional arguments of the task
+    * kwargs: Keyword arguments of the task

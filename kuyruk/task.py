@@ -47,6 +47,8 @@ class Task(EventMixin):
         without changing the client code.
 
         """
+        self.send_signal(events.task_presend, args, kwargs, reverse=True)
+
         task_result = TaskResult(self)
 
         if self.eager or self.kuyruk.config.EAGER:
@@ -54,6 +56,8 @@ class Task(EventMixin):
         else:
             host = kwargs.pop('kuyruk_host', None)
             task_result.id = self.send_to_queue(args, kwargs, host=host)
+
+        self.send_signal(events.task_postsend, args, kwargs)
 
         return task_result
 
@@ -124,36 +128,41 @@ class Task(EventMixin):
             'sender_cmd': ' '.join(sys.argv),
         }
 
+    def send_signal(self, signal, args, kwargs, reverse=False, **extra):
+        """
+        Sends a signal for each sender.
+        This allows the user to register for a specific sender.
+
+        """
+        senders = (self, self.__class__, self.kuyruk)
+        if reverse:
+            senders = reversed(senders)
+
+        for sender in senders:
+            signal.send(sender, task=self, args=args, kwargs=kwargs, **extra)
+
     @profile
     def apply(self, *args, **kwargs):
         """Run the wrapped function and event handlers."""
-        def send_signal(signal, senders, **extra):
-            """Send a signal to each sender. This allows the user to
-            register for a specific sender."""
-            for sender in senders:
-                signal.send(
-                    sender, task=self, args=args, kwargs=kwargs, **extra)
+        def send_signal(signal, reverse=False, **extra):
+            self.send_signal(signal, args, kwargs, reverse, **extra)
 
-        SENDERS = (self, self.__class__, self.kuyruk)
+        limit = (self.max_run_time or
+                 self.kuyruk.config.MAX_TASK_RUN_TIME or 0)
+
         logger.debug("Applying %r, args=%r, kwargs=%r", self, args, kwargs)
         try:
-            send_signal(events.task_prerun, reversed(SENDERS))
-
-            limit = (self.max_run_time
-                     or self.kuyruk.config.MAX_TASK_RUN_TIME
-                     or 0)
+            send_signal(events.task_prerun, reverse=True)
             with time_limit(limit):
                 # Call wrapped function
                 return_value = self.f(*args, **kwargs)
         except Exception:
-            send_signal(
-                events.task_failure, SENDERS, exc_info=sys.exc_info())
+            send_signal(events.task_failure, exc_info=sys.exc_info())
             raise
         else:
-            send_signal(
-                events.task_success, SENDERS, return_value=return_value)
+            send_signal(events.task_success, return_value=return_value)
         finally:
-            send_signal(events.task_postrun, SENDERS)
+            send_signal(events.task_postrun)
 
     @property
     def name(self):

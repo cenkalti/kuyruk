@@ -144,6 +144,7 @@ class KuyrukTestCase(unittest.TestCase):
     def test_before_after(self):
         """Before and after task functions are run"""
         tasks.task_with_functions('hello world')
+        self.assertTrue(tasks.presend_called)
         with run_kuyruk() as master:
             master.expect('function1')
             master.expect('function2')
