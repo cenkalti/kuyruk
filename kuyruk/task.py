@@ -4,18 +4,31 @@ import sys
 import signal
 import socket
 import logging
+from time import time
 from uuid import uuid1
 from types import MethodType
 from datetime import datetime
+from functools import wraps
 from contextlib import contextmanager
 
 from kuyruk import events, importer
 from kuyruk.queue import Queue
 from kuyruk.events import EventMixin
-from kuyruk.helpers import profile
 from kuyruk.exceptions import Timeout
 
 logger = logging.getLogger(__name__)
+
+
+def profile(f):
+    """Logs the time spent while running the task."""
+    @wraps(f)
+    def inner(self, *args, **kwargs):
+        start = time()
+        result = f(self, *args, **kwargs)
+        end = time()
+        logger.info("%s finished in %i seconds." % (self.name, end - start))
+        return result
+    return inner
 
 
 class Task(EventMixin):
