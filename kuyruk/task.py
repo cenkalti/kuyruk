@@ -60,10 +60,6 @@ class Task(EventMixin):
         without changing the client code.
 
         """
-        logger.debug("type(self) = %r", type(self))
-        logger.debug("self.cls=%r", self.cls)
-        logger.debug("args=%r, kwargs=%r", args, kwargs)
-
         self.send_signal(events.task_presend, args, kwargs, reverse=True)
 
         task_result = TaskResult(self)
