@@ -181,6 +181,12 @@ class KuyrukTestCase(unittest.TestCase):
     @patch('kuyruk.test.tasks.must_be_called')
     def test_class_task_eager(self, mock_func):
         cat = tasks.Cat(1, 'Felix')
+        cat.meow_eager('Oh my god')
+        mock_func.assert_called_once_with()
+
+    @patch('kuyruk.test.tasks.must_be_called')
+    def test_class_task_apply(self, mock_func):
+        cat = tasks.Cat(1, 'Felix')
         cat.meow.apply('Oh my god')
         mock_func.assert_called_once_with()
 

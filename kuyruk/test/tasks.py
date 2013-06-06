@@ -117,6 +117,11 @@ class Cat(object):
         print "Felix says:", message
         must_be_called()
 
+    @kuyruk.task(eager=True)
+    def meow_eager(self, message):
+        print "Felix says:", message
+        must_be_called()
+
     @kuyruk.task
     def raise_exception(self):
         raise Exception

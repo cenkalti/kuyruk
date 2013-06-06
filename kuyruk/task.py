@@ -69,8 +69,8 @@ class Task(EventMixin):
             task_result = self.apply(*args, **kwargs)
         else:
             task_result = TaskResult(self)
-            task_result.id = self.send_to_queue(args, kwargs,
-                                                host=host, local=local)
+            task_result.id = self.send_to_queue(
+                args, kwargs, host=host, local=local)
 
         self.send_signal(events.task_postsend, args, kwargs)
 
@@ -225,16 +225,22 @@ class BoundTask(Task):
         self.obj = obj
 
     def __getattr__(self, item):
+        """Delegates all attributes to real Task."""
         return getattr(self.task, item)
 
     def __call__(self, *args, **kwargs):
+        # Insert the bound object as a first argument to __call__
         args = list(args)
         args.insert(0, self.obj)
         return super(BoundTask, self).__call__(*args, **kwargs)
 
     def apply(self, *args, **kwargs):
-        args = list(args)
-        args.insert(0, self.obj)
+        # apply() may be called directly. Insert the bound object only if
+        # it is not inserted by __call__()
+        if args and args[0] is not self.obj:
+            args = list(args)
+            args.insert(0, self.obj)
+
         return super(BoundTask, self).apply(*args, **kwargs)
 
 
