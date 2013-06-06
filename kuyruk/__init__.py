@@ -8,7 +8,7 @@ from kuyruk.worker import Worker
 from kuyruk.task import Task
 from kuyruk.config import Config
 
-__version__ = '0.16.1'
+__version__ = '0.17.0'
 
 try:
     # not available in python 2.6
