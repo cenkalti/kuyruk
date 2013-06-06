@@ -4,6 +4,7 @@ import logging
 import unittest
 
 import redis
+from mock import patch
 
 import tasks
 from kuyruk import Task
@@ -71,11 +72,12 @@ class KuyrukTestCase(unittest.TestCase):
             master.expect_exit(0)
             wait_until(not_running, timeout=TIMEOUT)
 
-    def test_eager(self):
+    @patch('kuyruk.test.tasks.must_be_called')
+    def test_eager(self, mock_func):
         """Test eager mode for using in test environments"""
         result = tasks.eager_task()
         assert isinstance(result, TaskResult)
-        self.assertTrue(tasks.eager_called)
+        mock_func.assert_called_once_with()
 
     def test_reject(self):
         """Rejected tasks must be requeued again"""
@@ -141,10 +143,11 @@ class KuyrukTestCase(unittest.TestCase):
             master.expect_exit(-signal.SIGKILL)
             wait_until(not_running, timeout=TIMEOUT)
 
-    def test_before_after(self):
+    @patch('kuyruk.test.tasks.must_be_called')
+    def test_before_after(self, mock_func):
         """Before and after task functions are run"""
         tasks.task_with_functions('hello world')
-        self.assertTrue(tasks.presend_called)
+        mock_func.assert_called_once_with()
         with run_kuyruk() as master:
             master.expect('function1')
             master.expect('function2')

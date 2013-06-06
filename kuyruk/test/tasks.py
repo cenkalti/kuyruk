@@ -38,8 +38,7 @@ def loop_forever():
 
 @kuyruk.task(eager=True)
 def eager_task():
-    eager_called.append(1)
-eager_called = []
+    must_be_called()
 
 
 @kuyruk.task
@@ -64,8 +63,7 @@ def task_with_functions(message):
 
 @kuyruk2.on_presend
 def function0(sender, task, args, kwargs):
-    presend_called.append(1)
-presend_called = []
+    must_be_called()
 
 
 @kuyruk2.on_prerun
