@@ -165,6 +165,10 @@ class KuyrukTestCase(unittest.TestCase):
         self.assertTrue(isinstance(tasks.Cat.meow, Task))
         self.assertTrue(inspect.ismethod(cat.meow))
 
+        cat.meow('Oh my god')
+        with run_kuyruk() as master:
+            master.expect('Oh my god')
+
     def test_class_task_fail(self):
         cat = tasks.Cat(1, 'Felix')
 
