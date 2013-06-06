@@ -55,7 +55,9 @@ class Task(EventMixin):
             task_result.result = self.apply(*args, **kwargs)
         else:
             host = kwargs.pop('kuyruk_host', None)
-            task_result.id = self.send_to_queue(args, kwargs, host=host)
+            local = kwargs.pop('kuyruk_local', None)
+            task_result.id = self.send_to_queue(args, kwargs,
+                                                host=host, local=local)
 
         self.send_signal(events.task_postsend, args, kwargs)
 
@@ -79,7 +81,7 @@ class Task(EventMixin):
             return MethodType(self.__call__, obj, objtype)
         return self
 
-    def send_to_queue(self, args, kwargs, host=None):
+    def send_to_queue(self, args, kwargs, host=None, local=None):
         """
         Sends this task to queue.
 
@@ -88,18 +90,23 @@ class Task(EventMixin):
             on execution.
         :param host: Send this task to specific host. ``host`` will be
             appended to the queue name.
+        :param local: Send this task to this host. Hostname of this host will be
+            appended to the queue name.
         :return: :const:`None`
 
         """
+        queue = self.queue
+        local_ = self.local
+
+        if local is not None:
+            local_ = local
+
         if host:
             queue = "%s.%s" % (self.queue, host)
-            local = False
-        else:
-            queue = self.queue
-            local = self.local
+            local_ = False
 
         with self.kuyruk.channel() as channel:
-            queue = Queue(queue, channel, local)
+            queue = Queue(queue, channel, local_)
             desc = self.get_task_description(args, kwargs, queue.name)
             queue.send(desc)
 
