@@ -114,10 +114,21 @@ class Cat(object):
     @kuyruk.task
     def meow(self, message):
         print "Felix says:", message
+        must_be_called()
 
     @kuyruk.task
     def raise_exception(self):
         raise Exception
+
+
+@kuyruk.task(arg_class=Cat)
+def jump(cat):
+    print "%s jumps high!" % cat.name
+    must_be_called()
+
+
+def must_be_called():
+    print 'Yes, it is called.'
 
 
 class DatabaseTask(Task):

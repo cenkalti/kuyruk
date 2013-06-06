@@ -6,7 +6,6 @@ import socket
 import logging
 from time import time
 from uuid import uuid1
-from types import MethodType
 from datetime import datetime
 from functools import wraps
 from contextlib import contextmanager
@@ -33,8 +32,8 @@ def profile(f):
 
 class Task(EventMixin):
 
-    def __init__(self, f, kuyruk, queue='kuyruk', local=False,
-                 eager=False, retry=0, max_run_time=None):
+    def __init__(self, f, kuyruk, queue='kuyruk', local=False, eager=False,
+                 retry=0, max_run_time=None, arg_class=None):
         self.f = f
         self.kuyruk = kuyruk
         self.queue = queue
@@ -43,6 +42,7 @@ class Task(EventMixin):
         self.retry = retry
         self.max_run_time = max_run_time
         self.cls = None
+        self.arg_class = arg_class
         self.setup()
 
     def setup(self):
@@ -60,15 +60,20 @@ class Task(EventMixin):
         without changing the client code.
 
         """
+        logger.debug("type(self) = %r", type(self))
+        logger.debug("self.cls=%r", self.cls)
+        logger.debug("args=%r, kwargs=%r", args, kwargs)
+
         self.send_signal(events.task_presend, args, kwargs, reverse=True)
 
         task_result = TaskResult(self)
 
+        host = kwargs.pop('kuyruk_host', None)
+        local = kwargs.pop('kuyruk_local', None)
+
         if self.eager or self.kuyruk.config.EAGER:
             task_result.result = self.apply(*args, **kwargs)
         else:
-            host = kwargs.pop('kuyruk_host', None)
-            local = kwargs.pop('kuyruk_local', None)
             task_result.id = self.send_to_queue(args, kwargs,
                                                 host=host, local=local)
 
@@ -91,7 +96,8 @@ class Task(EventMixin):
         """
         self.cls = objtype
         if obj:
-            return MethodType(self.__call__, obj, objtype)
+            logger.debug("Creating bound task with obj=%r", obj)
+            return BoundTask(self, obj)
         return self
 
     def send_to_queue(self, args, kwargs, host=None, local=None):
@@ -129,7 +135,7 @@ class Task(EventMixin):
         """Return the dictionary to be sent to the queue."""
 
         # For class tasks; replace the first argument with the id of the object
-        if self.cls:
+        if self.cls or self.arg_class:
             args = list(args)
             args[0] = args[0].id
 
@@ -210,6 +216,26 @@ class Task(EventMixin):
         otherwise :const:`None`."""
         if self.cls:
             return self.cls.__name__
+
+
+class BoundTask(Task):
+
+    def __init__(self, task, obj):
+        self.task = task
+        self.obj = obj
+
+    def __getattr__(self, item):
+        return getattr(self.task, item)
+
+    def __call__(self, *args, **kwargs):
+        args = list(args)
+        args.insert(0, self.obj)
+        return super(BoundTask, self).__call__(*args, **kwargs)
+
+    def apply(self, *args, **kwargs):
+        args = list(args)
+        args.insert(0, self.obj)
+        return super(BoundTask, self).apply(*args, **kwargs)
 
 
 class TaskResult(object):

@@ -247,14 +247,17 @@ class Worker(KuyrukProcess):
         """Imports and runs the wrapped function in task."""
 
         # Fetch the object if class task
-        if task.cls:
+        cls = task.arg_class or task.cls
+        if cls:
             if not args:
                 raise InvalidTask
 
-            if not isinstance(args[0], task.cls):
-                obj = task.cls.get(args[0])
-                if not obj:
+            obj_id = args[0]
+            if not isinstance(obj_id, cls):
+                obj = cls.get(obj_id)
+                if obj is None:
                     raise ObjectNotFound
+
                 args[0] = obj
 
         result = task.apply(*args, **kwargs)

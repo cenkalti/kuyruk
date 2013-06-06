@@ -1,5 +1,4 @@
 import signal
-import inspect
 import logging
 import unittest
 
@@ -8,7 +7,7 @@ from mock import patch
 
 import tasks
 from kuyruk import Task
-from kuyruk.task import TaskResult
+from kuyruk.task import TaskResult, BoundTask
 from util import *
 
 logger = logging.getLogger(__name__)
@@ -166,11 +165,17 @@ class KuyrukTestCase(unittest.TestCase):
     def test_class_task(self):
         cat = tasks.Cat(1, 'Felix')
         self.assertTrue(isinstance(tasks.Cat.meow, Task))
-        self.assertTrue(inspect.ismethod(cat.meow))
+        self.assertTrue(isinstance(cat.meow, BoundTask))
 
         cat.meow('Oh my god')
         with run_kuyruk() as master:
             master.expect('Oh my god')
+
+    @patch('kuyruk.test.tasks.must_be_called')
+    def test_class_task_eager(self, mock_func):
+        cat = tasks.Cat(1, 'Felix')
+        cat.meow.apply('Oh my god')
+        mock_func.assert_called_once_with()
 
     def test_class_task_fail(self):
         cat = tasks.Cat(1, 'Felix')
@@ -180,6 +185,12 @@ class KuyrukTestCase(unittest.TestCase):
             master.expect('raise Exception')
             master.expect('Saving failed task')
             master.expect('Saved')
+
+    def test_class_task_function(self):
+        cat = tasks.Cat(1, 'Felix')
+        tasks.jump(cat)
+        with run_kuyruk() as master:
+            master.expect('Felix jumps high!')
 
     def test_task_name(self):
         self.assertEqual(tasks.Cat.meow.name, 'kuyruk.test.tasks:Cat.meow')
