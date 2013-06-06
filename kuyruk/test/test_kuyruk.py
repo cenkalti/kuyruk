@@ -17,7 +17,13 @@ logger.debug('Process group id: %s', os.getpgrp())
 
 
 class KuyrukTestCase(unittest.TestCase):
+    """
+    Tests here are mostly integration tests. They require a running
+    RabbitMQ and Redis instances to pass succesfully.
+    Just like the normal user they spawn a real master/worker process
+    and make some assertion in their output.
 
+    """
     def setUp(self):
         delete_queue('kuyruk')
 
