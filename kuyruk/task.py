@@ -62,14 +62,13 @@ class Task(EventMixin):
         """
         self.send_signal(events.task_presend, args, kwargs, reverse=True)
 
-        task_result = TaskResult(self)
-
         host = kwargs.pop('kuyruk_host', None)
         local = kwargs.pop('kuyruk_local', None)
 
         if self.eager or self.kuyruk.config.EAGER:
-            task_result.result = self.apply(*args, **kwargs)
+            task_result = self.apply(*args, **kwargs)
         else:
+            task_result = TaskResult(self)
             task_result.id = self.send_to_queue(args, kwargs,
                                                 host=host, local=local)
 
@@ -169,6 +168,8 @@ class Task(EventMixin):
         def send_signal(signal, reverse=False, **extra):
             self.send_signal(signal, args, kwargs, reverse, **extra)
 
+        result = TaskResult(self)
+
         limit = (self.max_run_time or
                  self.kuyruk.config.MAX_TASK_RUN_TIME or 0)
 
@@ -183,8 +184,11 @@ class Task(EventMixin):
             raise
         else:
             send_signal(events.task_success, return_value=return_value)
+            result.result = return_value
         finally:
             send_signal(events.task_postrun)
+
+        return result
 
     @property
     def name(self):

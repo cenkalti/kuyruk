@@ -12,6 +12,7 @@ kuyruk = Kuyruk()
 @kuyruk.task
 def print_task(message):
     print message
+    must_be_called()
 
 
 @kuyruk.task(queue='another_queue')
@@ -128,6 +129,10 @@ def jump(cat):
 
 
 def must_be_called():
+    """
+    This function is patched in tests to see the caller is doing it's job.
+
+    """
     print 'Yes, it is called.'
 
 

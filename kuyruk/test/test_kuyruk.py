@@ -78,6 +78,13 @@ class KuyrukTestCase(unittest.TestCase):
         assert isinstance(result, TaskResult)
         mock_func.assert_called_once_with()
 
+    @patch('kuyruk.test.tasks.must_be_called')
+    def test_apply(self, mock_func):
+        """Test Task.apply()"""
+        result = tasks.print_task.apply("hello")
+        assert isinstance(result, TaskResult)
+        mock_func.assert_called_once_with()
+
     def test_reject(self):
         """Rejected tasks must be requeued again"""
         tasks.rejecting_task()
