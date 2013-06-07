@@ -129,7 +129,6 @@ class KuyrukTestCase(unittest.TestCase):
 
     def test_save_failed(self):
         """Failed tasks are saved to Redis"""
-        delete_queue('kuyruk_failed')
         tasks.raise_exception()
         with run_kuyruk(save_failed_tasks=True) as master:
             master.expect('ZeroDivisionError')
@@ -137,6 +136,42 @@ class KuyrukTestCase(unittest.TestCase):
             master.expect('Saving failed task')
             master.expect('Saved')
             master.expect('Committed transaction')
+
+        assert is_empty('kuyruk')
+        r = redis.StrictRedis()
+        assert r.hvals('failed_tasks')
+
+        run_requeue()
+        assert not r.hvals('failed_tasks')
+        assert not is_empty('kuyruk')
+
+    def test_save_failed_class_task(self):
+        """Failed tasks are saved to Redis"""
+        cat = tasks.Cat(1, 'Felix')
+
+        cat.raise_exception()
+        with run_kuyruk(save_failed_tasks=True) as master:
+            master.expect('raise Exception')
+            master.expect('Saving failed task')
+            master.expect('Saved')
+
+        assert is_empty('kuyruk')
+        r = redis.StrictRedis()
+        assert r.hvals('failed_tasks')
+
+        run_requeue()
+        assert not r.hvals('failed_tasks')
+        assert not is_empty('kuyruk')
+
+    def test_save_failed_arg_class(self):
+        """Failed tasks are saved to Redis"""
+        cat = tasks.Cat(1, 'Felix')
+
+        tasks.jump_fail(cat)
+        with run_kuyruk(save_failed_tasks=True) as master:
+            master.expect('ZeroDivisionError')
+            master.expect('Saving failed task')
+            master.expect('Saved')
 
         assert is_empty('kuyruk')
         r = redis.StrictRedis()
@@ -197,19 +232,25 @@ class KuyrukTestCase(unittest.TestCase):
         mock_func.assert_called_once_with()
 
     def test_class_task_fail(self):
-        cat = tasks.Cat(1, 'Felix')
+        pass
 
-        cat.raise_exception()
-        with run_kuyruk(save_failed_tasks=True) as master:
-            master.expect('raise Exception')
-            master.expect('Saving failed task')
-            master.expect('Saved')
-
-    def test_class_task_function(self):
+    def test_arg_class(self):
         cat = tasks.Cat(1, 'Felix')
         tasks.jump(cat)
         with run_kuyruk() as master:
             master.expect('Felix jumps high!')
+
+    @patch('kuyruk.test.tasks.must_be_called')
+    def test_arg_class_eager(self, mock_func):
+        cat = tasks.Cat(1, 'Felix')
+        tasks.jump_eager(cat)
+        mock_func.assert_called_once_with()
+
+    @patch('kuyruk.test.tasks.must_be_called')
+    def test_arg_class_apply(self, mock_func):
+        cat = tasks.Cat(1, 'Felix')
+        tasks.jump.apply(cat)
+        mock_func.assert_called_once_with()
 
     def test_task_name(self):
         self.assertEqual(tasks.Cat.meow.name, 'kuyruk.test.tasks:Cat.meow')

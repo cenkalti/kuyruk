@@ -60,6 +60,7 @@ class Task(EventMixin):
         without changing the client code.
 
         """
+        logger.debug("args=%r, kwargs=%r", args, kwargs)
         self.send_signal(events.task_presend, args, kwargs, reverse=True)
 
         # These keyword argument allow the sender to override
@@ -117,6 +118,7 @@ class Task(EventMixin):
         :return: :const:`None`
 
         """
+        logger.debug("args=%r, kwargs=%r", args, kwargs)
         queue = self.queue
         local_ = self.local
 
@@ -178,6 +180,8 @@ class Task(EventMixin):
         """Run the wrapped function and event handlers."""
         def send_signal(signal, reverse=False, **extra):
             self.send_signal(signal, args, kwargs, reverse, **extra)
+
+        logger.debug("args=%r, kwargs=%r", args, kwargs)
 
         result = TaskResult(self)
 

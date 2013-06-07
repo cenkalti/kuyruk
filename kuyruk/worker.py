@@ -144,6 +144,7 @@ class Worker(KuyrukProcess):
 
         logger.info("Processing task: %r", task_description)
 
+        task = None
         try:
             task = self.import_task(task_description)
             args, kwargs = task_description['args'], task_description['kwargs']
@@ -153,20 +154,20 @@ class Worker(KuyrukProcess):
             sleep(1)  # Prevent cpu burning
             message.reject()
         except ObjectNotFound:
-            self.handle_not_found(message, task_description)
+            self.handle_not_found(message, task_description, task)
         except Timeout:
-            self.handle_timeout(message, task_description)
+            self.handle_timeout(message, task_description, task)
         except InvalidTask:
-            self.handle_invalid(message, task_description)
+            self.handle_invalid(message, task_description, task)
         except Exception:
-            self.handle_exception(message, task_description)
+            self.handle_exception(message, task_description, task)
         else:
             logger.info('Task is successful')
             message.ack()
+        finally:
+            logger.debug("Processing task is finished")
 
-        logger.debug("Processing task is finished")
-
-    def handle_exception(self, message, task_description):
+    def handle_exception(self, message, task_description, task):
         """Handles the exception while processing the message."""
         logger.error('Task raised an exception')
         logger.error(traceback.format_exc())
@@ -181,9 +182,9 @@ class Worker(KuyrukProcess):
             self.capture_exception(task_description)
             message.discard()
             if self.config.SAVE_FAILED_TASKS:
-                self.save_failed_task(task_description)
+                self.save_failed_task(task_description, task)
 
-    def handle_not_found(self, message, task_description):
+    def handle_not_found(self, message, task_description, task):
         """Called if the task is class task but the object with the given id
         is not found. The default action is logging the error and acking
         the message.
@@ -196,21 +197,21 @@ class Worker(KuyrukProcess):
             task_description['args'][0])
         message.ack()
 
-    def handle_timeout(self, message, task_description):
+    def handle_timeout(self, message, task_description, task):
         """Called when the task is timed out while running the wrapped
         function.
 
         """
         logger.error('Task has timed out.')
-        self.handle_exception(message, task_description)
+        self.handle_exception(message, task_description, task)
 
-    def handle_invalid(self, message, task_description):
+    def handle_invalid(self, message, task_description, task):
         """Called when the message from queue is invalid."""
         logger.error("Invalid message.")
         self.capture_exception(task_description)
         message.discard()
 
-    def save_failed_task(self, task_description):
+    def save_failed_task(self, task_description, task):
         """Saves the task to ``kuyruk_failed`` queue. Failed tasks can be
         investigated later and requeued with ``kuyruk reuqueue`` command.
 
@@ -228,7 +229,7 @@ class Worker(KuyrukProcess):
 
         try:
             # Convert object to id for class tasks
-            if task_description['class']:
+            if task_description['class'] or task.arg_class:
                 args = task_description['args']
                 args[0] = args[0].id
                 task_description['args'] = args

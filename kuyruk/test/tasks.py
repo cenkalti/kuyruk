@@ -133,6 +133,17 @@ def jump(cat):
     must_be_called()
 
 
+@kuyruk.task(arg_class=Cat, eager=True)
+def jump_eager(cat):
+    print "%s jumps high!" % cat.name
+    must_be_called()
+
+
+@kuyruk.task(arg_class=Cat)
+def jump_fail(cat):
+    1/0
+
+
 def must_be_called():
     """
     This function is patched in tests to see the caller is doing it's job.
