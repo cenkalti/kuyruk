@@ -139,10 +139,11 @@ class Worker(KuyrukProcess):
         """Processes the message received from the queue."""
         try:
             task_description = message.get_object()
+            logger.info("Processing task: %r", task_description)
         except Exception:
-            raise InvalidTask
-
-        logger.info("Processing task: %r", task_description)
+            message.ack()
+            logger.error("Canot decode message. Dropped!")
+            return
 
         task = None
         try:
