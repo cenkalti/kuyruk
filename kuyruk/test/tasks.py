@@ -130,13 +130,13 @@ class Cat(object):
 @kuyruk.task(arg_class=Cat)
 def jump(cat):
     print "%s jumps high!" % cat.name
-    must_be_called()
+    must_be_called(cat.name)
 
 
 @kuyruk.task(arg_class=Cat, eager=True)
 def jump_eager(cat):
     print "%s jumps high!" % cat.name
-    must_be_called()
+    must_be_called(cat.name)
 
 
 @kuyruk.task(arg_class=Cat)
@@ -144,12 +144,13 @@ def jump_fail(cat):
     1/0
 
 
-def must_be_called():
+def must_be_called(arg=None):
     """
     This function is patched in tests to see the caller is doing it's job.
 
     """
     print 'Yes, it is called.'
+    print 'Called with %s' % arg
 
 
 class DatabaseTask(Task):

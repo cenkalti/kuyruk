@@ -60,7 +60,7 @@ class Task(EventMixin):
         without changing the client code.
 
         """
-        logger.debug("args=%r, kwargs=%r", args, kwargs)
+        logger.debug("Task.__call__ args=%r, kwargs=%r", args, kwargs)
         self.send_signal(events.task_presend, args, kwargs, reverse=True)
 
         # These keyword argument allow the sender to override
@@ -118,7 +118,7 @@ class Task(EventMixin):
         :return: :const:`None`
 
         """
-        logger.debug("args=%r, kwargs=%r", args, kwargs)
+        logger.debug("Task.send_to_queueue args=%r, kwargs=%r", args, kwargs)
         queue = self.queue
         local_ = self.local
 
@@ -181,7 +181,7 @@ class Task(EventMixin):
         def send_signal(signal, reverse=False, **extra):
             self.send_signal(signal, args, kwargs, reverse, **extra)
 
-        logger.debug("args=%r, kwargs=%r", args, kwargs)
+        logger.debug("Task.apply args=%r, kwargs=%r", args, kwargs)
 
         result = TaskResult(self)
 
@@ -252,6 +252,7 @@ class BoundTask(Task):
 
     @wraps(Task.__call__)
     def __call__(self, *args, **kwargs):
+        logger.debug("BoundTask.__call__ args=%r, kwargs=%r", args, kwargs)
         # Insert the bound object as a first argument to __call__
         args = list(args)
         args.insert(0, self.obj)
@@ -259,6 +260,7 @@ class BoundTask(Task):
 
     @wraps(Task.apply)
     def apply(self, *args, **kwargs):
+        logger.debug("BoundTask.apply args=%r, kwargs=%r", args, kwargs)
         # apply() may be called directly. Insert the bound object only if
         # it is not inserted by __call__()
         if args and args[0] is not self.obj:

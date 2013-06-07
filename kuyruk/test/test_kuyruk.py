@@ -236,18 +236,19 @@ class KuyrukTestCase(unittest.TestCase):
         tasks.jump(cat)
         with run_kuyruk() as master:
             master.expect('Felix jumps high!')
+            master.expect('Called with Felix')
 
     @patch('kuyruk.test.tasks.must_be_called')
     def test_arg_class_eager(self, mock_func):
         cat = tasks.Cat(1, 'Felix')
         tasks.jump_eager(cat)
-        mock_func.assert_called_once_with()
+        mock_func.assert_called_once_with('Felix')
 
     @patch('kuyruk.test.tasks.must_be_called')
     def test_arg_class_apply(self, mock_func):
         cat = tasks.Cat(1, 'Felix')
         tasks.jump.apply(cat)
-        mock_func.assert_called_once_with()
+        mock_func.assert_called_once_with('Felix')
 
     def test_task_name(self):
         self.assertEqual(tasks.Cat.meow.name, 'kuyruk.test.tasks:Cat.meow')
