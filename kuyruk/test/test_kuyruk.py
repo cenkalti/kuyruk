@@ -231,9 +231,6 @@ class KuyrukTestCase(unittest.TestCase):
         cat.meow.apply('Oh my god')
         mock_func.assert_called_once_with()
 
-    def test_class_task_fail(self):
-        pass
-
     def test_arg_class(self):
         cat = tasks.Cat(1, 'Felix')
         tasks.jump(cat)
