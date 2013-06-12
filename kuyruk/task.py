@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from kuyruk import events, importer
 from kuyruk.queue import Queue
 from kuyruk.events import EventMixin
-from kuyruk.exceptions import Timeout
+from kuyruk.exceptions import Timeout, InvalidTask, ObjectNotFound, InvalidCall
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,30 @@ def profile(f):
         end = time()
         logger.info("%s finished in %i seconds." % (self.name, end - start))
         return result
+    return inner
+
+
+def arg_to_id(f):
+    """
+    If the Task is a class task, converts the first parameter to the id.
+
+    """
+    @wraps(f)
+    def inner(self, *args, **kwargs):
+        cls = self.cls or self.arg_class
+        if cls:
+            if not args:
+                raise InvalidCall("You must give an instance of %s as first "
+                                  "argument." % cls.__name__)
+
+            obj = args[0]
+            if not isinstance(obj, cls):
+                raise InvalidCall("%s object must have an id attribute." %
+                                  cls.__name__)
+
+            args = list(args)
+            args[0] = args[0].id
+        return f(self, *args, **kwargs)
     return inner
 
 
@@ -53,6 +77,7 @@ class Task(EventMixin):
     def __repr__(self):
         return "<Task of %r>" % self.name
 
+    @arg_to_id
     def __call__(self, *args, **kwargs):
         """When a fucntion is wrapped with a task decorator it will be
         converted to a Task object. By overriding __call__ method we are
@@ -70,7 +95,7 @@ class Task(EventMixin):
 
         if self.eager or self.kuyruk.config.EAGER:
             # Run the task in process
-            task_result = self.apply(*args, **kwargs)
+            task_result = self._apply(*args, **kwargs)
         else:
             # Send it to the queue
             task_result = TaskResult(self)
@@ -141,12 +166,6 @@ class Task(EventMixin):
 
     def get_task_description(self, args, kwargs, queue):
         """Return the dictionary to be sent to the queue."""
-
-        # For class tasks; replace the first argument with the id of the object
-        if self.cls or self.arg_class:
-            args = list(args)
-            args[0] = args[0].id
-
         return {
             'id': uuid1().hex,
             'queue': queue,
@@ -175,13 +194,19 @@ class Task(EventMixin):
         for sender in senders:
             signal.send(sender, task=self, args=args, kwargs=kwargs, **extra)
 
-    @profile
+    @arg_to_id
     def apply(self, *args, **kwargs):
+        return self._apply(*args, **kwargs)
+
+    @profile
+    def _apply(self, *args, **kwargs):
         """Run the wrapped function and event handlers."""
         def send_signal(signal, reverse=False, **extra):
             self.send_signal(signal, args, kwargs, reverse, **extra)
 
         logger.debug("Task.apply args=%r, kwargs=%r", args, kwargs)
+
+        args = self.process_args(args)
 
         result = TaskResult(self)
 
@@ -207,6 +232,27 @@ class Task(EventMixin):
         # TaskResult object too. Return value must be consistent whether
         # task is sent to queue or executed in process with apply().
         return result
+
+    def process_args(self, args):
+        """
+        If the Task is a class task, converts the first argument to an object
+        by calling the get function of the class with the id.
+
+        """
+        cls = self.arg_class or self.cls
+        if cls:
+            if not args:
+                raise InvalidTask
+
+            obj_id = args[0]
+            obj = cls.get(obj_id)
+            if obj is None:
+                raise ObjectNotFound
+
+            args = list(args)
+            args[0] = obj
+
+        return args
 
     @property
     def name(self):

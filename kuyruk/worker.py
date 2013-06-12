@@ -52,8 +52,8 @@ def set_current_task(f):
 class Worker(KuyrukProcess):
     """Consumes messages from a queue and runs tasks.
 
+    :param kuyruk: A :class:`~kuyurk.kuyruk.Kuyruk` instance
     :param queue_name: The queue name to work on
-    :param config: A :class:`~kuyurk.config.Config` object
 
     """
     def __init__(self, kuyruk, queue_name):
@@ -145,7 +145,6 @@ class Worker(KuyrukProcess):
             logger.error("Canot decode message. Dropped!")
             return
 
-        task = None
         try:
             task = self.import_task(task_description)
             args, kwargs = task_description['args'], task_description['kwargs']
@@ -155,20 +154,20 @@ class Worker(KuyrukProcess):
             sleep(1)  # Prevent cpu burning
             message.reject()
         except ObjectNotFound:
-            self.handle_not_found(message, task_description, task)
+            self.handle_not_found(message, task_description)
         except Timeout:
-            self.handle_timeout(message, task_description, task)
+            self.handle_timeout(message, task_description)
         except InvalidTask:
-            self.handle_invalid(message, task_description, task)
+            self.handle_invalid(message, task_description)
         except Exception:
-            self.handle_exception(message, task_description, task)
+            self.handle_exception(message, task_description)
         else:
             logger.info('Task is successful')
             message.ack()
         finally:
             logger.debug("Processing task is finished")
 
-    def handle_exception(self, message, task_description, task):
+    def handle_exception(self, message, task_description):
         """Handles the exception while processing the message."""
         logger.error('Task raised an exception')
         logger.error(traceback.format_exc())
@@ -183,9 +182,9 @@ class Worker(KuyrukProcess):
             self.capture_exception(task_description)
             message.discard()
             if self.config.SAVE_FAILED_TASKS:
-                self.save_failed_task(task_description, task)
+                self.save_failed_task(task_description)
 
-    def handle_not_found(self, message, task_description, task):
+    def handle_not_found(self, message, task_description):
         """Called if the task is class task but the object with the given id
         is not found. The default action is logging the error and acking
         the message.
@@ -198,21 +197,21 @@ class Worker(KuyrukProcess):
             task_description['args'][0])
         message.ack()
 
-    def handle_timeout(self, message, task_description, task):
+    def handle_timeout(self, message, task_description):
         """Called when the task is timed out while running the wrapped
         function.
 
         """
         logger.error('Task has timed out.')
-        self.handle_exception(message, task_description, task)
+        self.handle_exception(message, task_description)
 
-    def handle_invalid(self, message, task_description, task):
+    def handle_invalid(self, message, task_description):
         """Called when the message from queue is invalid."""
         logger.error("Invalid message.")
         self.capture_exception(task_description)
         message.discard()
 
-    def save_failed_task(self, task_description, task):
+    def save_failed_task(self, task_description):
         """Saves the task to ``kuyruk_failed`` queue. Failed tasks can be
         investigated later and requeued with ``kuyruk reuqueue`` command.
 
@@ -229,12 +228,6 @@ class Worker(KuyrukProcess):
             exc_type.__module__, exc_type.__name__)
 
         try:
-            # Convert object to id for class tasks
-            if task_description['class'] or task.arg_class:
-                args = task_description['args']
-                args[0] = args[0].id
-                task_description['args'] = args
-
             self.redis.hset('failed_tasks', task_description['id'],
                             JSONEncoder().encode(task_description))
             logger.debug('Saved')
@@ -247,22 +240,7 @@ class Worker(KuyrukProcess):
     @set_current_task
     def apply_task(self, task, args, kwargs):
         """Imports and runs the wrapped function in task."""
-
-        # Fetch the object if class task
-        cls = task.arg_class or task.cls
-        if cls:
-            if not args:
-                raise InvalidTask
-
-            obj_id = args[0]
-            if not isinstance(obj_id, cls):
-                obj = cls.get(obj_id)
-                if obj is None:
-                    raise ObjectNotFound
-
-                args[0] = obj
-
-        result = task.apply(*args, **kwargs)
+        result = task._apply(*args, **kwargs)
         logger.debug('Result: %r', result)
 
     def import_task(self, task_description):
