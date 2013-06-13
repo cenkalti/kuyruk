@@ -307,12 +307,8 @@ class BoundTask(Task):
     @wraps(Task.apply)
     def apply(self, *args, **kwargs):
         logger.debug("BoundTask.apply args=%r, kwargs=%r", args, kwargs)
-        # apply() may be called directly. Insert the bound object only if
-        # it is not inserted by __call__()
-        if args and args[0] is not self.obj:
-            args = list(args)
-            args.insert(0, self.obj)
-
+        args = list(args)
+        args.insert(0, self.obj)
         return super(BoundTask, self).apply(*args, **kwargs)
 
 
