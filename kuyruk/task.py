@@ -54,6 +54,17 @@ def arg_to_id(f):
     return inner
 
 
+def send_client_signals(f):
+    """Sends the presend and postsend signals."""
+    @wraps(f)
+    def inner(self, *args, **kwargs):
+        self.send_signal(events.task_presend, args, kwargs, reverse=True)
+        rv = f(self, *args, **kwargs)
+        self.send_signal(events.task_postsend, args, kwargs)
+        return rv
+    return inner
+
+
 class Task(EventMixin):
 
     def __init__(self, f, kuyruk, queue='kuyruk', local=False, eager=False,
@@ -77,6 +88,7 @@ class Task(EventMixin):
     def __repr__(self):
         return "<Task of %r>" % self.name
 
+    @send_client_signals
     @arg_to_id
     def __call__(self, *args, **kwargs):
         """When a fucntion is wrapped with a task decorator it will be
@@ -86,7 +98,6 @@ class Task(EventMixin):
 
         """
         logger.debug("Task.__call__ args=%r, kwargs=%r", args, kwargs)
-        self.send_signal(events.task_presend, args, kwargs, reverse=True)
 
         # These keyword argument allow the sender to override
         # the destination of the message.
@@ -101,8 +112,6 @@ class Task(EventMixin):
             task_result = TaskResult(self)
             task_result.id = self.send_to_queue(
                 args, kwargs, host=host, local=local)
-
-        self.send_signal(events.task_postsend, args, kwargs)
 
         return task_result
 
@@ -194,6 +203,7 @@ class Task(EventMixin):
         for sender in senders:
             signal.send(sender, task=self, args=args, kwargs=kwargs, **extra)
 
+    @send_client_signals
     @arg_to_id
     def apply(self, *args, **kwargs):
         return self._apply(*args, **kwargs)
