@@ -108,8 +108,8 @@ class Task(EventMixin):
 
     def __get__(self, obj, objtype):
         """If the task is accessed from an instance via attribute syntax
-        return a function for sending the task to queue, otherwise
-        return the task itself.
+        returns a bound task object that wraps the task itself, otherwise
+        returns the task itself.
 
         This is done for allowing a method to be converted to task without
         modifying the client code. When a function decorated inside a class
