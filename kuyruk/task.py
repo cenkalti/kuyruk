@@ -39,17 +39,22 @@ def object_to_id(f):
     def inner(self, *args, **kwargs):
         cls = self.cls or self.arg_class
         if cls:
-            if not args:
+            try:
+                obj = args[0]
+            except IndexError:
                 raise InvalidCall("You must give an instance of %s as first "
                                   "argument." % cls.__name__)
 
-            obj = args[0]
             if not isinstance(obj, cls):
-                raise InvalidCall("%s object must have an id attribute." %
+                raise InvalidCall("First argument must be an instance of %s." %
                                   cls.__name__)
 
             args = list(args)
-            args[0] = args[0].id
+            try:
+                args[0] = args[0].id
+            except AttributeError:
+                raise InvalidCall("%s object must have an id attribute." %
+                                  cls.__name__)
         return f(self, *args, **kwargs)
     return inner
 
