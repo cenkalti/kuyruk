@@ -97,7 +97,7 @@ class Task(EventMixin):
                  retry=0, max_run_time=None, arg_class=None):
         self.f = f
         self.kuyruk = kuyruk
-        self.queue = queue
+        self.queue_name = queue
         self.local = local
         self.eager = eager
         self.retry = retry
@@ -179,18 +179,8 @@ class Task(EventMixin):
 
         """
         logger.debug("Task.send_to_queueue args=%r, kwargs=%r", args, kwargs)
-        queue = self.queue
-        local_ = self.local
 
-        if local is not None:
-            local_ = local
-
-        if host:
-            queue = "%s.%s" % (self.queue, host)
-            local_ = False
-
-        with self.kuyruk.channel() as channel:
-            queue = Queue(queue, channel, local_)
+        with self.queue(host=host, local=local) as queue:
             desc = self.get_task_description(args, kwargs, queue.name)
             queue.send(desc)
 
@@ -198,6 +188,21 @@ class Task(EventMixin):
         # so we can query the result backend for completion.
         # TODO no result backend is available yet
         return desc['id']
+
+    @contextmanager
+    def queue(self, host=None, local=None):
+        queue_ = self.queue_name
+        local_ = self.local
+
+        if local is not None:
+            local_ = local
+
+        if host:
+            queue_ = "%s.%s" % (self.queue_name, host)
+            local_ = False
+
+        with self.kuyruk.channel() as channel:
+            yield Queue(queue_, channel, local_)
 
     def get_task_description(self, args, kwargs, queue):
         """Return the dictionary to be sent to the queue."""
