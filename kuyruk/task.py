@@ -43,18 +43,17 @@ def object_to_id(f):
                 obj = args[0]
             except IndexError:
                 raise InvalidCall("You must give an instance of %s as first "
-                                  "argument." % cls.__name__)
+                                  "argument." % cls)
 
             if not isinstance(obj, cls):
                 raise InvalidCall("First argument must be an instance of %s." %
-                                  cls.__name__)
+                                  cls)
 
             args = list(args)
             try:
                 args[0] = args[0].id
             except AttributeError:
-                raise InvalidCall("%s object must have an id attribute." %
-                                  cls.__name__)
+                raise InvalidCall("%s object must have an id attribute." % cls)
         return f(self, *args, **kwargs)
     return inner
 
@@ -77,12 +76,15 @@ def id_to_object(f):
             if obj is None:
                 raise ObjectNotFound
 
+            if not isinstance(obj, cls):
+                raise ObjectNotFound("%s is not an instance of %s." %
+                                     (obj, cls))
+
             args = list(args)
             args[0] = obj
 
         return f(self, *args, **kwargs)
     return inner
-
 
 
 def send_client_signals(f):
