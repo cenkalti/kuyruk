@@ -206,6 +206,7 @@ class Task(EventMixin):
     @send_client_signals
     @arg_to_id
     def apply(self, *args, **kwargs):
+        logger.debug("Task.apply args=%r, kwargs=%r", args, kwargs)
         return self._apply(*args, **kwargs)
 
     @profile
@@ -214,7 +215,7 @@ class Task(EventMixin):
         def send_signal(signal, reverse=False, **extra):
             self.send_signal(signal, args, kwargs, reverse, **extra)
 
-        logger.debug("Task.apply args=%r, kwargs=%r", args, kwargs)
+        logger.debug("Task._apply args=%r, kwargs=%r", args, kwargs)
 
         args = self.process_args(args)
 
