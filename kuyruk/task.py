@@ -30,7 +30,7 @@ def profile(f):
     return inner
 
 
-def arg_to_id(f):
+def object_to_id(f):
     """
     If the Task is a class task, converts the first parameter to the id.
 
@@ -52,6 +52,32 @@ def arg_to_id(f):
             args[0] = args[0].id
         return f(self, *args, **kwargs)
     return inner
+
+
+def id_to_object(f):
+    """
+    If the Task is a class task, converts the first argument to an object
+    by calling the get function of the class with the id.
+
+    """
+    @wraps(f)
+    def inner(self, *args, **kwargs):
+        cls = self.arg_class or self.cls
+        if cls:
+            if not args:
+                raise InvalidTask
+
+            obj_id = args[0]
+            obj = cls.get(obj_id)
+            if obj is None:
+                raise ObjectNotFound
+
+            args = list(args)
+            args[0] = obj
+
+        return f(self, *args, **kwargs)
+    return inner
+
 
 
 def send_client_signals(f):
@@ -89,7 +115,7 @@ class Task(EventMixin):
         return "<Task of %r>" % self.name
 
     @send_client_signals
-    @arg_to_id
+    @object_to_id
     def __call__(self, *args, **kwargs):
         """When a fucntion is wrapped with a task decorator it will be
         converted to a Task object. By overriding __call__ method we are
@@ -106,7 +132,7 @@ class Task(EventMixin):
 
         if self.eager or self.kuyruk.config.EAGER:
             # Run the task in process
-            task_result = self._apply(*args, **kwargs)
+            task_result = self._run(*args, **kwargs)
         else:
             # Send it to the queue
             task_result = TaskResult(self)
@@ -204,20 +230,19 @@ class Task(EventMixin):
             signal.send(sender, task=self, args=args, kwargs=kwargs, **extra)
 
     @send_client_signals
-    @arg_to_id
+    @object_to_id
     def apply(self, *args, **kwargs):
         logger.debug("Task.apply args=%r, kwargs=%r", args, kwargs)
-        return self._apply(*args, **kwargs)
+        return self._run(*args, **kwargs)
 
     @profile
-    def _apply(self, *args, **kwargs):
+    @id_to_object
+    def _run(self, *args, **kwargs):
         """Run the wrapped function and event handlers."""
         def send_signal(signal, reverse=False, **extra):
             self.send_signal(signal, args, kwargs, reverse, **extra)
 
         logger.debug("Task._apply args=%r, kwargs=%r", args, kwargs)
-
-        args = self.process_args(args)
 
         result = TaskResult(self)
 
@@ -228,8 +253,7 @@ class Task(EventMixin):
         try:
             send_signal(events.task_prerun, reverse=True)
             with time_limit(limit):
-                # Call wrapped function
-                return_value = self.f(*args, **kwargs)
+                return_value = self.run(*args, **kwargs)
         except Exception:
             send_signal(events.task_failure, exc_info=sys.exc_info())
             raise
@@ -244,26 +268,13 @@ class Task(EventMixin):
         # task is sent to queue or executed in process with apply().
         return result
 
-    def process_args(self, args):
+    def run(self, *args, **kwargs):
         """
-        If the Task is a class task, converts the first argument to an object
-        by calling the get function of the class with the id.
+        Runs the wrapped function.
+        This method is intended to be overriden from subclasses.
 
         """
-        cls = self.arg_class or self.cls
-        if cls:
-            if not args:
-                raise InvalidTask
-
-            obj_id = args[0]
-            obj = cls.get(obj_id)
-            if obj is None:
-                raise ObjectNotFound
-
-            args = list(args)
-            args[0] = obj
-
-        return args
+        return self.f(*args, **kwargs)
 
     @property
     def name(self):

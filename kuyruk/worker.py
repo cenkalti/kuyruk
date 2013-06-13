@@ -240,7 +240,7 @@ class Worker(KuyrukProcess):
     @set_current_task
     def apply_task(self, task, args, kwargs):
         """Imports and runs the wrapped function in task."""
-        result = task._apply(*args, **kwargs)
+        result = task._run(*args, **kwargs)
         logger.debug('Result: %r', result)
 
     def import_task(self, task_description):
