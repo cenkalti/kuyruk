@@ -81,7 +81,7 @@ class Queue(object):
     @require_declare
     def send(self, obj):
         """Send a single message to the queue. obj must be JSON serializable."""
-        logger.info('sending to queue: %s message: %r', self.name, obj)
+        logger.info('sending to queue: %r message: %r', self.name, obj)
         properties = pika.BasicProperties(
             content_type='application/json',
             delivery_mode=2)
