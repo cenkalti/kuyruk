@@ -1,9 +1,13 @@
+"""
+Contains generic functions/classes that can be used in any project.
+
+"""
 import logging
 import threading
-import traceback
 from time import sleep
 from Queue import Empty
 from functools import wraps
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +45,11 @@ def queue_get_all(q):
     return items
 
 
-def human_time(seconds, suffixes=['y', 'w', 'd', 'h', 'm', 's'], add_s=False, separator=' '):
+def human_time(seconds, suffixes=['y', 'w', 'd', 'h', 'm', 's'],
+               add_s=False, separator=' '):
     """
-    Takes an amount of seconds and turns it into a human-readable amount of time.
+    Takes an amount of seconds and
+    turns it into a human-readable amount of time.
 
     """
     # the formatted time string to be returned
@@ -80,3 +86,16 @@ def synchronized(f):
         with self.lock:
             return f(self, *args, **kw)
     return inner
+
+
+def monkeypatch_method(cls):
+    def decorator(func):
+        setattr(cls, func.__name__, func)
+        return func
+    return decorator
+
+
+def print_stack(sig, frame):
+    print '=' * 70
+    print ''.join(traceback.format_stack())
+    print '-' * 70

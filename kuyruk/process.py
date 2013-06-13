@@ -1,15 +1,16 @@
+from __future__ import absolute_import
 import os
 import sys
 import signal
 import logging
 import logging.config
 import threading
-import traceback
 import subprocess
 from time import time
-from .config import Config
-from .kuyruk import Kuyruk
-from .manager.client import ManagerClientThread
+
+from kuyruk.helpers import monkeypatch_method, print_stack
+from kuyruk.manager.client import ManagerClientThread
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ class KuyrukProcess(object):
 
     """
     def __init__(self, kuyruk):
+        from kuyruk import Kuyruk
         assert isinstance(kuyruk, Kuyruk)
         self.kuyruk = kuyruk
         self.shutdown_pending = threading.Event()
@@ -105,16 +107,3 @@ class KuyrukProcess(object):
             logging.getLogger('pika').level = logging.WARNING
             level = getattr(logging, self.config.LOGGING_LEVEL.upper())
             logging.basicConfig(level=level)
-
-
-def print_stack(sig, frame):
-    print '=' * 70
-    print ''.join(traceback.format_stack())
-    print '-' * 70
-
-
-def monkeypatch_method(cls):
-    def decorator(func):
-        setattr(cls, func.__name__, func)
-        return func
-    return decorator
