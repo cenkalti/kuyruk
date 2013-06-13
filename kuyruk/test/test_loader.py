@@ -6,7 +6,7 @@ from what import What
 
 from kuyruk import Kuyruk
 from kuyruk.queue import Queue
-from util import delete_queue
+from kuyruk.test.util import delete_queue
 
 
 class LoaderTestCase(unittest.TestCase):

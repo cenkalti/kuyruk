@@ -1,11 +1,10 @@
 import os
-import socket
 import unittest
 import tempfile
 
-from ..config import Config
-import config as user_config
-from ..master import parse_queues_str
+from kuyruk.config import Config
+from kuyruk.master import parse_queues_str
+from kuyruk.test import config as user_config
 
 
 class ConfigTestCase(unittest.TestCase):
@@ -40,5 +39,5 @@ class ConfigTestCase(unittest.TestCase):
         os.unlink(path)
 
     def test_queues_string(self):
-        assert parse_queues_str(" a,b, c, 2*d, e*3, 2*@f ") == list([
-            'a', 'b', 'c', 'd', 'd', 'e', 'e', 'e', '@f', '@f'])
+        assert parse_queues_str(" a,b, c, 2*d, e*3, 2*@f ") == \
+            ['a', 'b', 'c', 'd', 'd', 'e', 'e', 'e', '@f', '@f']

@@ -5,10 +5,10 @@ import unittest
 import redis
 from mock import patch
 
-import tasks
 from kuyruk import Task
 from kuyruk.task import TaskResult, BoundTask
-from util import *
+from kuyruk.test import tasks
+from kuyruk.test.util import *
 
 logger = logging.getLogger(__name__)
 
