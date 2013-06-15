@@ -20,11 +20,11 @@ class Requeuer(object):
 
     def run(self):
         tasks = self.redis.hvals('failed_tasks')
-        with self.kuyruk.channel() as channel:
-            for task in tasks:
-                task = json.loads(task)
-                print "Requeueing task: %r" % task
-                Requeuer.requeue(task, channel, self.redis)
+        channel = self.kuyruk.channel()
+        for task in tasks:
+            task = json.loads(task)
+            print "Requeueing task: %r" % task
+            Requeuer.requeue(task, channel, self.redis)
 
         print "%i failed tasks have been requeued." % len(tasks)
 

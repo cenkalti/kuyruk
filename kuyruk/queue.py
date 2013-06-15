@@ -47,7 +47,7 @@ class Queue(object):
     def __init__(self, name, channel, local=False):
         if channel is None:
             from kuyruk import Kuyruk
-            channel = Kuyruk()._channel()
+            channel = Kuyruk().channel()
 
         self.name = name
         self.channel = channel

@@ -24,15 +24,13 @@ logger = logging.getLogger(__name__)
 
 def delete_queue(*queues):
     """Delete queues from RabbitMQ"""
-    with Kuyruk().channel() as channel:
-        for name in queues:
-            RabbitQueue(name, channel).delete()
+    for name in queues:
+        RabbitQueue(name, Kuyruk().channel()).delete()
 
 
 def is_empty(queue):
-    with Kuyruk().channel() as channel:
-        queue = RabbitQueue(queue, channel)
-        return len(queue) == 0
+    queue = RabbitQueue(queue, Kuyruk().channel())
+    return len(queue) == 0
 
 
 @contextmanager

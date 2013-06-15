@@ -51,6 +51,5 @@ def assert_name(name):
 
 
 def get_name():
-    with Kuyruk().channel() as channel:
-        desc = Queue('kuyruk', channel).receive()[1]
-        return '.'.join([desc['module'], desc['function']])
+    desc = Queue('kuyruk', Kuyruk().channel()).receive()[1]
+    return '.'.join([desc['module'], desc['function']])

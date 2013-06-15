@@ -9,9 +9,10 @@ import pika.exceptions
 
 from kuyruk import exceptions
 from kuyruk.task import Task
+from kuyruk.queue import Queue
 from kuyruk.config import Config
-from kuyruk.events import EventMixin
 from kuyruk.worker import Worker
+from kuyruk.events import EventMixin
 
 __version__ = '0.17.1'
 
@@ -65,6 +66,7 @@ class Kuyruk(EventMixin):
         self.task_class = task_class
         self.config = Config()
         self._connection = None
+        self._channel = None
         if config:
             self.config.from_object(config)
 
@@ -135,7 +137,26 @@ class Kuyruk(EventMixin):
         logger.info('Connected to RabbitMQ')
         return connection
 
-    def _channel(self):
+    def channel(self):
+        """
+        Returns the shared channel.
+        Creates a new channel if there is no available.
+
+        """
+        if self._channel is None:
+            self._channel = self._open_channel()
+
+        # Make sure that the channel we are returning is connected and usable.
+        # Declaring a queue ensures that the connection is open.
+        try:
+            queue = Queue('kuyruk', self._channel)
+            queue.declare()
+        except pika.exceptions.ChannelClosed:
+            self._channel = self._open_channel()
+
+        return self._channel
+
+    def _open_channel(self):
         """Returns a new channel."""
         CLOSED = (pika.exceptions.ConnectionClosed,
                   pika.exceptions.ChannelClosed)
@@ -152,18 +173,7 @@ class Kuyruk(EventMixin):
             self._connection = self._connect()
             return self._connection.channel()
 
-    @contextmanager
-    def channel(self):
-        """
-        Yields a new channel object.
-        When exiting the context the channel will be closed.
-
-        """
-        ch = self._channel()
-        try:
-            yield ch
-        finally:
-            try:
-                ch.close()
-            except pika.exceptions.ChannelClosed:
-                logger.debug("Channel is already closed.")
+    def close(self):
+        if self._connection is not None:
+            if self._connection.is_open:
+                self._connection.close()

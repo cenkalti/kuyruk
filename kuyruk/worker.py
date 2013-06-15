@@ -58,7 +58,7 @@ class Worker(KuyrukProcess):
     """
     def __init__(self, kuyruk, queue_name):
         super(Worker, self).__init__(kuyruk)
-        self.channel = self.kuyruk._channel()
+        self.channel = self.kuyruk.channel()
         is_local = queue_name.startswith('@')
         queue_name = queue_name.lstrip('@')
         self.queue = Queue(queue_name, self.channel, local=is_local)

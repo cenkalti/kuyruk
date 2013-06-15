@@ -208,8 +208,7 @@ class Task(EventMixin):
             queue_ = "%s.%s" % (self.queue_name, host)
             local_ = False
 
-        with self.kuyruk.channel() as channel:
-            yield Queue(queue_, channel, local_)
+        yield Queue(queue_, self.kuyruk.channel(), local_)
 
     def get_task_description(self, args, kwargs, queue):
         """Return the dictionary to be sent to the queue."""
