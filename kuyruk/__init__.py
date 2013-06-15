@@ -109,9 +109,12 @@ class Kuyruk(EventMixin):
             logger.debug('task with args')
             return decorator()
 
-    @property
     def connection(self):
-        """Persistent connection object of instance."""
+        """
+        Returns the shared RabbitMQ connection.
+        Creates a new connection if it is not connected.
+
+        """
         if self._connection is None:
             self._connection = self._connect()
         return self._connection
@@ -133,12 +136,12 @@ class Kuyruk(EventMixin):
         return connection
 
     def _channel(self):
-        """Returns new channel object."""
+        """Returns a new channel."""
         CLOSED = (pika.exceptions.ConnectionClosed,
                   pika.exceptions.ChannelClosed)
 
         try:
-            return self.connection.channel()
+            return self.connection().channel()
         except CLOSED:
             logger.warning("Connection is closed. Reconnecting...")
             try:
