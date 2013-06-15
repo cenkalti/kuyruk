@@ -16,20 +16,15 @@ from kuyruk.helpers import synchronized
 logger = logging.getLogger(__name__)
 
 
-def require_declare(f):
-    """Declare queue before running the wrapping function.
-    Also, if queue is deleted while worker is running, declare again.
+def declare_and_retry(f):
+    """
+    Declares the queue and retries if the call fails because of the queue is
+    not found.
 
     """
     @wraps(f)
     def inner(self, *args, **kwargs):
         try:
-            if not self.declared:
-                # This declare() here is runs only once when the first function
-                # is called on the queue. Queue needs to be declared before
-                # doing anything with the queue.
-                self.declare()
-                self.declared = True
             return f(self, *args, **kwargs)
         except pika.exceptions.ChannelClosed as e:
             # If queue is not found, declare queue and try again
@@ -52,7 +47,6 @@ class Queue(object):
         self.name = name
         self.channel = channel
         self.local = local
-        self.declared = False
         self.canceling = False
         self.lock = RLock()
 
@@ -71,14 +65,14 @@ class Queue(object):
             exclusive=False, auto_delete=False)
 
     @synchronized
-    @require_declare
+    @declare_and_retry
     def receive(self):
         """Get a single message from queue."""
         message = self.channel.basic_get(self.name)
         return Message.decode(message)
 
     @synchronized
-    @require_declare
+    @declare_and_retry
     def send(self, obj):
         """Send a single message to the queue. obj must be JSON serializable."""
         logger.info('sending to queue: %r message: %r', self.name, obj)

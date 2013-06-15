@@ -117,8 +117,9 @@ class Kuyruk(EventMixin):
         Creates a new connection if it is not connected.
 
         """
-        if self._connection is None:
+        if self._connection is None or not self._connection.is_open:
             self._connection = self._connect()
+
         return self._connection
 
     def _connect(self):
@@ -143,15 +144,7 @@ class Kuyruk(EventMixin):
         Creates a new channel if there is no available.
 
         """
-        if self._channel is None:
-            self._channel = self._open_channel()
-
-        # Make sure that the channel we are returning is connected and usable.
-        # Declaring a queue ensures that the connection is open.
-        try:
-            queue = Queue('kuyruk', self._channel)
-            queue.declare()
-        except pika.exceptions.ChannelClosed:
+        if self._channel is None or not self._channel.is_open:
             self._channel = self._open_channel()
 
         return self._channel
