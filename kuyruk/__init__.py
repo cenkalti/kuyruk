@@ -128,7 +128,7 @@ class Kuyruk(EventMixin):
             credentials=pika.PlainCredentials(
                 self.config.RABBIT_USER,
                 self.config.RABBIT_PASSWORD),
-            heartbeat_interval=600,
+            heartbeat_interval=0,  # We don't want heartbeats
             socket_timeout=2,
             connection_attempts=2)
         connection = pika.BlockingConnection(parameters)
