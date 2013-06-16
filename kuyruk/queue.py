@@ -92,7 +92,6 @@ class Queue(object):
 
     @synchronized
     def delete(self):
-        """Deletes queue. Does not raise exception if queue is not found."""
         logger.warning('Deleting queue')
         return self.channel.queue_delete(queue=self.name)
 
