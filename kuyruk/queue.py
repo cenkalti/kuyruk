@@ -1,9 +1,6 @@
 from __future__ import absolute_import
-import os
-import errno
 import socket
 import logging
-import traceback
 from threading import RLock
 
 import pika
