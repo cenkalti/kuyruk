@@ -4,37 +4,15 @@ import errno
 import socket
 import logging
 import traceback
-from functools import wraps
 from threading import RLock
 
 import pika
-import pika.exceptions
 
 from kuyruk.message import Message
 from kuyruk.helpers import synchronized
 
+
 logger = logging.getLogger(__name__)
-
-
-def declare_and_retry(f):
-    """
-    Declares the queue and retries if the call fails because of the queue is
-    not found.
-
-    """
-    @wraps(f)
-    def inner(self, *args, **kwargs):
-        try:
-            return f(self, *args, **kwargs)
-        except pika.exceptions.ChannelClosed as e:
-            # If queue is not found, declare queue and try again
-            # Queue migth be deleted while working on this queue.
-            if e.args[0] == 404:
-                logger.warning("Queue(%r) is not found", self.name)
-                self.declare()
-                return f(self, *args, **kwargs)
-            raise
-    return inner
 
 
 class Queue(object):
@@ -65,14 +43,12 @@ class Queue(object):
             exclusive=False, auto_delete=False)
 
     @synchronized
-    @declare_and_retry
     def receive(self):
         """Get a single message from queue."""
         message = self.channel.basic_get(self.name)
         return Message.decode(message)
 
     @synchronized
-    @declare_and_retry
     def send(self, obj):
         """Send a single message to the queue. obj must be JSON serializable."""
         logger.info('sending to queue: %r message: %r', self.name, obj)
@@ -119,12 +95,7 @@ class Queue(object):
     def delete(self):
         """Deletes queue. Does not raise exception if queue is not found."""
         logger.warning('Deleting queue')
-        try:
-            return self.channel.queue_delete(queue=self.name)
-        except pika.exceptions.ChannelClosed as e:
-            # do not raise exceptions if queue is not found
-            if e.args[0] != 404:
-                raise
+        return self.channel.queue_delete(queue=self.name)
 
     @synchronized
     def basic_consume(self, callback):
@@ -138,16 +109,7 @@ class Queue(object):
 
     @synchronized
     def process_data_events(self):
-        try:
-            self.channel.connection.process_data_events()
-        except Exception as e:
-            logger.debug(e)
-            if e.args[0] == errno.EINTR:  # Interrupted system call
-                # Happens when a signal is received. No harm.
-                pass
-            else:
-                logger.critical(traceback.format_exc())
-                os._exit(1)
+        self.channel.connection.process_data_events()
 
     @synchronized
     def sleep(self, seconds):
