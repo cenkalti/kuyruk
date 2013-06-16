@@ -31,6 +31,8 @@ class Queue(object):
         if self.local:
             self.name = "%s.%s" % (self.name, socket.gethostname())
 
+        self.declare()
+
     @synchronized
     def __len__(self):
         return self.declare().method.message_count
