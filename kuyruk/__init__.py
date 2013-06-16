@@ -2,7 +2,6 @@ from __future__ import absolute_import
 import errno
 import select
 import logging
-from contextlib import contextmanager
 
 import pika
 import pika.exceptions
@@ -134,7 +133,8 @@ class Kuyruk(EventMixin):
             heartbeat_interval=0,  # We don't want heartbeats
             socket_timeout=2,
             connection_attempts=2)
-        connection = pika.BlockingConnection(parameters)
+        from kuyruk.connection import Connection
+        connection = Connection(parameters)
         logger.info('Connected to RabbitMQ')
         return connection
 
@@ -155,16 +155,18 @@ class Kuyruk(EventMixin):
                   pika.exceptions.ChannelClosed)
 
         try:
-            return self.connection().channel()
+            channel = self.connection().channel()
         except CLOSED:
             logger.warning("Connection is closed. Reconnecting...")
             try:
                 self._connection.close()
             except CLOSED:
-                logger.debug("Connection is already closed.")
+                pass
 
             self._connection = self._connect()
-            return self._connection.channel()
+            channel = self._connection.channel()
+
+        return channel
 
     def close(self):
         if self._connection is not None:
