@@ -1,6 +1,7 @@
 import sys
 import logging
 from collections import defaultdict
+from threading import Lock
 
 import pika.adapters.blocking_connection
 from pika.adapters.blocking_connection import BlockingConnection
@@ -35,6 +36,7 @@ class RememberingChannel(BlockingChannel):
     """Remembers the queues decalared and does not redeclare them."""
 
     def __init__(self, connection, channel_number):
+        self.lock = Lock()
         super(RememberingChannel, self).__init__(connection, channel_number)
         self.declared = defaultdict(bool)
 
@@ -49,3 +51,8 @@ class RememberingChannel(BlockingChannel):
             return rv
         else:
             logger.debug("Queue is already declared, skipped declare.")
+
+    def _send_method(self, method_frame, content=None, wait=False):
+        with self.lock:
+            super(RememberingChannel, self)._send_method(method_frame, content,
+                                                         wait)
