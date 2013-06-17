@@ -13,7 +13,7 @@ from kuyruk.config import Config
 from kuyruk.events import EventMixin
 from kuyruk.worker import Worker
 
-__version__ = '0.17.1'
+__version__ = '0.18.0'
 
 try:
     # not available in python 2.6
