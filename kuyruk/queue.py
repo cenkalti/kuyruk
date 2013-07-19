@@ -1,12 +1,10 @@
 from __future__ import absolute_import
 import socket
 import logging
-from threading import RLock
 
 import pika
 
 from kuyruk.message import Message
-from kuyruk.helpers import synchronized
 
 
 logger = logging.getLogger(__name__)
@@ -23,31 +21,26 @@ class Queue(object):
         self.channel = channel
         self.local = local
         self.canceling = False
-        self.lock = RLock()
 
         if self.local:
             self.name = "%s.%s" % (self.name, socket.gethostname())
 
         self.declare()
 
-    @synchronized
     def __len__(self):
         return self.declare().method.message_count
 
-    @synchronized
     def declare(self):
         logger.debug('Declaring queue: %s', self.name)
         return self.channel.queue_declare(
             queue=self.name, durable=True,
             exclusive=False, auto_delete=False)
 
-    @synchronized
     def receive(self):
         """Get a single message from queue."""
         message = self.channel.basic_get(self.name)
         return Message.decode(message)
 
-    @synchronized
     def send(self, obj):
         """Send a single message to the queue. obj must be JSON serializable."""
         logger.info('sending to queue: %r message: %r', self.name, obj)
@@ -60,67 +53,54 @@ class Queue(object):
             body=Message.encode(obj),
             properties=properties)
 
-    @synchronized
     def ack(self, delivery_tag):
         logger.debug('Acking message')
         return self.channel.basic_ack(delivery_tag=delivery_tag)
 
-    @synchronized
     def nack(self, delivery_tag, multiple=False, requeue=True):
         logger.debug('Nacking message')
         return self.channel.basic_nack(
             delivery_tag=delivery_tag, multiple=multiple, requeue=requeue)
 
-    @synchronized
     def reject(self, delivery_tag):
         """Reject the message. Message will be delivered to another worker."""
         logger.debug('Rejecting message')
         return self.channel.basic_reject(
             delivery_tag=delivery_tag, requeue=True)
 
-    @synchronized
     def discard(self, delivery_tag):
         """Discard the message. Discarded messages will be lost."""
         logger.debug('Discarding message')
         return self.channel.basic_reject(
             delivery_tag=delivery_tag, requeue=False)
 
-    @synchronized
     def recover(self):
         logger.debug('Recovering messages')
         return self.channel.basic_recover(requeue=True)
 
-    @synchronized
     def delete(self):
         logger.warning('Deleting queue')
         return self.channel.queue_delete(queue=self.name)
 
-    @synchronized
     def basic_consume(self, callback):
         logger.debug('Issuing Basic.Consume')
         return self.channel.basic_consume(callback, self.name)
 
-    @synchronized
     def basic_cancel(self, consumer_id):
         logger.debug('Issuing Basic.Cancel')
         return self.channel.basic_cancel(consumer_id)
 
-    @synchronized
     def process_data_events(self):
         self.channel.connection.process_data_events()
 
-    @synchronized
     def sleep(self, seconds):
         self.channel.connection.sleep(seconds)
 
-    @synchronized
     def basic_qos(self, *args, **kwargs):
         return self.channel.basic_qos(*args, **kwargs)
 
-    @synchronized
     def tx_select(self):
         return self.channel.tx_select()
 
-    @synchronized
     def tx_commit(self):
         return self.channel.tx_commit()

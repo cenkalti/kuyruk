@@ -81,14 +81,6 @@ def human_time(seconds, suffixes=['y', 'w', 'd', 'h', 'm', 's'],
     return separator.join(time)
 
 
-def synchronized(f):
-    """Run the method with lock."""
-    def inner(self, *args, **kw):
-        with self.lock:
-            return f(self, *args, **kw)
-    return inner
-
-
 def monkeypatch_method(cls):
     def decorator(func):
         setattr(cls, func.__name__, func)
