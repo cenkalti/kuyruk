@@ -41,7 +41,6 @@ def ready(self):
     while True:
         try:
             return original_method(self)
-            break
         except select.error as e:
             if e[0] != errno.EINTR:
                 raise
