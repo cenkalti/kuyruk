@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import logging
 import threading
+from time import sleep
 from Queue import Queue, Empty
 from contextlib import contextmanager
 
@@ -90,7 +91,9 @@ class Consumer(object):
 
     def _process_data_events(self):
         while not self._stop_processing_data_events.is_set():
-            self.queue.process_data_events()
+            sleep(0.1)
+            self.queue.channel.connection.add_timeout(
+                0, self.queue.process_data_events)
 
 
 class MessageIterator(object):
