@@ -30,7 +30,8 @@ def retry(sleep_seconds=1, stop_event=threading.Event(),
                 except Exception as e:
                     if on_exception:
                         on_exception(e)
-                    sleep(sleep_seconds)
+                    if sleep_seconds:
+                        sleep(sleep_seconds)
         return inner
     return decorator
 
