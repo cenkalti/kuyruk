@@ -3,6 +3,7 @@ import os
 import ast
 import logging
 import argparse
+
 from kuyruk import __version__, importer, Kuyruk
 from kuyruk.master import Master
 from kuyruk.config import Config

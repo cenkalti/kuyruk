@@ -9,7 +9,9 @@ import multiprocessing
 from time import time, sleep
 from datetime import datetime
 from functools import wraps
+
 from setproctitle import setproctitle
+
 import kuyruk
 from kuyruk import importer
 from kuyruk.queue import Queue
