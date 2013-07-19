@@ -10,7 +10,9 @@ import tempfile
 import itertools
 import subprocess
 from time import time, sleep
+
 from setproctitle import setproctitle
+
 from kuyruk import __version__
 from kuyruk.process import KuyrukProcess
 

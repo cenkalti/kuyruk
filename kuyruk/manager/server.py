@@ -1,6 +1,7 @@
 import Queue
 from pprint import pformat
 from SocketServer import ThreadingTCPServer, BaseRequestHandler
+
 from kuyruk.manager.messaging import message_loop
 from kuyruk.helpers.total_ordering import total_ordering
 
