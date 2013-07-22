@@ -27,7 +27,7 @@ def delete_queue(*queues):
     """Delete queues from RabbitMQ"""
     for name in queues:
         try:
-            ch = Kuyruk()._open_channel()
+            ch = Kuyruk().channel()
             RabbitQueue(name, ch).delete()
             ch.close()
         except ChannelClosed:
