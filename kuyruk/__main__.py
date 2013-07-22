@@ -92,10 +92,18 @@ def add_config_options(parser):
 def create_config(args):
     """Creates Config object and overrides it's values from args."""
     config = Config()
+    
     if args.config:
+        # Load config file from command line option
         config.from_pyfile(args.config)
+    else:
+        # Load config file from environment variable
+        env_config = os.environ.get('KUYRUK_CONFIG')
+        if env_config:
+            assert os.path.isabs(env_config)
+            config.from_pyfile(env_config)
 
-    # Override values in config
+    # Override values in config from command line
     for key, value in vars(args).iteritems():
         if value is not None:
             key = to_attr(key)
@@ -106,6 +114,7 @@ def create_config(args):
                     pass
                 setattr(config, key, value)
 
+    # This option is used internally when master spawns workers.
     if args.delete_config:
         os.unlink(args.config)
 
