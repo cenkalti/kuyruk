@@ -12,6 +12,7 @@ from kuyruk.queue import Queue
 from kuyruk.config import Config
 from kuyruk.worker import Worker
 from kuyruk.events import EventMixin
+from kuyruk.connection import Connection
 
 __version__ = '0.18.0'
 
@@ -120,6 +121,22 @@ class Kuyruk(EventMixin):
 
         return self._connection
 
+    def channel(self):
+        """
+        Returns the shared channel.
+        Creates a new channel if there is no available.
+
+        """
+        if self._channel is None or not self._channel.is_open:
+            self._channel = self._open_channel()
+
+        return self._channel
+
+    def close(self):
+        if self._connection is not None:
+            if self._connection.is_open:
+                self._connection.close()
+
     def _connect(self):
         """Returns new connection object."""
         parameters = pika.ConnectionParameters(
@@ -132,21 +149,9 @@ class Kuyruk(EventMixin):
             heartbeat_interval=0,  # We don't want heartbeats
             socket_timeout=2,
             connection_attempts=2)
-        from kuyruk.connection import Connection
         connection = Connection(parameters)
         logger.info('Connected to RabbitMQ')
         return connection
-
-    def channel(self):
-        """
-        Returns the shared channel.
-        Creates a new channel if there is no available.
-
-        """
-        if self._channel is None or not self._channel.is_open:
-            self._channel = self._open_channel()
-
-        return self._channel
 
     def _open_channel(self):
         """Returns a new channel."""
@@ -166,8 +171,3 @@ class Kuyruk(EventMixin):
             channel = self._connection.channel()
 
         return channel
-
-    def close(self):
-        if self._connection is not None:
-            if self._connection.is_open:
-                self._connection.close()
