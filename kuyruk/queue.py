@@ -28,13 +28,13 @@ class Queue(object):
         self.declare()
 
     def __len__(self):
-        return self.declare().method.message_count
+        return self.declare(force=True).method.message_count
 
-    def declare(self):
+    def declare(self, force=False):
         logger.debug('Declaring queue: %s', self.name)
         return self.channel.queue_declare(
             queue=self.name, durable=True,
-            exclusive=False, auto_delete=False)
+            exclusive=False, auto_delete=False, force=force)
 
     def receive(self):
         """Get a single message from queue."""

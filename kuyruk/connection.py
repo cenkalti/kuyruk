@@ -25,7 +25,7 @@ class Connection(BlockingConnection):
         if not channel_number:
             channel_number = self._next_channel_number()
         logger.debug('Opening channel %i', channel_number)
-        self._channels[channel_number] = RememberingChannel(self, channel_number)
+        self._channels[channel_number] = Channel(self, channel_number)
         return self._channels[channel_number]
 
     def process_data_events(self):
@@ -38,21 +38,23 @@ class Connection(BlockingConnection):
                                                 content)
 
 
-class RememberingChannel(BlockingChannel):
+class Channel(BlockingChannel):
     """Remembers the queues decalared and does not redeclare them."""
 
+    SKIP_REDECLARE_QUEUE = True
+
     def __init__(self, connection, channel_number):
-        super(RememberingChannel, self).__init__(connection, channel_number)
+        super(Channel, self).__init__(connection, channel_number)
         self.declared = defaultdict(bool)
 
     def queue_declare(self, queue='', passive=False, durable=False,
                       exclusive=False, auto_delete=False, nowait=False,
-                      arguments=None):
-        if not self.declared[queue] or 'nose' in sys.argv[0]:
-            rv = super(RememberingChannel, self).queue_declare(
+                      arguments=None, force=False):
+        if self.SKIP_REDECLARE_QUEUE and self.declared[queue] and not force:
+            logger.debug("Queue is already declared, skipped declare.")
+        else:
+            rv = super(Channel, self).queue_declare(
                 queue, passive, durable, exclusive,
                 auto_delete, nowait, arguments)
             self.declared[queue] = True
             return rv
-        else:
-            logger.debug("Queue is already declared, skipped declare.")
