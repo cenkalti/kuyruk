@@ -60,8 +60,9 @@ class Master(KuyrukProcess):
 
     def shutdown_workers(self, kill=False):
         """Sends shutdown signal to all workers."""
+        kill_signal = signal.SIGKILL if kill else signal.SIGTERM
         for worker in self.workers:
-            os.kill(worker.pid, signal.SIGKILL if kill else signal.SIGTERM)
+            os.kill(worker.pid, kill_signal)
 
     def wait_for_workers(self):
         """Loops until any of the self.workers is alive.
