@@ -90,12 +90,6 @@ class Queue(object):
         logger.debug('Issuing Basic.Cancel')
         return self.channel.basic_cancel(consumer_id)
 
-    def process_data_events(self):
-        self.channel.connection.process_data_events()
-
-    def sleep(self, seconds):
-        self.channel.connection.sleep(seconds)
-
     def basic_qos(self, *args, **kwargs):
         return self.channel.basic_qos(*args, **kwargs)
 

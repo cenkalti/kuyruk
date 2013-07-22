@@ -49,7 +49,7 @@ class Consumer(object):
     def pause(self, seconds):
         logger.info('Pausing for %i seconds...', seconds)
         self._cancel()
-        self.queue.sleep(seconds)
+        self.queue.channel.connection.sleep(seconds)
         logger.info('Resuming')
         self._consume()
 
