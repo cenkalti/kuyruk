@@ -3,7 +3,7 @@
 Configuration
 =============
 
-Configuraion options should be put in a Python module. Pass this module
+Configuration options should be put in a Python module. Pass this module
 to the :class:`~kuyruk.Kuyruk` instance to configure it.
 
 Example:
