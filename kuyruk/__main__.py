@@ -1,3 +1,9 @@
+"""
+This is the entry point for main "kuyruk" executable command.
+It implements the command line parsing for subcommands and configuration.
+
+"""
+
 from __future__ import absolute_import
 import os
 import ast
