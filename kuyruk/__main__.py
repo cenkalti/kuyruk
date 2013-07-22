@@ -98,7 +98,7 @@ def add_config_options(parser):
 def create_config(args):
     """Creates Config object and overrides it's values from args."""
     config = Config()
-    
+
     if args.config:
         # Load config file from command line option
         config.from_pyfile(args.config)
