@@ -32,6 +32,11 @@ class Connection(BlockingConnection):
         with self._lock:
             return super(Connection, self).process_data_events()
 
+    def send_method(self, channel_number, method_frame, content=None):
+        with self._lock:
+            super(Connection, self).send_method(channel_number, method_frame,
+                                                content)
+
 
 class RememberingChannel(BlockingChannel):
     """Remembers the queues decalared and does not redeclare them."""
