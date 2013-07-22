@@ -1,22 +1,19 @@
 import sys
 import logging
+from threading import RLock
 from collections import defaultdict
-from threading import Lock
 
-import pika.adapters.blocking_connection
-from pika.adapters.blocking_connection import BlockingConnection
-from pika.adapters.blocking_connection import BlockingChannel
+from pika.adapters.blocking_connection import (BlockingConnection,
+                                               BlockingChannel)
 
 logger = logging.getLogger(__name__)
 
 
 class Connection(BlockingConnection):
 
-    # def channel(self, channel_number=None):
-    #     pika.adapters.blocking_connection.BlockingChannel = RememberingChannel
-    #     rv = super(Connection, self).channel(channel_number)
-    #     pika.adapters.blocking_connection.BlockingChannel = BlockingChannel
-    #     return rv
+    def __init__(self, parameters=None):
+        self._lock = RLock()
+        super(Connection, self).__init__(parameters)
 
     def channel(self, channel_number=None):
         """Create a new channel with the next available or specified channel #.
@@ -30,6 +27,10 @@ class Connection(BlockingConnection):
         logger.debug('Opening channel %i', channel_number)
         self._channels[channel_number] = RememberingChannel(self, channel_number)
         return self._channels[channel_number]
+
+    def process_data_events(self):
+        with self._lock:
+            return super(Connection, self).process_data_events()
 
 
 class RememberingChannel(BlockingChannel):
