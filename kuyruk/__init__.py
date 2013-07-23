@@ -14,7 +14,7 @@ from kuyruk.worker import Worker
 from kuyruk.events import EventMixin
 from kuyruk.connection import Connection
 
-__version__ = '0.19.0'
+__version__ = '0.19.1'
 
 try:
     # not available in python 2.6
