@@ -325,7 +325,7 @@ class Worker(KuyrukProcess):
 
     def get_stats(self):
         """Generate stats to be sent to manager."""
-        method = self.queue.declare().method
+        method = self.queue.declare(force=True).method
         try:
             current_task = self.current_task.name
         except AttributeError:
