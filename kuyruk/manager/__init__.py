@@ -95,10 +95,10 @@ class Manager(Flask):
             else:
                 tasks = [redis.hget('failed_tasks', task_id)]
 
-            with self.kuyruk.channel() as channel:
-                for desc in tasks:
-                    desc = json.loads(desc)
-                    Requeuer.requeue(desc, channel, redis)
+            channel = self.kuyruk.channel()
+            for desc in tasks:
+                desc = json.loads(desc)
+                Requeuer.requeue(desc, channel, redis)
 
             return redirect_back()
 
