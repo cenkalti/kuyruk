@@ -2,8 +2,8 @@ Getting Started
 ===============
 
 Running a function in background requires only few steps with Kuyruk.
-This tutorial assumes that you have a RabbitMQ server running in localhost
-with default options.
+This tutorial assumes that you have a RabbitMQ server running at localhost
+with default configuration.
 
 
 Installing
