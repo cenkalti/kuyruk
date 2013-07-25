@@ -11,6 +11,7 @@ Example:
 .. code-block:: python
 
     # config.py
+
     RABBIT_HOST = 'localhost'
     RABBIT_PORT = 5672
     RABBIT_USER = 'guest'
@@ -22,6 +23,7 @@ Example:
 .. code-block:: python
 
     # tasks.py
+
     from kuyruk import Kuyruk
     import config
 
