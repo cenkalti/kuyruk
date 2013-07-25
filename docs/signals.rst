@@ -46,4 +46,5 @@ SIGKILL
     dead and respawn a new one.
 
 SIGQUIT
-    Send acknowledgement for the current task and exit.
+    Send acknowledgement for the current task and exit immediately.
+    Can be used if the task is stuck and looping in the queue.
