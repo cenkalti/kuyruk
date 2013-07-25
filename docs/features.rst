@@ -13,9 +13,10 @@ For this reason Kuyruk tries to utilize RabbitMQ and AMQP as much as possible.
 
 Easy
 ----
-Kuyruk requires no change in client code other that adding a decorator on top
-of a function in order to convert it to a task.
-Also, sensible defaults have been set for configuration options.
+Kuyruk requires no change in client code other than adding a decorator on top
+of a function in order to convert it to a "task".
+Also, sensible defaults have been set for configuration options and
+can be run without configuring while developing your application.
 
 
 Robust
