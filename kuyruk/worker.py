@@ -9,6 +9,7 @@ import multiprocessing
 from time import time, sleep
 from datetime import datetime
 from functools import wraps
+from contextlib import contextmanager
 
 from setproctitle import setproctitle
 
@@ -65,6 +66,7 @@ class Worker(KuyrukProcess):
         queue_name = queue_name.lstrip('@')
         self.queue = Queue(queue_name, self.channel, local=is_local)
         self.consumer = Consumer(self.queue)
+        self.current_message = None
         self.current_task = None
         self.current_args = None
         self.current_kwargs = None
@@ -120,9 +122,20 @@ class Worker(KuyrukProcess):
         """
         with self.consumer.consume() as messages:
             for message in messages:
-                self.process_message(message)
-                self.queue.tx_commit()
-                logger.debug("Committed transaction")
+                with self._set_current_message(message):
+                    self.process_message(message)
+                    self.queue.tx_commit()
+                    logger.debug("Committed transaction")
+
+    @contextmanager
+    def _set_current_message(self, message):
+        """Save current message processing so we can send ack before exiting
+        when SIGQUIT is received."""
+        self.current_message = message
+        try:
+            yield message
+        finally:
+            self.current_message = None
 
     def start_daemon_threads(self):
         """Start the function as threads listed in self.daemon_thread."""
@@ -312,11 +325,26 @@ class Worker(KuyrukProcess):
     def register_signals(self):
         super(Worker, self).register_signals()
         signal.signal(signal.SIGTERM, self.handle_sigterm)
+        signal.signal(signal.SIGQUIT, self.handle_sigquit)
 
     def handle_sigterm(self, signum, frame):
         """Initiates a warm shutdown."""
         logger.warning("Catched SIGTERM")
         self.warm_shutdown()
+
+    def handle_sigquit(self, signum, frame):
+        """Send ACK for the current task and exit."""
+        logger.warning("Catched SIGQUIT")
+        if self.current_message:
+            try:
+                logger.warning("Acking current task...")
+                self.current_message.ack()
+                self.queue.tx_commit()
+            except Exception:
+                logger.critical("Cannot send ACK for the current task.")
+                traceback.print_exc()
+        logger.warning("Exiting...")
+        os._exit(1)
 
     def warm_shutdown(self, sigint=False):
         """Shutdown gracefully."""

@@ -262,3 +262,15 @@ class KuyrukTestCase(unittest.TestCase):
         tasks.sleeping_task(2)
         with run_kuyruk() as master:
             master.expect('raise Timeout')
+
+    def test_worker_sigquit(self):
+        """Ack current message and exit"""
+        tasks.loop_forever()
+        with run_kuyruk(terminate=False) as worker:
+            worker.expect('looping forever')
+            pid = get_pid('kuyruk: worker')
+            os.kill(pid, signal.SIGQUIT)
+            worker.expect('Acking current task')
+            worker.expect('Exiting')
+            worker.expect_exit(1)
+        assert is_empty('kuyruk'), worker.get_output()
