@@ -44,3 +44,6 @@ SIGTERM
 SIGKILL
     Terminate the worker process immediately. Master will detect that worker is
     dead and respawn a new one.
+
+SIGQUIT
+    Send acknowledgement for the current task and exit.
