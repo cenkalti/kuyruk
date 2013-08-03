@@ -35,7 +35,6 @@ Example:
         def close_session(self, *args, **kwargs):
             self.session.close()
 
-
     @kuyruk.task(task_class=DatabaseTask)
     def a_task_with_a_session(some_arg):
         session = self.session
