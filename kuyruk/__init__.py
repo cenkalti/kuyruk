@@ -15,6 +15,7 @@ from kuyruk.events import EventMixin
 from kuyruk.connection import Connection
 
 __version__ = '0.20.1'
+__all__ = ['Kuyruk', 'Task', 'Worker']
 
 try:
     # not available in python 2.6
