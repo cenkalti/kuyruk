@@ -26,6 +26,7 @@ User's Guide
    commands
    signals
    events
+   classtasks
    extending
 
 
