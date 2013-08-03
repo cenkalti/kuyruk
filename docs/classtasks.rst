@@ -52,5 +52,5 @@ It is better to explain with an example:
     mp4.convert(resolution='720p')
 
 
-When you run the worker it will try to fetch the insance by
+When you run the worker it will try to fetch the instance by
 calling ``Mp4.get(34)``. Then it will call ``mp4.convert(resolution='720p')``.
