@@ -7,10 +7,10 @@
     {% endif %}
 {%- endmacro %}
 
-{% macro requeue_button(task_id, title) %}
+{% macro _button(action, task_id, title) %}
     <button type="submit" name='task_id'
             value="{{ task_id }}"
-            formaction="{{ url_for('requeue_task') }}">
+            formaction="{{ url_for('%s_task' % action) }}">
         {{ title }}</button>
 {% endmacro -%}
 
@@ -47,7 +47,8 @@
                 <td>{{ task.sender_timestamp }}</td>
                 <td>{{ task.worker_timestamp }}</td>
                 <td>
-                    {{ requeue_button(task.id, 'Requeue') }}
+                    {{ _button('requeue', task.id, 'Requeue') }}
+                    {{ _button('delete', task.id, 'Delete') }}
                 </td>
             </tr>
             {% endfor %}
@@ -65,7 +66,7 @@
                 <td></td>
                 <td></td>
                 <td>
-                    {{ requeue_button('ALL', 'Requeue All') }}
+                    {{ _button('requeue', 'ALL', 'Requeue All') }}
                 </td>
             </tr>
         </table>

@@ -102,6 +102,13 @@ class Manager(Flask):
 
             return redirect_back()
 
+        @self.route('/delete', methods=['POST'])
+        def delete_task():
+            task_id = request.form['task_id']
+            redis = self.get_redis()
+            redis.hdel('failed_tasks', task_id)
+            return redirect_back()
+
         @self.context_processor
         def inject_helpers():
             return {
