@@ -96,7 +96,7 @@ class Master(KuyrukProcess):
         logger.debug(self.workers)
 
     def spawn_new_worker(self, queue):
-        worker = WorkerProcess(self.config, queue)
+        worker = WorkerProcess(self.config, queue, self.kuyruk)
         worker.start()
         self.workers.append(worker)
 
@@ -105,6 +105,10 @@ class Master(KuyrukProcess):
         signal.signal(signal.SIGTERM, self.handle_sigterm)
         signal.signal(signal.SIGQUIT, self.handle_sigquit)
         signal.signal(signal.SIGABRT, self.handle_sigabrt)
+
+        # Ignore SIGCHLD explicitly so the kernel to
+        # automatically reap child processes.
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
     def handle_sigterm(self, signum, frame):
         logger.warning("Handling SIGTERM")
@@ -148,35 +152,35 @@ class Master(KuyrukProcess):
 
 class WorkerProcess(object):
 
-    def __init__(self, config, queue):
+    def __init__(self, config, queue, kuyruk):
         self.config = config
         self.queue = queue
-        self.popen = None
+        self.kuyruk = kuyruk
 
     def start(self):
-        """Runs the worker by starting another Python interpreter."""
-        # Pass configuration values to the worker
-        fd, path = tempfile.mkstemp()
-        self.config.export(fd)
-
-        command = [
-            sys.executable, '-u', '-m', 'kuyruk.__main__',
-            '--config', path,
-            '--delete-config',
-            'worker',
-            '--queue', self.queue
-        ]
-        self.popen = subprocess.Popen(
-            command, stdout=sys.stdout, stderr=sys.stderr,
-            bufsize=1, close_fds=True)
-
-    @property
-    def pid(self):
-        return self.popen.pid
+        pid = os.fork()
+        if pid:
+            # master
+            self.pid = pid
+        else:
+            # child
+            from kuyruk.__main__ import worker
+            from collections import namedtuple
+            Args = namedtuple('Args', 'queue')
+            args = Args(queue=self.queue)
+            worker(self.kuyruk, args)
+            os._exit(0)
 
     def is_alive(self):
-        self.popen.poll()
-        return self.popen.returncode is None
+        logger.debug("Cheking if the worker is alive? pid=%s", self.pid)
+        try:
+            os.kill(self.pid, 0)
+        except OSError:
+            logger.debug("No")
+            return False
+        else:
+            logger.debug("Yes")
+            return True
 
     def kill_pg(self):
         """Kills the process with their children. Does not raise exception
