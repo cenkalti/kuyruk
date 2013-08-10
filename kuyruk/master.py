@@ -59,9 +59,13 @@ class Master(KuyrukProcess):
 
     def shutdown_workers(self, kill=False):
         """Sends shutdown signal to all workers."""
-        kill_signal = signal.SIGKILL if kill else signal.SIGTERM
+        if kill:
+            fn, sig = os.killpg, signal.SIGKILL
+        else:
+            fn, sig = os.kill, signal.SIGTERM
+
         for worker in self.workers:
-            os.kill(worker.pid, kill_signal)
+            fn(worker.pid, sig)
 
     def wait_for_workers(self):
         """Loops until any of the self.workers is alive.
@@ -165,6 +169,7 @@ class WorkerProcess(object):
             self.run_worker()
 
     def run_worker(self):
+        os.setpgrp()
         self.close_fds()
         Args = namedtuple('Args', 'queue')
         args = Args(queue=self.queue)
