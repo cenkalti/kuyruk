@@ -1,15 +1,13 @@
 from __future__ import absolute_import
 import os
-import sys
 import errno
 import signal
 import socket
 import string
 import logging
-import tempfile
 import itertools
-import subprocess
 from time import time, sleep
+from collections import namedtuple
 
 from setproctitle import setproctitle
 
@@ -96,7 +94,7 @@ class Master(KuyrukProcess):
         logger.debug(self.workers)
 
     def spawn_new_worker(self, queue):
-        worker = WorkerProcess(self.config, queue, self.kuyruk)
+        worker = WorkerProcess(self.kuyruk, queue)
         worker.start()
         self.workers.append(worker)
 
@@ -152,10 +150,9 @@ class Master(KuyrukProcess):
 
 class WorkerProcess(object):
 
-    def __init__(self, config, queue, kuyruk):
-        self.config = config
-        self.queue = queue
+    def __init__(self, kuyruk, queue):
         self.kuyruk = kuyruk
+        self.queue = queue
 
     def start(self):
         pid = os.fork()
@@ -164,12 +161,14 @@ class WorkerProcess(object):
             self.pid = pid
         else:
             # child
-            from kuyruk.__main__ import worker
-            from collections import namedtuple
-            Args = namedtuple('Args', 'queue')
-            args = Args(queue=self.queue)
-            worker(self.kuyruk, args)
-            os._exit(0)
+            self.run_worker()
+
+    def run_worker(self):
+        from kuyruk.__main__ import worker
+        Args = namedtuple('Args', 'queue')
+        args = Args(queue=self.queue)
+        worker(self.kuyruk, args)
+        os._exit(0)
 
     def is_alive(self):
         logger.debug("Cheking if the worker is alive? pid=%s", self.pid)
