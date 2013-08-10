@@ -1,0 +1,15 @@
+Kuyruk Changelog
+================
+
+Here you can see the full list of changes between each Kuyruk release.
+
+Version 0.20.3
+--------------
+
+- Uses fork() directly instead of subprocess.Popen() when starting workers
+  from master.
+
+Version 0.20.2
+--------------
+
+First public preview release.
