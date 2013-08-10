@@ -49,9 +49,6 @@ def main():
     parser.add_argument(
         '-c', '--config',
         help='Python file containing Kuyruk configuration parameters')
-    parser.add_argument(
-        '--delete-config', action='store_true',
-        help='delete config after loading (used internally)')
     add_config_options(parser)
 
     subparsers = parser.add_subparsers(help='sub-command name')
@@ -119,10 +116,6 @@ def create_config(args):
                 except (ValueError, SyntaxError):
                     pass
                 setattr(config, key, value)
-
-    # This option is used internally when master spawns workers.
-    if args.delete_config:
-        os.unlink(args.config)
 
     return config
 

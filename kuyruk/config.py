@@ -1,6 +1,6 @@
-import os
 import imp
 import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -142,23 +142,3 @@ class Config(object):
             e.strerror = 'Unable to load configuration file (%s)' % e.strerror
             raise
         self.from_object(d)
-
-    def export(self, file_or_path):
-        """Exports values to a file."""
-        if isinstance(file_or_path, file):
-            f = file_or_path
-        elif isinstance(file_or_path, int):
-            f = os.fdopen(file_or_path, 'w')
-        elif isinstance(file_or_path, basestring):
-            f = open(file_or_path, 'w')
-        else:
-            raise TypeError("Argument must be a fd, file object or path: %r" %
-                            file_or_path)
-
-        try:
-            for attr in dir(self):
-                if attr.isupper() and not attr.startswith('_'):
-                    value = getattr(self, attr)
-                    f.write("%s = %r\n" % (attr, value))
-        finally:
-            f.close()
