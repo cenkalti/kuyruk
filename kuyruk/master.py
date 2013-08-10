@@ -70,7 +70,7 @@ class Master(KuyrukProcess):
         """
         start = time()
         any_alive = True
-        while any_alive and not self.shutdown_pending.is_set():
+        while any_alive:
             any_alive = False
             for worker in list(self.workers):
                 if worker.is_alive():
