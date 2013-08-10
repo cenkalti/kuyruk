@@ -106,4 +106,6 @@ class KuyrukProcess(object):
         else:
             logging.getLogger('pika').level = logging.WARNING
             level = getattr(logging, self.config.LOGGING_LEVEL.upper())
-            logging.basicConfig(level=level)
+            fmt = "%(levelname).1s %(process)d " \
+                  "%(name)s.%(funcName)s:%(lineno)d - %(message)s"
+            logging.basicConfig(level=level, format=fmt)
