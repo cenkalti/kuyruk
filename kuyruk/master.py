@@ -5,6 +5,7 @@ import signal
 import socket
 import string
 import logging
+import resource
 import itertools
 from time import time, sleep
 from collections import namedtuple
@@ -164,11 +165,25 @@ class WorkerProcess(object):
             self.run_worker()
 
     def run_worker(self):
-        from kuyruk.__main__ import worker
+        self.close_fds()
         Args = namedtuple('Args', 'queue')
         args = Args(queue=self.queue)
-        worker(self.kuyruk, args)
+        import kuyruk.__main__
+        kuyruk.__main__.worker(self.kuyruk, args)
         os._exit(0)
+
+    def close_fds(self):
+        maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
+        if maxfd == resource.RLIM_INFINITY:
+            maxfd = 1024
+
+        # Iterate through and close all file descriptors.
+        # Do not close stdin, out and err (0, 1, 2)
+        for fd in range(3, maxfd):
+            try:
+                os.close(fd)
+            except OSError:  # fd wasn't open
+                pass
 
     def is_alive(self):
         logger.debug("Cheking if the worker is alive? pid=%s", self.pid)
