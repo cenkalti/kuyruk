@@ -61,12 +61,12 @@ class KuyrukProcess(object):
         """
         logger.warning("Handling SIGINT")
         if sys.stdin.isatty() and not self.shutdown_pending.is_set():
-            self.warm_shutdown(signum == signal.SIGINT)
+            self.warm_shutdown()
         else:
             self.cold_shutdown()
         logger.debug("Handled SIGINT")
 
-    def warm_shutdown(self, sigint):
+    def warm_shutdown(self):
         logger.warning("Warm shutdown")
         self.shutdown_pending.set()
 

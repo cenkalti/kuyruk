@@ -346,9 +346,9 @@ class Worker(KuyrukProcess):
         logger.warning("Exiting...")
         os._exit(1)
 
-    def warm_shutdown(self, sigint=False):
+    def warm_shutdown(self):
         """Shutdown gracefully."""
-        super(Worker, self).warm_shutdown(sigint)
+        super(Worker, self).warm_shutdown()
         self.consumer.stop()
 
     def get_stats(self):

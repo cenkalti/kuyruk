@@ -125,10 +125,9 @@ class Master(KuyrukProcess):
         logger.warning("Handling SIGABRT")
         self.abort()
 
-    def warm_shutdown(self, sigint=False):
-        super(Master, self).warm_shutdown(sigint)
-        if not sigint:
-            self.shutdown_workers()
+    def warm_shutdown(self):
+        super(Master, self).warm_shutdown()
+        self.shutdown_workers()
 
     def cold_shutdown(self):
         logger.warning("Cold shutdown")
