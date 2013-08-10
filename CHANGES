@@ -6,10 +6,14 @@ Here you can see the full list of changes between each Kuyruk release.
 Version 0.20.3
 --------------
 
+Released on 10-08-2013.
+
 - Uses fork() directly instead of subprocess.Popen() when starting workers
   from master.
 
 Version 0.20.2
 --------------
+
+Released on 03-08-2013.
 
 First public preview release.
