@@ -79,7 +79,8 @@ class Kuyruk(EventMixin):
 
         :param queue: Queue name for the tasks.
         :param eager: Run task in process, do not use RabbitMQ.
-        :param retry: Retry this times before give up.
+        :param retry: Retry this times before give up. Task will be re-routed
+            and executed on another worker.
         :param task_class: Custom task class.
             Must be a subclass of :class:`~Task`.
             If this is :const:`None` then :attr:`Task.task_class` will be used.
