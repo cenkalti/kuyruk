@@ -186,6 +186,7 @@ class WorkerProcess(object):
                 pass
 
     def is_alive(self):
+        """Send signal 0 to process to check if it is alive."""
         logger.debug("Cheking if the worker is alive? pid=%s", self.pid)
         try:
             os.kill(self.pid, 0)
