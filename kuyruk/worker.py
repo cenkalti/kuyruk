@@ -344,7 +344,7 @@ class Worker(KuyrukProcess):
                 logger.critical("Cannot send ACK for the current task.")
                 traceback.print_exc()
         logger.warning("Exiting...")
-        os._exit(1)
+        sys.exit(1)
 
     def warm_shutdown(self):
         """Shutdown gracefully."""
