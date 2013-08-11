@@ -40,30 +40,30 @@ class KuyrukTestCase(unittest.TestCase):
     def test_simple_task(self):
         """Run a task on default queue"""
         tasks.print_task('hello world')
-        with run_kuyruk() as master:
-            master.expect('hello world')
+        with run_kuyruk() as worker:
+            worker.expect('hello world')
 
     def test_another_queue(self):
         """Run a task on different queue"""
         tasks.print_task2('hello another')
-        with run_kuyruk(queue='another_queue') as master:
-            master.expect('another_queue')
-            master.expect('hello another')
-            master.expect('Committed transaction')
+        with run_kuyruk(queue='another_queue') as worker:
+            worker.expect('another_queue')
+            worker.expect('hello another')
+            worker.expect('Committed transaction')
 
     def test_exception(self):
         """Errored task message is discarded"""
         tasks.raise_exception()
-        with run_kuyruk() as master:
-            master.expect('ZeroDivisionError')
+        with run_kuyruk() as worker:
+            worker.expect('ZeroDivisionError')
         assert is_empty('kuyruk')
 
     def test_retry(self):
         """Errored tasks must be retried"""
         tasks.retry_task()
-        with run_kuyruk() as master:
-            master.expect('ZeroDivisionError')
-            master.expect('ZeroDivisionError')
+        with run_kuyruk() as worker:
+            worker.expect('ZeroDivisionError')
+            worker.expect('ZeroDivisionError')
         assert is_empty('kuyruk')
 
     def test_cold_shutdown(self):
@@ -97,9 +97,9 @@ class KuyrukTestCase(unittest.TestCase):
     def test_reject(self):
         """Rejected tasks must be requeued again"""
         tasks.rejecting_task()
-        with run_kuyruk() as master:
-            master.expect('Task is rejected')
-            master.expect('Task is rejected')
+        with run_kuyruk() as worker:
+            worker.expect('Task is rejected')
+            worker.expect('Task is rejected')
         assert not is_empty('kuyruk')
 
     def test_respawn(self):
@@ -133,12 +133,12 @@ class KuyrukTestCase(unittest.TestCase):
     def test_save_failed(self):
         """Failed tasks are saved to Redis"""
         tasks.raise_exception()
-        with run_kuyruk(save_failed_tasks=True) as master:
-            master.expect('ZeroDivisionError')
-            master.expect('No retry left')
-            master.expect('Saving failed task')
-            master.expect('Saved')
-            master.expect('Committed transaction')
+        with run_kuyruk(save_failed_tasks=True) as worker:
+            worker.expect('ZeroDivisionError')
+            worker.expect('No retry left')
+            worker.expect('Saving failed task')
+            worker.expect('Saved')
+            worker.expect('Committed transaction')
 
         assert is_empty('kuyruk')
         r = redis.StrictRedis()
@@ -153,10 +153,10 @@ class KuyrukTestCase(unittest.TestCase):
         cat = tasks.Cat(1, 'Felix')
 
         cat.raise_exception()
-        with run_kuyruk(save_failed_tasks=True) as master:
-            master.expect('raise Exception')
-            master.expect('Saving failed task')
-            master.expect('Saved')
+        with run_kuyruk(save_failed_tasks=True) as worker:
+            worker.expect('raise Exception')
+            worker.expect('Saving failed task')
+            worker.expect('Saved')
 
         assert is_empty('kuyruk')
         r = redis.StrictRedis()
@@ -171,10 +171,10 @@ class KuyrukTestCase(unittest.TestCase):
         cat = tasks.Cat(1, 'Felix')
 
         tasks.jump_fail(cat)
-        with run_kuyruk(save_failed_tasks=True) as master:
-            master.expect('ZeroDivisionError')
-            master.expect('Saving failed task')
-            master.expect('Saved')
+        with run_kuyruk(save_failed_tasks=True) as worker:
+            worker.expect('ZeroDivisionError')
+            worker.expect('Saving failed task')
+            worker.expect('Saved')
 
         assert is_empty('kuyruk')
         r = redis.StrictRedis()
@@ -187,10 +187,10 @@ class KuyrukTestCase(unittest.TestCase):
     def test_dead_master(self):
         """If master is dead worker should exit gracefully"""
         tasks.print_task('hello world')
-        with run_kuyruk(terminate=False) as master:
-            master.expect('hello world')
-            master.kill()
-            master.expect_exit(-signal.SIGKILL)
+        with run_kuyruk(terminate=False) as worker:
+            worker.expect('hello world')
+            worker.kill()
+            worker.expect_exit(-signal.SIGKILL)
             wait_until(not_running, timeout=TIMEOUT)
 
     @patch('kuyruk.test.tasks.must_be_called')
@@ -198,20 +198,20 @@ class KuyrukTestCase(unittest.TestCase):
         """Before and after task functions are run"""
         tasks.task_with_functions('hello world')
         mock_func.assert_called_once_with()
-        with run_kuyruk() as master:
-            master.expect('function1')
-            master.expect('function2')
-            master.expect('hello world')
-            master.expect('function3')
-            master.expect('function4')
-            master.expect('function5')
+        with run_kuyruk() as worker:
+            worker.expect('function1')
+            worker.expect('function2')
+            worker.expect('hello world')
+            worker.expect('function3')
+            worker.expect('function4')
+            worker.expect('function5')
 
     def test_extend(self):
         """Extend task class"""
         tasks.use_session()
-        with run_kuyruk() as master:
-            master.expect('Opening session')
-            master.expect('Closing session')
+        with run_kuyruk() as worker:
+            worker.expect('Opening session')
+            worker.expect('Closing session')
 
     def test_class_task(self):
         cat = tasks.Cat(1, 'Felix')
@@ -219,8 +219,8 @@ class KuyrukTestCase(unittest.TestCase):
         self.assertTrue(isinstance(cat.meow, BoundTask))
 
         cat.meow('Oh my god')
-        with run_kuyruk() as master:
-            master.expect('Oh my god')
+        with run_kuyruk() as worker:
+            worker.expect('Oh my god')
 
     @patch('kuyruk.test.tasks.must_be_called')
     def test_class_task_eager(self, mock_func):
@@ -237,9 +237,9 @@ class KuyrukTestCase(unittest.TestCase):
     def test_arg_class(self):
         cat = tasks.Cat(1, 'Felix')
         tasks.jump(cat)
-        with run_kuyruk() as master:
-            master.expect('Felix jumps high!')
-            master.expect('Called with Felix')
+        with run_kuyruk() as worker:
+            worker.expect('Felix jumps high!')
+            worker.expect('Called with Felix')
 
     @patch('kuyruk.test.tasks.must_be_called')
     def test_arg_class_eager(self, mock_func):
@@ -260,8 +260,8 @@ class KuyrukTestCase(unittest.TestCase):
     def test_max_run_time(self):
         """Timeout long running task"""
         tasks.sleeping_task(2)
-        with run_kuyruk() as master:
-            master.expect('raise Timeout')
+        with run_kuyruk() as worker:
+            worker.expect('raise Timeout')
 
     def test_worker_sigquit(self):
         """Ack current message and exit"""
