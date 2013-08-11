@@ -12,6 +12,7 @@ install:
 script:
   - python setup.py nosetests
 after_success:
+  - coverage combine
   - coveralls
 services:
   - rabbitmq
