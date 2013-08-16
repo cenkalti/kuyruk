@@ -149,7 +149,7 @@ class KuyrukTestCase(unittest.TestCase):
         assert not is_empty('kuyruk')
 
     def test_save_failed_class_task(self):
-        """Failed tasks are saved to Redis"""
+        """Failed tasks are saved to Redis (class tasks)"""
         cat = tasks.Cat(1, 'Felix')
 
         cat.raise_exception()
@@ -167,7 +167,7 @@ class KuyrukTestCase(unittest.TestCase):
         assert not is_empty('kuyruk')
 
     def test_save_failed_arg_class(self):
-        """Failed tasks are saved to Redis"""
+        """Failed tasks are saved to Redis (arg class)"""
         cat = tasks.Cat(1, 'Felix')
 
         tasks.jump_fail(cat)
