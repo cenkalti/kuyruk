@@ -79,7 +79,8 @@ class Config(object):
 
     CLOSE_FDS = True
     """Patch subprocess.Popen constructor to always set close_fds=True.
-    See `subprocess.Popen <http://docs.python.org/2/library/subprocess.html#popen-constructor>`_
+    See `subprocess.Popen
+    <http://docs.python.org/2/library/subprocess.html#popen-constructor>`_
     for additional information."""
 
     # Connection Options
