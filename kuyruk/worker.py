@@ -129,8 +129,8 @@ class Worker(KuyrukProcess):
 
     @contextmanager
     def _set_current_message(self, message):
-        """Save current message processing so we can send ack before exiting
-        when SIGQUIT is received."""
+        """Save current message being processed so we can send ack
+        before exiting when SIGQUIT is received."""
         self.current_message = message
         try:
             yield message
