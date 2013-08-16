@@ -108,7 +108,6 @@ class Worker(KuyrukProcess):
         setproctitle("kuyruk: worker on %s" % self.queue.name)
         self.queue.declare()
         self.queue.basic_qos(prefetch_count=1)
-        self.queue.tx_select()
         self.import_modules()
         self.start_daemon_threads()
         self.maybe_start_manager_thread()
@@ -124,8 +123,6 @@ class Worker(KuyrukProcess):
             for message in messages:
                 with self._set_current_message(message):
                     self.process_message(message)
-                    self.queue.tx_commit()
-                    logger.debug("Committed transaction")
 
     @contextmanager
     def _set_current_message(self, message):
@@ -180,7 +177,7 @@ class Worker(KuyrukProcess):
             logger.info('Task is successful')
             message.ack()
         finally:
-            logger.debug("Processing task is finished")
+            logger.debug("Task is processed")
 
     def handle_exception(self, message, task_description):
         """Handles the exception while processing the message."""
@@ -339,7 +336,6 @@ class Worker(KuyrukProcess):
             try:
                 logger.warning("Acking current task...")
                 self.current_message.ack()
-                self.queue.tx_commit()
             except Exception:
                 logger.critical("Cannot send ACK for the current task.")
                 traceback.print_exc()

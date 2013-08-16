@@ -49,7 +49,7 @@ class KuyrukTestCase(unittest.TestCase):
         with run_kuyruk(queue='another_queue') as worker:
             worker.expect('another_queue')
             worker.expect('hello another')
-            worker.expect('Committed transaction')
+            worker.expect('Task is processed')
 
     def test_exception(self):
         """Errored task message is discarded"""
@@ -138,7 +138,7 @@ class KuyrukTestCase(unittest.TestCase):
             worker.expect('No retry left')
             worker.expect('Saving failed task')
             worker.expect('Saved')
-            worker.expect('Committed transaction')
+            worker.expect('Task is processed')
 
         assert is_empty('kuyruk')
         r = redis.StrictRedis()
