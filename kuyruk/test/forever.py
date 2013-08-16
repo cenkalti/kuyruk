@@ -12,6 +12,7 @@ kuyruk = Kuyruk()
 
 @kuyruk.task(queue='forever')
 def run_forever():
+    # Execute this script
     path = os.path.abspath(__file__)
     p = subprocess.Popen([sys.executable, path])
     p.wait()
@@ -23,6 +24,7 @@ if __name__ == '__main__':
     def handle_signal(signum, frame):
         print 'SIGNAL', signum
 
+    # Ignore all signals
     signal.signal(signal.SIGINT, handle_signal)
     signal.signal(signal.SIGTERM, handle_signal)
     signal.signal(signal.SIGABRT, handle_signal)
@@ -31,6 +33,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGCHLD, handle_signal)
     signal.signal(signal.SIGUSR1, handle_signal)
 
+    # Sleep forever
     i = 0
     while True:
         i += 1
