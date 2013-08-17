@@ -17,7 +17,13 @@ def get_version():
     raise Exception('Cannot find version')
 
 
-install_requires = read('requirements.txt').splitlines()
+install_requires = [
+    'Flask>=0.9',
+    'pika>=0.9.12, !=0.9.13',
+    'setproctitle>=1.1.7',
+    'blinker>=1.2',
+    'argparse>=1.2.1',
+]
 try:
     # not available in python 2.6
     import importlib
