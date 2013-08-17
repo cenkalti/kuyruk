@@ -1,4 +1,6 @@
+import os
 import imp
+import ast
 import logging
 
 
@@ -143,3 +145,28 @@ class Config(object):
             e.strerror = 'Unable to load configuration file (%s)' % e.strerror
             raise
         self.from_object(d)
+
+    def from_env_vars(self):
+        """Load values from environment variables."""
+        for key, value in os.environ.iteritems():
+            if key.startswith('KUYRUK_'):
+                key = key.lstrip('KUYRUK_')
+                self._eval_item(key, value)
+
+    def from_cmd_args(self, args):
+        """Load values from command line arguments."""
+        def to_attr(option):
+            return option.upper().replace('-', '_')
+
+        for key, value in vars(args).iteritems():
+            if value is not None:
+                key = to_attr(key)
+                self._eval_item(key, value)
+
+    def _eval_item(self, key, value):
+        if hasattr(Config, key):
+            try:
+                value = ast.literal_eval(value)
+            except (ValueError, SyntaxError):
+                pass
+            setattr(self, key, value)

@@ -3,10 +3,8 @@ This is the entry point for main "kuyruk" executable command.
 It implements the command line parsing for subcommands and configuration.
 
 """
-
 from __future__ import absolute_import
 import os
-import ast
 import logging
 import argparse
 
@@ -15,6 +13,7 @@ from kuyruk.master import Master
 from kuyruk.config import Config
 from kuyruk.requeue import Requeuer
 from kuyruk.manager import Manager
+
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +85,10 @@ def add_config_options(parser):
     """Adds options for overriding values in config."""
     config_group = parser.add_argument_group('override values in config')
 
+    def to_option(attr):
+        """Convert config key to command line option."""
+        return '--%s' % attr.lower().replace('_', '-')
+
     # Add every attribute in Config as command line option
     for key in sorted(dir(Config)):
         if key.isupper():
@@ -106,26 +109,9 @@ def create_config(args):
             assert os.path.isabs(env_config)
             config.from_pyfile(env_config)
 
-    # Override values in config from command line
-    for key, value in vars(args).iteritems():
-        if value is not None:
-            key = to_attr(key)
-            if hasattr(Config, key):
-                try:
-                    value = ast.literal_eval(value)
-                except (ValueError, SyntaxError):
-                    pass
-                setattr(config, key, value)
-
+    config.from_env_vars()
+    config.from_cmd_args(args)
     return config
-
-
-def to_option(attr):
-    return '--%s' % attr.lower().replace('_', '-')
-
-
-def to_attr(option):
-    return option.upper().replace('-', '_')
 
 
 if __name__ == '__main__':
