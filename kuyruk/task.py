@@ -180,8 +180,8 @@ class Task(EventMixin):
             on execution.
         :param host: Send this task to specific host. ``host`` will be
             appended to the queue name.
-        :param local: Send this task to this host. Hostname of this host will be
-            appended to the queue name.
+        :param local: Send this task to this host. Hostname of this host will
+            be appended to the queue name.
         :return: :const:`None`
 
         """

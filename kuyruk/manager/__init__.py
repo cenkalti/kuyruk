@@ -35,7 +35,8 @@ class Manager(Flask):
 
         @self.route('/masters')
         def masters():
-            return render_template('masters.html', sockets=get_sockets('master'))
+            return render_template('masters.html',
+                                   sockets=get_sockets('master'))
 
         @self.route('/workers')
         def workers():

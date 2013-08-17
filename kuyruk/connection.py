@@ -1,4 +1,3 @@
-import sys
 import logging
 from threading import RLock
 from collections import defaultdict

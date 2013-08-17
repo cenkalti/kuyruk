@@ -79,9 +79,9 @@ class Kuyruk(EventMixin):
         :param max_run_time: Maximum allowed time in seconds for task to
             complete.
         :param arg_class: Class of the first argument. If it is present,
-            the first argument will be converted to it's ``id`` when sending the
-            task to the queue and it will be reloaded on worker when running
-            the task.
+            the first argument will be converted to it's ``id`` when sending
+            the task to the queue and it will be reloaded on worker when
+            running the task.
         :return: Callable :class:`~Task` object wrapping the original function.
 
         """

@@ -94,7 +94,7 @@ class Consumer(object):
 
 
 class MessageIterator(object):
-    
+
     def __init__(self, messages, queue):
         self.messages = messages
         self.queue = queue

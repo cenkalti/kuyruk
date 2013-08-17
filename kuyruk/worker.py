@@ -80,16 +80,16 @@ class Worker(KuyrukProcess):
 
         if self.config.SENTRY_DSN:
             if raven is None:
-                raise ImportError('Cannot import raven. Please install it with '
-                                  '"pip install raven".')
+                raise ImportError('Cannot import raven. Please install it '
+                                  'with "pip install raven".')
             self.sentry = raven.Client(self.config.SENTRY_DSN)
         else:
             self.sentry = None
 
         if self.config.SAVE_FAILED_TASKS:
             if redis is None:
-                raise ImportError('Cannot import redis. Please install it with '
-                                  '"pip install redis".')
+                raise ImportError('Cannot import redis. Please install it '
+                                  'with "pip install redis".')
             self.redis = redis.StrictRedis(
                 host=self.config.REDIS_HOST,
                 port=self.config.REDIS_PORT,

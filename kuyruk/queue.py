@@ -42,7 +42,8 @@ class Queue(object):
         return Message.decode(message)
 
     def send(self, obj):
-        """Send a single message to the queue. obj must be JSON serializable."""
+        """Send a single message to the queue.
+        obj must be JSON serializable."""
         logger.info('sending to queue: %r message: %r', self.name, obj)
         properties = pika.BasicProperties(
             content_type='application/json',
