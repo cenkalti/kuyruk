@@ -13,7 +13,7 @@ def bump(part):
 
 
 @task
-def uplaod():
+def upload():
     run("python setup.py sdist upload")
 
 
