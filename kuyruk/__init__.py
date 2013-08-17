@@ -17,20 +17,12 @@ from kuyruk.connection import Connection
 __version__ = '0.20.3'
 __all__ = ['Kuyruk', 'Task', 'Worker']
 
-try:
-    # not available in python 2.6
-    from logging import NullHandler
-except ImportError:
-    class NullHandler(logging.Handler):
-        def emit(self, record):
-            pass
-
 
 logger = logging.getLogger(__name__)
 
 
 # Add NullHandler to prevent logging warnings on startup
-null_handler = NullHandler()
+null_handler = logging.NullHandler()
 logger.addHandler(null_handler)
 
 

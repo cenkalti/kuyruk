@@ -17,20 +17,6 @@ def get_version():
     raise Exception('Cannot find version')
 
 
-install_requires = [
-    'Flask>=0.9',
-    'pika>=0.9.12, !=0.9.13',
-    'setproctitle>=1.1.7',
-    'blinker>=1.2',
-    'argparse>=1.2.1',
-]
-try:
-    # not available in python 2.6
-    import importlib
-except ImportError:
-    install_requires.append('importlib>=1.0.2, <2')
-
-
 setup(
     name='Kuyruk',
     version=get_version(),
@@ -40,7 +26,13 @@ setup(
     url='http://github.com/cenkalti/kuyruk',
     packages=find_packages(),
     include_package_data=True,
-    install_requires=install_requires,
+    install_requires=[
+        'Flask>=0.9',
+        'pika>=0.9.12, !=0.9.13',
+        'setproctitle>=1.1.7',
+        'blinker>=1.2',
+        'argparse>=1.2.1',
+    ],
     description='A distributed task runner',
     long_description=read('README.rst'),
     zip_safe=True,
@@ -55,7 +47,6 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Topic :: Software Development :: Object Brokering',
         'Topic :: System :: Distributed Computing',
