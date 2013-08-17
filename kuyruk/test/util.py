@@ -111,14 +111,8 @@ def is_running():
 
 
 def run_requeue():
-    args = [
-        sys.executable, '-u',
-        '-m', 'kuyruk.__main__',
-        '--logging-level=DEBUG',
-        'requeue'
-    ]
-    w = What(*args)
-    w.expect_exit(0, TIMEOUT)
+    from kuyruk.__main__ import requeue
+    requeue(Kuyruk(), None)
 
 
 def get_pids(pattern):
