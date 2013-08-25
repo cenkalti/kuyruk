@@ -1,5 +1,4 @@
 import os
-import imp
 import ast
 import logging
 
@@ -128,23 +127,26 @@ class Config(object):
     """Manager HTTP port that the Flask application will run on."""
 
     def from_object(self, obj):
-        """Loads values from an object."""
+        """Load values from an object."""
         for key in dir(obj):
             if key.isupper():
                 value = getattr(obj, key)
                 setattr(self, key, value)
-        logger.info("Config is loaded from %r", obj)
+        logger.info("Config is loaded from object: %r", obj)
+
+    def from_dict(self, d):
+        """Load values from a dict."""
+        for key, value in d.iteritems():
+            if key.isupper():
+                setattr(self, key, value)
+        logger.info("Config is loaded from dict: %r", d)
 
     def from_pyfile(self, filename):
-        """Loads values from a Python file."""
-        d = imp.new_module('kuyruk_config')
-        d.__file__ = filename
-        try:
-            execfile(filename, d.__dict__)
-        except IOError as e:
-            e.strerror = 'Unable to load configuration file (%s)' % e.strerror
-            raise
-        self.from_object(d)
+        """Load values from a Python file."""
+        globals_, locals_ = {}, {}
+        execfile(filename, globals_, locals_)
+        self.from_dict(locals_)
+        logger.info("Config is loaded from file: %s", filename)
 
     def from_env_vars(self):
         """Load values from environment variables."""
