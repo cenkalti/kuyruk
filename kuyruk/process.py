@@ -75,13 +75,14 @@ class KuyrukProcess(object):
         self.shutdown_pending.set()
         os._exit(0)
 
-    def maybe_start_manager_thread(self):
+    def maybe_start_manager_thread(self, socket_lock=None):
         if self.config.MANAGER_HOST:
             self.manager_thread = ManagerClientThread(
                 self.config.MANAGER_HOST,
                 self.config.MANAGER_PORT,
                 self.get_stats,
-                self.on_action)
+                self.on_action,
+                socket_lock=socket_lock)
             self.manager_thread.start()
 
     def get_stats(self):

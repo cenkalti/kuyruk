@@ -7,6 +7,7 @@ import string
 import logging
 import resource
 import itertools
+import threading
 from time import time, sleep
 from collections import namedtuple
 
@@ -26,11 +27,12 @@ class Master(KuyrukProcess):
     def __init__(self, config):
         super(Master, self).__init__(config)
         self.workers = []
+        self.lock = threading.Lock()
 
     def run(self):
         super(Master, self).run()
         setproctitle('kuyruk: master')
-        self.maybe_start_manager_thread()
+        self.maybe_start_manager_thread(self.lock)
         self.start_workers()
         self.wait_for_workers()
         logger.debug('End run master')
@@ -111,7 +113,8 @@ class Master(KuyrukProcess):
             logger.info("Shutdown is pending. Skipped spawning new worker.")
             return
         worker = WorkerProcess(self.kuyruk, queue)
-        worker.start()
+        with self.lock:
+            worker.start()
         self.workers.append(worker)
 
     def register_signals(self):
