@@ -29,21 +29,24 @@ def message_loop(sock, generate_message, callback,
 
     sock.setblocking(0)
     while not stop_event.is_set():
-        message = generate_message()
-        if message:
-            send_message(sock, message)
-            logger.debug('Message sent')
-
-        try:
-            message = receive_message(sock)
-            logger.debug('Message received')
-        except socket.error as e:
-            if e.errno != errno.EAGAIN:  # Resource temporarily unavailable
-                raise
-        else:
-            callback(sock, message)
-
+        send_and_receive(sock, generate_message, callback)
         sleep(sleep_seconds)
+
+
+def send_and_receive(sock, generate_message, callback):
+    message = generate_message()
+    if message:
+        send_message(sock, message)
+        logger.debug('Message sent')
+
+    try:
+        message = receive_message(sock)
+        logger.debug('Message received')
+    except socket.error as e:
+        if e.errno != errno.EAGAIN:  # Resource temporarily unavailable
+            raise
+    else:
+        callback(sock, message)
 
 
 def send_message(sock, message):
