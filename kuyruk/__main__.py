@@ -18,23 +18,23 @@ from kuyruk.manager import Manager
 logger = logging.getLogger(__name__)
 
 
-def worker(kuyruk, args):
+def run_worker(kuyruk, args):
     worker_class = importer.import_class_str(kuyruk.config.WORKER_CLASS)
     w = worker_class(kuyruk, args.queue)
     w.run()
 
 
-def master(kuyruk, args):
+def run_master(kuyruk, args):
     m = Master(kuyruk)
     m.run()
 
 
-def requeue(kuyruk, args):
+def run_requeue(kuyruk, args):
     r = Requeuer(kuyruk)
     r.run()
 
 
-def manager(kuyruk, args):
+def run_manager(kuyruk, args):
     m = Manager(kuyruk)
     m.run()
 
@@ -54,24 +54,24 @@ def main():
 
     # Parser for the "worker" sub-command
     parser_worker = subparsers.add_parser('worker', help='run a worker')
-    parser_worker.set_defaults(func=worker)
+    parser_worker.set_defaults(func=run_worker)
     parser_worker.add_argument(
         '-q', '--queue', default='kuyruk', help='consume tasks from')
 
     # Parser for the "master" sub-command
     parser_master = subparsers.add_parser('master', help='run a master')
-    parser_master.set_defaults(func=master)
+    parser_master.set_defaults(func=run_master)
     parser_master.add_argument(
         '-q', '--queues', help='comma seperated list of queues')
 
     # Parser for the "requeue" sub-command
     parser_master = subparsers.add_parser('requeue',
                                           help='requeue failed tasks')
-    parser_master.set_defaults(func=requeue)
+    parser_master.set_defaults(func=run_requeue)
 
     # Parser for the "manager" sub-command
     parser_master = subparsers.add_parser('manager', help='run manager')
-    parser_master.set_defaults(func=manager)
+    parser_master.set_defaults(func=run_manager)
 
     # Parse arguments
     args = parser.parse_args()

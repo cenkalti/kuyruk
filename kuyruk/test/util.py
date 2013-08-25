@@ -111,8 +111,8 @@ def is_running():
 
 
 def run_requeue():
-    from kuyruk.__main__ import requeue
-    requeue(Kuyruk(), None)
+    from kuyruk.__main__ import run_requeue
+    run_requeue(Kuyruk(), None)
 
 
 def get_pids(pattern):

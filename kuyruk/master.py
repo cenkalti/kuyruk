@@ -195,9 +195,9 @@ class WorkerProcess(object):
         args = Args(queue=self.queue)
 
         # This will run as if called "kuyruk worker" from command line
-        from kuyruk.__main__ import worker
+        from kuyruk.__main__ import run_worker
         logger.debug("Running worker command")
-        worker(self.kuyruk, args)
+        run_worker(self.kuyruk, args)
 
         os._exit(0)
 
