@@ -342,6 +342,9 @@ class Worker(KuyrukProcess):
         logger.warning("Exiting...")
         sys.exit(1)
 
+    def quit_task(self):
+        self.handle_sigquit(None, None)
+
     def warm_shutdown(self):
         """Shutdown gracefully."""
         super(Worker, self).warm_shutdown()
