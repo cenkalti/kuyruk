@@ -101,7 +101,7 @@ class Master(KuyrukProcess):
 
     def respawn_worker(self, worker):
         """Spawns a new process with parameters same as the old worker."""
-        logger.debug("Spawning new worker")
+        logger.debug("Respawning worker %s", worker)
         self.spawn_new_worker(worker.queue)
         self.workers.remove(worker)
         logger.debug(self.workers)
@@ -229,6 +229,7 @@ class WorkerProcess(object):
         if the process is not alive.
 
         """
+        logger.debug("Killing worker's process group with SIGKILL")
         try:
             os.killpg(self.pid, signal.SIGKILL)
         except OSError as e:
