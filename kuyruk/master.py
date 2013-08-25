@@ -65,7 +65,15 @@ class Master(KuyrukProcess):
             fn, sig = os.kill, signal.SIGTERM
 
         for worker in self.workers:
-            fn(worker.pid, sig)
+            try:
+                logger.info("Sending signal %s to PID %s", sig, worker.pid)
+                fn(worker.pid, sig)
+            except OSError as e:
+                if e.errno == errno.ESRCH:
+                    # Worker may be restarting and dead
+                    logger.warning("Cannot find PID %s", worker.pid)
+                else:
+                    raise
 
     def wait_for_workers(self):
         """Loops until any of the self.workers is alive.
