@@ -1,14 +1,14 @@
 from __future__ import absolute_import
 import os
-import sys
 import errno
 import signal
 import socket
 import string
 import logging
+import resource
 import itertools
-import subprocess
 from time import time, sleep
+from collections import namedtuple
 
 from setproctitle import setproctitle
 
@@ -99,7 +99,7 @@ class Master(KuyrukProcess):
         logger.debug(self.workers)
 
     def spawn_new_worker(self, queue):
-        worker = WorkerProcess(self.config, queue)
+        worker = WorkerProcess(self.kuyruk, queue)
         worker.start()
         self.workers.append(worker)
 
@@ -108,6 +108,10 @@ class Master(KuyrukProcess):
         signal.signal(signal.SIGTERM, self.handle_sigterm)
         signal.signal(signal.SIGQUIT, self.handle_sigquit)
         signal.signal(signal.SIGABRT, self.handle_sigabrt)
+
+        # Ignore SIGCHLD explicitly so the kernel to
+        # automatically reap child processes.
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
     def handle_sigterm(self, signum, frame):
         logger.warning("Handling SIGTERM")
@@ -150,36 +154,53 @@ class Master(KuyrukProcess):
 
 class WorkerProcess(object):
 
-    def __init__(self, config, queue):
-        self.config = config
+    def __init__(self, kuyruk, queue):
+        self.kuyruk = kuyruk
         self.queue = queue
-        self.popen = None
+        self.pid = None
 
     def start(self):
-        """Runs the worker by starting another Python interpreter."""
-        command = [sys.executable, '-u', '-m', 'kuyruk.__main__']
-        command.extend(['worker', '--queue', self.queue])
-        self.popen = subprocess.Popen(
-            command, stdout=sys.stdout, stderr=sys.stderr,
-            bufsize=1, close_fds=True, preexec_fn=os.setpgrp,
-            env=self.create_env())
+        pid = os.fork()
+        if pid:
+            # master
+            self.pid = pid
+        else:
+            # child
+            self.run_worker()
 
-    def create_env(self):
-        """Create a copy of os.environ and set Kuyruk configuration values."""
-        env = dict(os.environ)
-        for key in dir(self.config):
-            if key.isupper() and not key.startswith('_'):
-                value = getattr(self.config, key)
-                key = 'KUYRUK_%s' % key
-                env[key] = repr(value)
-        return env
+    def run_worker(self):
+        os.setpgrp()
+        self.close_fds()
+        Args = namedtuple('Args', 'queue')
+        args = Args(queue=self.queue)
+        import kuyruk.__main__
+        kuyruk.__main__.worker(self.kuyruk, args)
+        os._exit(0)
 
-    @property
-    def pid(self):
-        return self.popen.pid
+    def close_fds(self):
+        maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
+        if maxfd == resource.RLIM_INFINITY:
+            maxfd = 1024
+
+        # Iterate through and close all file descriptors.
+        # Do not close stdin, stdout and stderr (0, 1, 2)
+        for fd in range(3, maxfd):
+            try:
+                os.close(fd)
+            except OSError:  # fd wasn't open
+                pass
 
     def is_alive(self):
-        return self.popen.poll() is None
+        """Send signal 0 to process to check if it is alive."""
+        logger.debug("Cheking if the worker is alive? pid=%s", self.pid)
+        try:
+            os.kill(self.pid, 0)
+        except OSError:
+            logger.debug("No")
+            return False
+        else:
+            logger.debug("Yes")
+            return True
 
     def kill_pg(self):
         """Kills the process with their children. Does not raise exception
