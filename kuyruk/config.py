@@ -1,6 +1,8 @@
 import os
 import ast
+import types
 import logging
+import multiprocessing
 
 
 logger = logging.getLogger(__name__)
@@ -143,9 +145,34 @@ class Config(object):
 
     def from_pyfile(self, filename):
         """Load values from a Python file."""
-        globals_, locals_ = {}, {}
-        execfile(filename, globals_, locals_)
-        self.from_dict(locals_)
+        # Read the config file from a seperate process because it may contain
+        # import statements doing import from user code. No user code should
+        # be imported to master because they have to be imported in workers
+        # after the master has forked. Otherwise newly created workers
+        # cannot load new code after the master has started.
+        def readfile(conn):
+            logger.debug("Reading config file from seperate process...")
+            try:
+                globals_, locals_ = {}, {}
+                execfile(filename, globals_, locals_)
+                values = {}
+                for key, value in locals_.iteritems():
+                    if (key.isupper() and
+                            not isinstance(value, types.ModuleType)):
+                        values[key] = value
+                conn.send(values)
+                logger.debug("Config read successfully")
+            except:
+                logger.debug("Cannot read config")
+                conn.send(None)
+        parent_conn, child_conn = multiprocessing.Pipe()
+        process = multiprocessing.Process(target=readfile,
+                                          args=(child_conn, ))
+        process.start()
+        values = parent_conn.recv()
+        process.join()
+        assert values is not None, "Cannot load config file: %s" % filename
+        self.from_dict(values)
         logger.info("Config is loaded from file: %s", filename)
 
     def from_env_vars(self):
