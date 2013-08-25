@@ -7,7 +7,6 @@ import string
 import logging
 import resource
 import itertools
-import multiprocessing
 from time import time, sleep
 from collections import namedtuple
 
@@ -153,24 +152,30 @@ class Master(KuyrukProcess):
         }
 
 
-class WorkerProcess(multiprocessing.Process):
+class WorkerProcess(object):
 
     def __init__(self, kuyruk, queue):
         self.kuyruk = kuyruk
         self.queue = queue
-        super(WorkerProcess, self).__init__(target=self.run_worker)
+        self.pid = None
+
+    def start(self):
+        pid = os.fork()
+        if pid:
+            # master
+            self.pid = pid
+        else:
+            # child
+            self.run_worker()
 
     def run_worker(self):
         os.setpgrp()
         self.close_fds()
-
-        # Fake command line args
         Args = namedtuple('Args', 'queue')
         args = Args(queue=self.queue)
-
-        # Run worker as if run as "kuyruk worker" form command line
-        from kuyruk.__main__ import worker
-        worker(self.kuyruk, args)
+        import kuyruk.__main__
+        kuyruk.__main__.worker(self.kuyruk, args)
+        os._exit(0)
 
     def close_fds(self):
         maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
