@@ -107,6 +107,9 @@ class Master(KuyrukProcess):
         logger.debug(self.workers)
 
     def spawn_new_worker(self, queue):
+        if self.shutdown_pending.is_set():
+            logger.info("Shutdown is pending. Skipped spawning new worker.")
+            return
         worker = WorkerProcess(self.kuyruk, queue)
         worker.start()
         self.workers.append(worker)
