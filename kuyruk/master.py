@@ -168,24 +168,38 @@ class WorkerProcess(object):
         self.pid = None
 
     def start(self):
+        logger.debug("Forking...")
         pid = os.fork()
         if pid:
-            # master
+            # parent
+            logger.debug("I am parent")
             self.pid = pid
         else:
             # child
+            logger.debug("I am child")
             self.run_worker()
 
     def run_worker(self):
+        logger.debug("Hello from worker")
+
+        logger.debug("Setting new process group")
         os.setpgrp()
+
         self.close_fds()
+
+        # Fake command line queue argument
         Args = namedtuple('Args', 'queue')
         args = Args(queue=self.queue)
-        import kuyruk.__main__
-        kuyruk.__main__.worker(self.kuyruk, args)
+
+        # This will run as if called "kuyruk worker" from command line
+        from kuyruk.__main__ import worker
+        logger.debug("Running worker command")
+        worker(self.kuyruk, args)
+
         os._exit(0)
 
     def close_fds(self):
+        logger.debug("Closing open file descriptors...")
         maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
         if maxfd == resource.RLIM_INFINITY:
             maxfd = 1024
