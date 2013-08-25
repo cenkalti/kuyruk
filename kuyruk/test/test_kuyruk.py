@@ -122,7 +122,7 @@ class KuyrukTestCase(unittest.TestCase):
             pids_old = get_worker_pids()
             for pid in pids_old:
                 os.kill(pid, signal.SIGKILL)
-            master.expect('Spawning new worker')
+            master.expect('Respawning worker')
             master.expect('Waiting for new message')
             master.expect('Waiting for new message')
             pids_new = get_worker_pids()
