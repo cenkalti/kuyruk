@@ -2,6 +2,8 @@
 Contains generic functions/classes that can be used in any project.
 
 """
+import errno
+import select
 import logging
 import threading
 import traceback
@@ -93,3 +95,15 @@ def print_stack(sig, frame):
     print '=' * 70
     print ''.join(traceback.format_stack())
     print '-' * 70
+
+
+def retry_on_eintr(f):
+    @wraps(f)
+    def inner(*args, **kwargs):
+        while True:
+            try:
+                return f(*args, **kwargs)
+            except (select.error, OSError) as e:
+                if e[0] != errno.EINTR:
+                    raise
+    return inner

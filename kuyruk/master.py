@@ -12,7 +12,7 @@ from collections import namedtuple
 
 from setproctitle import setproctitle
 
-from kuyruk import __version__
+from kuyruk import __version__, helpers
 from kuyruk.process import KuyrukProcess
 
 
@@ -82,8 +82,9 @@ class Master(KuyrukProcess):
         If a worker is dead and Kuyruk is running state, spawns a new worker.
 
         """
+        retry_wait = helpers.retry_on_eintr(os.wait)
         while self.workers:
-            pid, status = os.wait()
+            pid, status = retry_wait()
             worker = self.workers[pid]
             if not self.shutdown_pending.is_set():
                 worker.kill_pg()
