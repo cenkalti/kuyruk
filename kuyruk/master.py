@@ -8,7 +8,6 @@ import logging
 import resource
 import itertools
 import threading
-from time import time, sleep
 from collections import namedtuple
 
 from setproctitle import setproctitle
@@ -83,24 +82,14 @@ class Master(KuyrukProcess):
         If a worker is dead and Kuyruk is running state, spawns a new worker.
 
         """
-        start = time()
-        any_alive = True
-        while any_alive:
-            any_alive = False
-            for worker in self.workers.values():
-                if worker.is_alive():
-                    any_alive = True
-                elif not self.shutdown_pending.is_set():
-                    worker.kill_pg()
-                    self.respawn_worker(worker)
-                    any_alive = True
-                else:
-                    self.remove_worker(worker)
-
-            if any_alive:
-                logger.debug("Waiting for workers... "
-                             "%i seconds passed" % (time() - start))
-                sleep(1)
+        while self.workers:
+            pid, status = os.wait()
+            worker = self.workers[pid]
+            if not self.shutdown_pending.is_set():
+                worker.kill_pg()
+                self.respawn_worker(worker)
+            else:
+                self.remove_worker(worker)
 
     def respawn_worker(self, worker):
         """Spawns a new process with parameters same as the old worker."""
@@ -119,9 +108,6 @@ class Master(KuyrukProcess):
         self.workers[worker.pid] = worker
 
     def remove_worker(self, worker):
-        logger.debug("waitpid")
-        os.waitpid(worker.pid, 0)
-        logger.debug("endwaitpid")
         del self.workers[worker.pid]
 
     def register_signals(self):
