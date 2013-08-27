@@ -85,18 +85,17 @@ class Master(KuyrukProcess):
         retry_wait = helpers.retry_on_eintr(os.wait)
         while self.workers:
             pid, status = retry_wait()
+            # Worker is dead
             worker = self.workers[pid]
+            worker.kill_pg()
+            del self.workers[pid]
             if not self.shutdown_pending.is_set():
-                worker.kill_pg()
                 self.respawn_worker(worker)
-            else:
-                self.remove_worker(worker)
 
     def respawn_worker(self, worker):
         """Spawn a new process with parameters same as the old worker."""
         logger.debug("Respawning worker %s", worker)
         self.create_new_worker(worker.queue)
-        self.remove_worker(worker)
         logger.debug(self.workers)
 
     def create_new_worker(self, queue):
@@ -107,9 +106,6 @@ class Master(KuyrukProcess):
         with self.lock:
             worker.start()
         self.workers[worker.pid] = worker
-
-    def remove_worker(self, worker):
-        del self.workers[worker.pid]
 
     def register_signals(self):
         super(Master, self).register_signals()
