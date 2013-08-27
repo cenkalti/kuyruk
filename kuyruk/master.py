@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import os
+import sys
 import errno
 import signal
 import socket
@@ -188,7 +189,7 @@ class WorkerProcess(object):
         logger.debug("Running worker command")
         run_worker(self.kuyruk, args)
 
-        os._exit(0)
+        sys.exit(0)
 
     def close_fds(self):
         logger.debug("Closing open file descriptors...")
