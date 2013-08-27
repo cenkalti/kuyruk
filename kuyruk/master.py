@@ -27,7 +27,7 @@ class Master(KuyrukProcess):
     """
     def __init__(self, config):
         super(Master, self).__init__(config)
-        self.workers = []
+        self.workers = {}
         self.lock = threading.Lock()
 
     def run(self):
@@ -67,7 +67,7 @@ class Master(KuyrukProcess):
         else:
             fn, sig = os.kill, signal.SIGTERM
 
-        for worker in self.workers:
+        for worker in self.workers.itervalues():
             try:
                 logger.info("Sending signal %s to PID %s", sig, worker.pid)
                 fn(worker.pid, sig)
@@ -87,7 +87,7 @@ class Master(KuyrukProcess):
         any_alive = True
         while any_alive:
             any_alive = False
-            for worker in list(self.workers):
+            for worker in self.workers.values():
                 if worker.is_alive():
                     any_alive = True
                 elif not self.shutdown_pending.is_set():
@@ -116,13 +116,13 @@ class Master(KuyrukProcess):
         worker = WorkerProcess(self.kuyruk, queue)
         with self.lock:
             worker.start()
-        self.workers.append(worker)
+        self.workers[worker.pid] = worker
 
     def remove_worker(self, worker):
         logger.debug("waitpid")
         os.waitpid(worker.pid, 0)
         logger.debug("endwaitpid")
-        self.workers.remove(worker)
+        del self.workers[worker.pid]
 
     def register_signals(self):
         super(Master, self).register_signals()
