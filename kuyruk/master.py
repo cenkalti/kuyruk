@@ -200,18 +200,6 @@ class WorkerProcess(object):
         # Do not close stdin, stdout and stderr (0, 1, 2)
         os.closerange(3, maxfd)
 
-    def is_alive(self):
-        """Send signal 0 to process to check if it is alive."""
-        logger.debug("Cheking if the worker is alive? pid=%s", self.pid)
-        try:
-            os.kill(self.pid, 0)
-        except OSError:
-            logger.debug("No")
-            return False
-        else:
-            logger.debug("Yes")
-            return True
-
     def kill_pg(self):
         """Kill the process with their children. Does not raise exception
         if the process is not alive.
