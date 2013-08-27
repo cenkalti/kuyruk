@@ -3,6 +3,13 @@ Kuyruk Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 0.22.1
+--------------
+
+Released on 27-08-2013.
+
+- Master uses os.wait() instead of polling workers every second.
+
 Version 0.22.0
 --------------
 
