@@ -197,13 +197,8 @@ class WorkerProcess(object):
         if maxfd == resource.RLIM_INFINITY:
             maxfd = 1024
 
-        # Iterate through and close all file descriptors.
         # Do not close stdin, stdout and stderr (0, 1, 2)
-        for fd in range(3, maxfd):
-            try:
-                os.close(fd)
-            except OSError:  # fd wasn't open
-                pass
+        os.closerange(3, maxfd)
 
     def is_alive(self):
         """Send signal 0 to process to check if it is alive."""
