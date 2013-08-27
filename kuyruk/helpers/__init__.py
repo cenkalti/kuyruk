@@ -4,10 +4,11 @@ Contains generic functions/classes that can be used in any project.
 """
 import logging
 import threading
+import traceback
 from time import sleep
 from Queue import Empty
 from functools import wraps
-import traceback
+
 
 logger = logging.getLogger(__name__)
 

@@ -16,6 +16,7 @@ from setproctitle import setproctitle
 from kuyruk import __version__
 from kuyruk.process import KuyrukProcess
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,7 +44,7 @@ class Master(KuyrukProcess):
         queues = parse_queues_str(queues)
         logger.info('Starting to work on queues: %s', queues)
         for queue in queues:
-            self.spawn_new_worker(queue)
+            self.create_new_worker(queue)
 
     def get_queues(self):
         """Returns queues string by reading from configuration."""
@@ -94,7 +95,7 @@ class Master(KuyrukProcess):
                     self.respawn_worker(worker)
                     any_alive = True
                 else:
-                    self.workers.remove(worker)
+                    self.remove_worker(worker)
 
             if any_alive:
                 logger.debug("Waiting for workers... "
@@ -104,11 +105,11 @@ class Master(KuyrukProcess):
     def respawn_worker(self, worker):
         """Spawns a new process with parameters same as the old worker."""
         logger.debug("Respawning worker %s", worker)
-        self.spawn_new_worker(worker.queue)
-        self.workers.remove(worker)
+        self.create_new_worker(worker.queue)
+        self.remove_worker(worker)
         logger.debug(self.workers)
 
-    def spawn_new_worker(self, queue):
+    def create_new_worker(self, queue):
         if self.shutdown_pending.is_set():
             logger.info("Shutdown is pending. Skipped spawning new worker.")
             return
@@ -117,15 +118,17 @@ class Master(KuyrukProcess):
             worker.start()
         self.workers.append(worker)
 
+    def remove_worker(self, worker):
+        logger.debug("waitpid")
+        os.waitpid(worker.pid, 0)
+        logger.debug("endwaitpid")
+        self.workers.remove(worker)
+
     def register_signals(self):
         super(Master, self).register_signals()
         signal.signal(signal.SIGTERM, self.handle_sigterm)
         signal.signal(signal.SIGQUIT, self.handle_sigquit)
         signal.signal(signal.SIGABRT, self.handle_sigabrt)
-
-        # Ignore SIGCHLD explicitly so the kernel to
-        # automatically reap child processes.
-        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
     def handle_sigterm(self, signum, frame):
         logger.warning("Handling SIGTERM")
