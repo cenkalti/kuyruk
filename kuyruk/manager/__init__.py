@@ -11,12 +11,14 @@ from kuyruk.helpers import human_time, start_daemon_thread
 from kuyruk.manager.server import ManagerServer
 from kuyruk.helpers.json_datetime import JSONDecoder
 
+
 logger = logging.getLogger(__name__)
 
 
 class Manager(Flask):
 
     def __init__(self, kuyruk):
+        from kuyruk import __version__
         super(Manager, self).__init__(__name__)
         self.debug = True
         self.kuyruk = kuyruk
@@ -116,6 +118,7 @@ class Manager(Flask):
                 'now': str(datetime.utcnow())[:19],
                 'hostname': socket.gethostname(),
                 'human_time': human_time,
+                'version': __version__,
             }
 
         @self.template_filter('sentry_url')
