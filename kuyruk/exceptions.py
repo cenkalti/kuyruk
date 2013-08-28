@@ -26,8 +26,3 @@ class Timeout(KuyrukError):
 class InvalidTask(KuyrukError):
     """Raised when the message from queue is not valid."""
     pass
-
-
-class InvalidCall(KuyrukError):
-    """Raised when a class task is called with invalid arguments."""
-    pass
