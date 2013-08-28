@@ -358,6 +358,9 @@ class TaskResult(object):
     def __getattr__(self, name):
         raise NotImplementedError(name)
 
+    def __setattr__(self, name, value):
+        raise NotImplementedError(name)
+
     def __getitem__(self, key):
         raise NotImplementedError(key)
 
