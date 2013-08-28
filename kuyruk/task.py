@@ -355,14 +355,17 @@ class TaskResult(object):
     def __init__(self, task):
         self.task = task
 
-    def __getattr__(self, item):
-        raise Exception(item)
+    def __getattr__(self, name):
+        raise NotImplementedError(name)
 
-    def __getitem__(self, item):
-        raise Exception(item)
+    def __setattr__(self, name, value):
+        raise NotImplementedError(name)
+
+    def __getitem__(self, key):
+        raise NotImplementedError(key)
 
     def __setitem__(self, key, value):
-        raise Exception(key, value)
+        raise NotImplementedError(key)
 
     def __repr__(self):
         return "<TaskResult of %r>" % self.task.name
