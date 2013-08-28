@@ -366,9 +366,6 @@ class TaskResult(object):
     def __repr__(self):
         return "<TaskResult of %r>" % self.task.name
 
-    def __str__(self):
-        return self.__repr__()
-
 
 @contextmanager
 def time_limit(seconds):
