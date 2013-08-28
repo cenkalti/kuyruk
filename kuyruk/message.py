@@ -48,7 +48,7 @@ class Message(object):
         elif properties.content_type == 'application/python-pickle':
             obj = pickle.loads(body)
         else:
-            raise ValueError('Unknown content type')
+            raise TypeError('Unknown content type')
 
         logger.debug('Message decoded: %s', obj)
         return method.delivery_tag, obj
