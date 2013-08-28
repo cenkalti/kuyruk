@@ -70,6 +70,9 @@ def id_to_object(f):
                 raise InvalidTask
 
             obj_id = args[0]
+            if not isinstance(obj_id, (int, long, basestring)):
+                raise InvalidTask
+
             obj = cls.get(obj_id)
             if obj is None:
                 raise ObjectNotFound
