@@ -51,6 +51,7 @@ def object_to_id(f):
 
             args = list(args)
             args[0] = args[0].id
+            assert isinstance(args[0], (int, long, basestring))
         return f(self, *args, **kwargs)
     return inner
 
