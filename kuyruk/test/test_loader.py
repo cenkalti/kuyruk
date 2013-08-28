@@ -12,42 +12,38 @@ from kuyruk.test.util import delete_queue
 class LoaderTestCase(unittest.TestCase):
 
     def test_function_name(self):
-        self._test_function_name(
-            'onefile.py',
-            'loader',
-            'onefile.print_message'
-        )
-        self._test_function_name(
-            'main.py',
-            'loader/appdirectory',
-            'tasks.print_message'
-        )
-        self._test_function_name(
-            '-m apppackage.main',
-            'loader',
-            'apppackage.tasks.print_message'
-        )
-        self._test_function_name(
-            '-m apppackage.scripts.send_message',
-            'loader',
-            'apppackage.tasks.print_message'
-        )
-
-    def _test_function_name(self, args, cwd, name):
-        delete_queue('kuyruk')
-        run_python(args, cwd=cwd)
-        assert_name(name)
+        cases = [
+            (
+                'onefile.py',
+                'loader',
+                'onefile.print_message'
+            ),
+            (
+                'main.py',
+                'loader/appdirectory',
+                'tasks.print_message'
+            ),
+            (
+                '-m apppackage.main',
+                'loader',
+                'apppackage.tasks.print_message'
+            ),
+            (
+                '-m apppackage.scripts.send_message',
+                'loader',
+                'apppackage.tasks.print_message'
+            ),
+        ]
+        for args, cwd, name in cases:
+            delete_queue('kuyruk')
+            run_python(args, cwd=cwd)  # Every call sends a task to the queue
+            assert get_name() == name  # Can we load the task by name?
 
 
 def run_python(args, cwd):
     dirname = os.path.dirname(__file__)
     cwd = os.path.join(dirname, cwd)
     What(sys.executable, *args.split(' '), cwd=cwd).expect_exit(0)
-
-
-def assert_name(name):
-    f = get_name()
-    assert f == name, "%s != %s" % (f, name)
 
 
 def get_name():

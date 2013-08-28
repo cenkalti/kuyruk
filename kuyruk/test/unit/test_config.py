@@ -3,7 +3,7 @@ import unittest
 
 from kuyruk.config import Config
 from kuyruk.master import parse_queues_str
-from kuyruk.test import config as user_config
+from kuyruk.test.unit import config as user_config
 
 
 class ConfigTestCase(unittest.TestCase):
