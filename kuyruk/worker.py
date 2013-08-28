@@ -22,16 +22,6 @@ from kuyruk.consumer import Consumer
 from kuyruk.exceptions import Reject, ObjectNotFound, Timeout, InvalidTask
 from kuyruk.helpers.json_datetime import JSONEncoder
 
-try:
-    import raven
-except ImportError:
-    raven = None
-
-try:
-    import redis
-except ImportError:
-    redis = None
-
 logger = logging.getLogger(__name__)
 
 
@@ -79,17 +69,13 @@ class Worker(KuyrukProcess):
             self.config.MAX_LOAD = multiprocessing.cpu_count()
 
         if self.config.SENTRY_DSN:
-            if raven is None:
-                raise ImportError('Cannot import raven. Please install it '
-                                  'with "pip install raven".')
+            import raven
             self.sentry = raven.Client(self.config.SENTRY_DSN)
         else:
             self.sentry = None
 
         if self.config.SAVE_FAILED_TASKS:
-            if redis is None:
-                raise ImportError('Cannot import redis. Please install it '
-                                  'with "pip install redis".')
+            import redis
             self.redis = redis.StrictRedis(
                 host=self.config.REDIS_HOST,
                 port=self.config.REDIS_PORT,
