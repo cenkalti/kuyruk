@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from kuyruk import events, importer
 from kuyruk.queue import Queue
 from kuyruk.events import EventMixin
-from kuyruk.exceptions import Timeout, InvalidTask, ObjectNotFound, InvalidCall
+from kuyruk.exceptions import Timeout, InvalidTask, ObjectNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -42,18 +42,15 @@ def object_to_id(f):
             try:
                 obj = args[0]
             except IndexError:
-                raise InvalidCall("You must give an instance of %s as first "
-                                  "argument." % cls)
+                msg = "You must give an instance of %s as first argument." % cls
+                raise TypeError(msg)
 
             if not isinstance(obj, cls):
-                raise InvalidCall("First argument must be an instance of %s." %
-                                  cls)
+                msg = "First argument must be an instance of %s." % cls
+                raise TypeError(msg)
 
             args = list(args)
-            try:
-                args[0] = args[0].id
-            except AttributeError:
-                raise InvalidCall("%s object must have an id attribute." % cls)
+            args[0] = args[0].id
         return f(self, *args, **kwargs)
     return inner
 
