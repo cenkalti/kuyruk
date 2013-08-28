@@ -359,7 +359,9 @@ class TaskResult(object):
         raise NotImplementedError(name)
 
     def __setattr__(self, name, value):
-        raise NotImplementedError(name)
+        if name not in ('task', 'id', 'result'):
+            raise NotImplementedError(name)
+        super(TaskResult, self).__setattr__(name, value)
 
     def __getitem__(self, key):
         raise NotImplementedError(key)
