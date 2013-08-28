@@ -6,9 +6,9 @@ import redis
 from mock import patch
 
 from kuyruk import Task
-from kuyruk.task import TaskResult, BoundTask
+from kuyruk.task import BoundTask
 from kuyruk.test import tasks
-from kuyruk.test.util import *
+from kuyruk.test.integration.util import *
 from kuyruk.connection import Channel
 
 Channel.SKIP_REDECLARE_QUEUE = False
@@ -29,13 +29,6 @@ class KuyrukTestCase(unittest.TestCase):
     """
     def setUp(self):
         delete_queue('kuyruk')
-
-    def test_task_decorator(self):
-        """Does task decorator works correctly?"""
-        # Decorator without args
-        self.assertTrue(isinstance(tasks.print_task, Task))
-        # Decorator with args
-        self.assertTrue(isinstance(tasks.print_task2, Task))
 
     def test_simple_task(self):
         """Run a task on default queue"""
@@ -79,20 +72,6 @@ class KuyrukTestCase(unittest.TestCase):
             master.expect('Cold shutdown')
             master.expect_exit(0)
             wait_until(not_running, timeout=TIMEOUT)
-
-    @patch('kuyruk.test.tasks.must_be_called')
-    def test_eager(self, mock_func):
-        """Test eager mode for using in test environments"""
-        result = tasks.eager_task()
-        assert isinstance(result, TaskResult)
-        mock_func.assert_called_once_with()
-
-    @patch('kuyruk.test.tasks.must_be_called')
-    def test_apply(self, mock_func):
-        """Test Task.apply()"""
-        result = tasks.print_task.apply("hello")
-        assert isinstance(result, TaskResult)
-        mock_func.assert_called_once_with()
 
     def test_reject(self):
         """Rejected tasks must be requeued again"""
@@ -222,40 +201,12 @@ class KuyrukTestCase(unittest.TestCase):
         with run_kuyruk() as worker:
             worker.expect('Oh my god')
 
-    @patch('kuyruk.test.tasks.must_be_called')
-    def test_class_task_eager(self, mock_func):
-        cat = tasks.Cat(1, 'Felix')
-        cat.meow_eager('Oh my god')
-        mock_func.assert_called_once_with()
-
-    @patch('kuyruk.test.tasks.must_be_called')
-    def test_class_task_apply(self, mock_func):
-        cat = tasks.Cat(1, 'Felix')
-        cat.meow.apply('Oh my god')
-        mock_func.assert_called_once_with()
-
     def test_arg_class(self):
         cat = tasks.Cat(1, 'Felix')
         tasks.jump(cat)
         with run_kuyruk() as worker:
             worker.expect('Felix jumps high!')
             worker.expect('Called with Felix')
-
-    @patch('kuyruk.test.tasks.must_be_called')
-    def test_arg_class_eager(self, mock_func):
-        cat = tasks.Cat(1, 'Felix')
-        tasks.jump_eager(cat)
-        mock_func.assert_called_once_with('Felix')
-
-    @patch('kuyruk.test.tasks.must_be_called')
-    def test_arg_class_apply(self, mock_func):
-        cat = tasks.Cat(1, 'Felix')
-        tasks.jump.apply(cat)
-        mock_func.assert_called_once_with('Felix')
-
-    def test_task_name(self):
-        self.assertEqual(tasks.Cat.meow.name, 'kuyruk.test.tasks:Cat.meow')
-        self.assertEqual(tasks.print_task.name, 'kuyruk.test.tasks:print_task')
 
     def test_max_run_time(self):
         """Timeout long running task"""

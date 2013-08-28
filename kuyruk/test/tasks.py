@@ -1,3 +1,8 @@
+"""
+Contains sample tasks to be used in unit and integration tests.
+
+"""
+
 from time import sleep
 
 from kuyruk import Kuyruk, Task

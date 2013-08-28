@@ -6,7 +6,7 @@ from what import What
 
 from kuyruk import Kuyruk
 from kuyruk.queue import Queue
-from kuyruk.test.util import delete_queue
+from kuyruk.test.integration.util import delete_queue
 
 
 class LoaderTestCase(unittest.TestCase):
@@ -35,9 +35,11 @@ class LoaderTestCase(unittest.TestCase):
             ),
         ]
         for args, cwd, name in cases:
+            print cwd, args, name
             delete_queue('kuyruk')
             run_python(args, cwd=cwd)  # Every call sends a task to the queue
-            assert get_name() == name  # Can we load the task by name?
+            name_from_queue = get_name()
+            assert name_from_queue == name  # Can we load the task by name?
 
 
 def run_python(args, cwd):
