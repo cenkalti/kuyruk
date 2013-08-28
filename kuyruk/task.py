@@ -78,8 +78,8 @@ def id_to_object(f):
                 raise ObjectNotFound
 
             if not isinstance(obj, cls):
-                raise ObjectNotFound("%s is not an instance of %s." %
-                                     (obj, cls))
+                msg = "%s is not an instance of %s." % (obj, cls)
+                raise ObjectNotFound(msg)
 
             args = list(args)
             args[0] = obj
