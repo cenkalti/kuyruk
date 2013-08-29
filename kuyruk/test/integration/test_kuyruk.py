@@ -223,5 +223,5 @@ class KuyrukTestCase(unittest.TestCase):
             os.kill(pid, signal.SIGQUIT)
             worker.expect('Acking current task')
             worker.expect('Exiting')
-            worker.expect_exit(1)
+            worker.expect_exit(0)
         assert is_empty('kuyruk'), worker.get_output()

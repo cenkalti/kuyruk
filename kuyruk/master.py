@@ -134,11 +134,12 @@ class Master(KuyrukProcess):
         logger.warning("Cold shutdown")
         self.shutdown_pending.set()
         self.shutdown_workers(kill=True)
+        sys.exit(0)
 
     def abort(self):
         """Exit immediately making workers orphan."""
         logger.warning("Aborting")
-        os._exit(1)
+        sys.exit(0)
 
     def get_stats(self):
         """Generate stats to be sent to manager."""

@@ -10,6 +10,7 @@ Released on XX-XX-2013.
 
 - Removed InvalidCall exception type. TypeError or AttributeError is raised
   instead.
+- If a kuyruk process exits with a signal, the exit code will be 0.
 
 Version 0.22.1
 --------------
