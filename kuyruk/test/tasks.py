@@ -3,6 +3,9 @@ Contains sample tasks to be used in unit and integration tests.
 
 """
 
+import sys
+import string
+import random
 from time import sleep
 
 from kuyruk import Kuyruk, Task
@@ -23,6 +26,18 @@ def print_task(message):
 @kuyruk.task(queue='another_queue')
 def print_task2(message):
     print message
+
+
+@kuyruk.task
+def flood():
+    s = ''.join(random.choice(string.ascii_uppercase) for _ in xrange(70))
+    while True:
+        sys.stdout.write(s)
+        sys.stdout.write('\n')
+        sys.stdout.flush()
+        sys.stderr.write(s)
+        sys.stderr.write('\n')
+        sys.stderr.flush()
 
 
 @kuyruk.task
