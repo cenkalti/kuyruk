@@ -21,6 +21,8 @@ def run_forever():
 
 if __name__ == '__main__':
 
+    # A script that cannot be interrupted
+
     def handle_signal(signum, frame):
         print 'SIGNAL', signum
 
