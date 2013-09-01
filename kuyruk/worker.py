@@ -299,11 +299,14 @@ class Worker(KuyrukProcess):
             return
 
         while True:
-            sleep(1)
             passed = time() - self.started
-            if passed > self.config.MAX_WORKER_RUN_TIME:
+            remaining = self.config.MAX_WORKER_RUN_TIME - passed
+            if remaining > 0:
+                sleep(remaining)
+            else:
                 logger.warning('Run time reached zero')
                 self.warm_shutdown()
+                break
 
     def register_signals(self):
         super(Worker, self).register_signals()
