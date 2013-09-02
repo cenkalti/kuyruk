@@ -3,7 +3,7 @@ import socket
 import logging
 from datetime import datetime
 
-from flask import Flask, render_template, redirect, request, url_for
+from flask import Flask, render_template, redirect, request, url_for, jsonify
 from werkzeug.serving import run_simple
 
 from kuyruk.requeue import Requeuer
@@ -54,10 +54,14 @@ class Manager(Flask):
             return render_template('workers.html', sockets=sockets2)
 
         @self.route('/failed-tasks')
+        @self.route('/api/failed-tasks', endpoint="api_failed_tasks")
         def failed_tasks():
             tasks = self.get_redis().hvals('failed_tasks')
             decoder = JSONDecoder()
             tasks = map(decoder.decode, tasks)
+            if request.path.startswith("/api/"):
+                ret = {"tasks": tasks}
+                return jsonify(**ret)
             return render_template('failed_tasks.html', tasks=tasks)
 
         def get_sockets(type_):
