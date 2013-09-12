@@ -5,6 +5,7 @@ import threading
 from kuyruk.manager.messaging import message_loop
 from kuyruk.helpers import retry
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,13 +30,17 @@ class ManagerClientThread(threading.Thread):
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            logger.debug("Connection to manager")
+            logger.debug("Connecting to manager")
             sock.connect((self.host, self.port))
-            logger.debug("Connected to manager")
+            logger.info("Connected to manager")
             if self.lock:
                 self.lock.release()
 
-            message_loop(sock, self.generate_message, self.on_message)
+            try:
+                message_loop(sock, self.generate_message, self.on_message)
+            except Exception:
+                logger.warning("Disconnected from manager")
+                raise
         finally:
             logger.debug("Closing socket")
             sock.close()

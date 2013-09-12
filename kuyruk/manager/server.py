@@ -46,7 +46,7 @@ class RequestHandler(BaseRequestHandler):
             pass
 
     def _on_stats(self, sock, stats):
-        print self.client_address, pformat(stats)
+        print 'Received stats from', self.client_address
         self.struct.stats = stats
 
     @property
