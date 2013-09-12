@@ -72,7 +72,7 @@ class KuyrukProcess(object):
 
     def cold_shutdown(self):
         logger.warning("Cold shutdown")
-        os._exit(0)
+        sys.exit(0)
 
     def maybe_start_manager_thread(self, socket_lock=None):
         if self.config.MANAGER_HOST:

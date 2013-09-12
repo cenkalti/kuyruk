@@ -134,12 +134,12 @@ class Master(KuyrukProcess):
         logger.warning("Cold shutdown")
         self.shutdown_pending.set()
         self.shutdown_workers(kill=True)
-        os._exit(0)
+        sys.exit(0)
 
     def abort(self):
         """Exit immediately making workers orphan."""
         logger.warning("Aborting")
-        os._exit(0)
+        sys.exit(0)
 
     def get_stats(self):
         """Generate stats to be sent to manager."""
@@ -189,6 +189,8 @@ class WorkerProcess(object):
         from kuyruk.__main__ import run_worker
         logger.debug("Running worker command")
         run_worker(self.kuyruk, args)
+
+        sys.exit(0)
 
     def close_fds(self):
         logger.debug("Closing open file descriptors...")

@@ -329,7 +329,7 @@ class Worker(KuyrukProcess):
                 logger.critical("Cannot send ACK for the current task.")
                 traceback.print_exc()
         logger.warning("Exiting...")
-        os._exit(0)
+        sys.exit(0)
 
     def quit_task(self):
         self.handle_sigquit(None, None)
