@@ -9,6 +9,7 @@ from kuyruk.manager.messaging import message_loop
 class ManagerServer(ThreadingTCPServer):
 
     daemon_threads = True
+    allow_reuse_address = True
 
     def __init__(self, host, port):
         self.clients = {}
