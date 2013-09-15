@@ -54,10 +54,9 @@ class RequestHandler(BaseRequestHandler):
 
 
 @total_ordering
-class Client(dict):
+class Client(object):
 
     def __init__(self, socket):
-        super(Client, self).__init__()
         self.socket = socket
         self.stats = {}
         self.actions = Queue.Queue()
