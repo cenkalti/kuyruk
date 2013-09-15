@@ -22,13 +22,12 @@ class ManagerServer(ThreadingTCPServer):
         return client_sock, client_addr
 
     def process_request_thread(self, request, client_address):
-        ThreadingTCPServer.process_request_thread(self, request,
-                                                  client_address)
-        self._remove_socket(client_address)
-
-    def _remove_socket(self, client_address):
-        del self.clients[client_address]
-        print 'self.clients', pformat(self.clients)
+        try:
+            ThreadingTCPServer.process_request_thread(
+                self, request, client_address)
+        finally:
+            del self.clients[client_address]
+            print 'self.clients', pformat(self.clients)
 
 
 class RequestHandler(BaseRequestHandler):
