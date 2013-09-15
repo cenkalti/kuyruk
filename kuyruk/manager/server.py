@@ -17,7 +17,7 @@ class ManagerServer(ThreadingTCPServer):
 
     def get_request(self):
         client_sock, client_addr = ThreadingTCPServer.get_request(self)
-        self.clients[client_addr] = ClientStruct(client_sock)
+        self.clients[client_addr] = Client(client_sock)
         print 'self.clients', pformat(self.clients)
         return client_sock, client_addr
 
@@ -54,10 +54,10 @@ class RequestHandler(BaseRequestHandler):
 
 
 @total_ordering
-class ClientStruct(dict):
+class Client(dict):
 
     def __init__(self, socket):
-        super(ClientStruct, self).__init__()
+        super(Client, self).__init__()
         self.socket = socket
         self.stats = {}
         self.actions = Queue.Queue()
