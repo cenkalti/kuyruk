@@ -66,13 +66,12 @@ class KuyrukProcess(object):
             self.cold_shutdown()
         logger.debug("Handled SIGINT")
 
-    def warm_shutdown(self):
-        logger.warning("Warm shutdown")
-        self.shutdown_pending.set()
-
-    def cold_shutdown(self):
-        logger.warning("Cold shutdown")
-        sys.exit(0)
+    @staticmethod
+    def _exit(status=0):
+        """Flush output buffers and exit from process."""
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os._exit(status)
 
     def maybe_start_manager_thread(self, socket_lock=None):
         if self.config.MANAGER_HOST:

@@ -335,9 +335,15 @@ class Worker(KuyrukProcess):
         self.handle_sigquit(None, None)
 
     def warm_shutdown(self):
-        """Shutdown gracefully."""
-        super(Worker, self).warm_shutdown()
+        """Exit after the last task is finished."""
+        logger.warning("Warm shutdown")
         self.consumer.stop()
+        self.shutdown_pending.set()
+
+    def cold_shutdown(self):
+        """Exit immediately."""
+        logger.warning("Cold shutdown")
+        self._exit(0)
 
     def get_stats(self):
         """Generate stats to be sent to manager."""

@@ -127,14 +127,15 @@ class Master(KuyrukProcess):
         self.abort()
 
     def warm_shutdown(self):
-        super(Master, self).warm_shutdown()
+        logger.warning("Warm shutdown")
+        self.shutdown_pending.set()
         self.shutdown_workers()
 
     def cold_shutdown(self):
         logger.warning("Cold shutdown")
         self.shutdown_pending.set()
         self.shutdown_workers(kill=True)
-        sys.exit(0)
+        self._exit(0)
 
     def abort(self):
         """Exit immediately making workers orphan."""
