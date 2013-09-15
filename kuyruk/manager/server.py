@@ -16,9 +16,13 @@ class ManagerServer(ThreadingTCPServer):
         ThreadingTCPServer.__init__(self, (host, port), RequestHandler)
 
     def get_request(self):
+        # Calls accept inside
         client_sock, client_addr = ThreadingTCPServer.get_request(self)
+
+        # Hold a reference to our new client
         self.clients[client_addr] = Client(client_sock)
         print 'self.clients', pformat(self.clients)
+
         return client_sock, client_addr
 
     def process_request_thread(self, request, client_address):
@@ -26,6 +30,7 @@ class ManagerServer(ThreadingTCPServer):
             ThreadingTCPServer.process_request_thread(
                 self, request, client_address)
         finally:
+            # Client is no longer connected, remove the reference
             del self.clients[client_address]
             print 'self.clients', pformat(self.clients)
 
