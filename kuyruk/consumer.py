@@ -108,9 +108,10 @@ class MessageIterator(object):
         while not self._stop.is_set():
             try:
                 message = self.messages.get(timeout=0.1)
-                return Message(message, self.queue)
             except Empty:
                 pass
+            else:
+                return Message(message, self.queue)
 
         logger.debug("Exiting from iterator")
         raise StopIteration
