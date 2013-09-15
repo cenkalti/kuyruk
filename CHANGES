@@ -3,6 +3,13 @@ Kuyruk Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 0.23.3
+--------------
+
+Released on 15-09-2013.
+
+- Fix the bug about freezing processes on exit.
+
 Version 0.23.2
 --------------
 
