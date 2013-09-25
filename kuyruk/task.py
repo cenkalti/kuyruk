@@ -228,7 +228,7 @@ class Task(EventMixin):
             'sender_cmd': ' '.join(sys.argv),
         }
 
-    def send_signal(self, signal, args, kwargs, reverse=False, **extra):
+    def send_signal(self, sig, args, kwargs, reverse=False, **extra):
         """
         Sends a signal for each sender.
         This allows the user to register for a specific sender.
@@ -239,7 +239,7 @@ class Task(EventMixin):
             senders = reversed(senders)
 
         for sender in senders:
-            signal.send(sender, task=self, args=args, kwargs=kwargs, **extra)
+            sig.send(sender, task=self, args=args, kwargs=kwargs, **extra)
 
     @send_client_signals
     @object_to_id
@@ -251,8 +251,8 @@ class Task(EventMixin):
     @id_to_object
     def _run(self, *args, **kwargs):
         """Run the wrapped function and event handlers."""
-        def send_signal(signal, reverse=False, **extra):
-            self.send_signal(signal, args, kwargs, reverse, **extra)
+        def send_signal(sig, reverse=False, **extra):
+            self.send_signal(sig, args, kwargs, reverse, **extra)
 
         logger.debug("Task._apply args=%r, kwargs=%r", args, kwargs)
 
