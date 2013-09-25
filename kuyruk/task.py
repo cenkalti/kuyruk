@@ -144,8 +144,8 @@ class Task(EventMixin):
         else:
             # Send it to the queue
             task_result = TaskResult(self)
-            task_result.id = self.send_to_queue(
-                args, kwargs, host=host, local=local)
+            task_result.id = self.send_to_queue(args, kwargs,
+                                                host=host, local=local)
 
         return task_result
 
