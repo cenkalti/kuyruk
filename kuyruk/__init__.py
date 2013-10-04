@@ -14,7 +14,7 @@ from kuyruk.worker import Worker
 from kuyruk.events import EventMixin
 from kuyruk.connection import Connection
 
-__version__ = '0.23.3'
+__version__ = '0.23.4'
 __all__ = ['Kuyruk', 'Task', 'Worker']
 
 
