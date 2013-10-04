@@ -41,12 +41,13 @@ class Queue(object):
         message = self.channel.basic_get(self.name)
         return Message.decode(message)
 
-    def send(self, obj):
+    def send(self, obj, expiration=None):
         """Send a single message to the queue.
         obj must be JSON serializable."""
         logger.info('sending to queue: %r message: %r', self.name, obj)
         properties = pika.BasicProperties(
             content_type='application/json',
+            expiration=expiration,
             delivery_mode=2)
         return self.channel.basic_publish(
             exchange='',

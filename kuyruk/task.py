@@ -137,6 +137,7 @@ class Task(EventMixin):
         # the destination of the message.
         host = kwargs.pop('kuyruk_host', None)
         local = kwargs.pop('kuyruk_local', None)
+        expiration = kwargs.pop('kuyruk_expiration', None)
 
         if self.eager or self.kuyruk.config.EAGER:
             # Run the task in process
@@ -145,7 +146,8 @@ class Task(EventMixin):
             # Send it to the queue
             task_result = TaskResult(self)
             task_result.id = self.send_to_queue(args, kwargs,
-                                                host=host, local=local)
+                                                host=host, local=local,
+                                                expiration=expiration)
 
         return task_result
 
@@ -172,7 +174,8 @@ class Task(EventMixin):
             return BoundTask(self, obj)
         return self
 
-    def send_to_queue(self, args, kwargs, host=None, local=None):
+    def send_to_queue(self, args, kwargs, host=None, local=None,
+                      expiration=None):
         """
         Sends this task to queue.
 
@@ -183,6 +186,7 @@ class Task(EventMixin):
             appended to the queue name.
         :param local: Send this task to this host. Hostname of this host will
             be appended to the queue name.
+        :param expiration: Expire message after expiration milliseconds.
         :return: :const:`None`
 
         """
@@ -190,7 +194,7 @@ class Task(EventMixin):
 
         with self.queue(host=host, local=local) as queue:
             desc = self.get_task_description(args, kwargs, queue.name)
-            queue.send(desc)
+            queue.send(desc, expiration=expiration)
 
         # We are returning the unique identifier of the task sent to queue
         # so we can query the result backend for completion.
