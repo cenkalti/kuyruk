@@ -28,7 +28,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'Flask>=0.9',
-        'pika>=0.9.12, !=0.9.13',
+        'pika>=0.9.12',
         'setproctitle>=1.1.7',
         'blinker>=1.2',
         'argparse>=1.2.1',
