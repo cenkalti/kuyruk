@@ -145,6 +145,7 @@ class Worker(KuyrukProcess):
 
         try:
             task = self.import_task(task_description)
+            task.message = message
             args, kwargs = task_description['args'], task_description['kwargs']
             self.apply_task(task, args, kwargs)
         except Reject:
@@ -161,6 +162,7 @@ class Worker(KuyrukProcess):
             self.handle_exception(message, task_description)
         else:
             logger.info('Task is successful')
+            delattr(task, 'message')
             message.ack()
         finally:
             logger.debug("Task is processed")
