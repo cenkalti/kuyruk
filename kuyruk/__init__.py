@@ -156,10 +156,13 @@ class Kuyruk(EventMixin):
             channel = self.connection().channel()
         except CLOSED:
             logger.warning("Connection is closed. Reconnecting...")
-            try:
-                self._connection.close()
-            except CLOSED:
-                pass
+
+            # If there is a connection, try to close it
+            if self._connection:
+                try:
+                    self._connection.close()
+                except CLOSED:
+                    pass
 
             self._connection = self._connect()
             channel = self._connection.channel()
