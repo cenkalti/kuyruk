@@ -38,8 +38,8 @@ automatically on push.
 
    $ git clone git://github.com/cenkalti/kuyruk.git
    $ cd kuyruk
-   $ pip install -r kuyruk/test/requirements.txt
    $ pip install --allow-all-external -e .
+   $ pip install --allow-all-external -r requirements.txt
    $ nosetests
 
 
