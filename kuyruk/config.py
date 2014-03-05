@@ -13,10 +13,6 @@ class Config(object):
     class attributes.
 
     """
-    TASK_CLASS = 'kuyruk.task.Task'
-    """Task implementation class. It can be replaced with a subclass of
-    :class:`~kuyruk.task.Task` to change specific behavior."""
-
     # Worker Options
     ################
 

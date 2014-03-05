@@ -3,6 +3,15 @@ Kuyruk Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 0.24.3
+--------------
+
+Released on 05-03-2014.
+
+- Reverted the option to give Task class from configuration. This caused
+  master to import from user code.
+- Added sleep after respawn_worker to prevent cpu burning.
+
 Version 0.24.2
 --------------
 

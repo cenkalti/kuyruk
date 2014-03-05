@@ -6,7 +6,7 @@ import logging
 import pika
 import pika.exceptions
 
-from kuyruk import exceptions, importer
+from kuyruk import exceptions
 from kuyruk.task import Task
 from kuyruk.queue import Queue
 from kuyruk.config import Config
@@ -54,14 +54,13 @@ class Kuyruk(EventMixin):
     """
     Reject = exceptions.Reject  # Shortcut for raising from tasks
 
-    def __init__(self, config=None, task_class=None):
+    def __init__(self, config=None, task_class=Task):
+        self.task_class = task_class
         self.config = Config()
         self._connection = None
         self._channel = None
         if config:
             self.config.from_object(config)
-        self.task_class = (importer.import_class_str(self.config.TASK_CLASS)
-                           if task_class is None else task_class)
 
     def task(self, queue='kuyruk', eager=False, retry=0, task_class=None,
              max_run_time=None, local=False, arg_class=None):
