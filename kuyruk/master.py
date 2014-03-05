@@ -9,6 +9,7 @@ import logging
 import resource
 import itertools
 import threading
+from time import sleep
 from collections import namedtuple
 
 from setproctitle import setproctitle
@@ -92,6 +93,7 @@ class Master(KuyrukProcess):
             del self.workers[pid]
             if not self.shutdown_pending.is_set():
                 self.respawn_worker(worker)
+                sleep(1) # Prevent cpu burning in case a worker cant start
 
     def respawn_worker(self, worker):
         """Spawn a new process with parameters same as the old worker."""
