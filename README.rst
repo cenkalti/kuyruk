@@ -24,25 +24,6 @@ Kuyruk is available on `PyPI <https://pypi.python.org/pypi/Kuyruk>`_.
    $ pip install kuyruk
 
 
-How to run tests?
------------------
-
-Normally you don't need this but it is easy.
-``kuyruk/test`` directory contains files of both unit and integration tests.
-Make sure that RabbitMQ is running before running tests.
-If you want to test failed task saving, make sure Redis is also running.
-Tests also run on `Travis CI <https://travis-ci.org/cenkalti/kuyruk>`_
-automatically on push.
-
-.. code-block:: bash
-
-   $ git clone git://github.com/cenkalti/kuyruk.git
-   $ cd kuyruk
-   $ pip install --allow-all-external -e .
-   $ pip install --allow-all-external -r requirements.txt
-   $ nosetests
-
-
 How to define tasks?
 --------------------
 
@@ -81,3 +62,22 @@ processing the tasks in the default queue.
 Where is the documentation?
 ---------------------------
 Here it is: http://kuyruk.readthedocs.org
+
+
+How to run tests?
+-----------------
+
+Normally you don't need this but it is easy.
+``kuyruk/test`` directory contains files of both unit and integration tests.
+Make sure that RabbitMQ is running before running tests.
+If you want to test failed task saving, make sure Redis is also running.
+Tests also run on `Travis CI <https://travis-ci.org/cenkalti/kuyruk>`_
+automatically on push.
+
+.. code-block:: bash
+
+   $ git clone git://github.com/cenkalti/kuyruk.git
+   $ cd kuyruk
+   $ pip install --allow-all-external -e .
+   $ pip install --allow-all-external -r requirements.txt
+   $ nosetests
