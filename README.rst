@@ -81,9 +81,3 @@ processing the tasks in the default queue.
 Where is the documentation?
 ---------------------------
 Here it is: http://kuyruk.readthedocs.org
-
-
-.. image:: https://d2weczhvl823v0.cloudfront.net/cenkalti/kuyruk/trend.png
-   :alt: Bitdeli badge
-   :target: https://bitdeli.com/free
-
