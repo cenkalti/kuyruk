@@ -1,3 +1,6 @@
+.. image:: https://raw.githubusercontent.com/cenkalti/kuyruk/master/docs/_static/lemur.png
+   :alt: Kuyruk Logo
+
 Kuyruk
 ======
 
