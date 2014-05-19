@@ -12,6 +12,7 @@ import threading
 from time import sleep
 from collections import namedtuple
 
+import rpyc
 from setproctitle import setproctitle
 
 from kuyruk import __version__, helpers
@@ -34,10 +35,18 @@ class Master(KuyrukProcess):
     def run(self):
         super(Master, self).run()
         setproctitle('kuyruk: master')
-        self.maybe_start_manager_thread(self.lock)
+        self.maybe_start_manager_rpc_service()
         self.start_workers()
         self.wait_for_workers()
         logger.debug('End run master')
+
+    def rpc_service_class(self):
+        class _Service(rpyc.Service):
+            exposed_get_stats = self.get_stats
+            exposed_warm_shutdown = self.warm_shutdown
+            exposed_cold_shutdown = self.cold_shutdown
+            exposed_abort = self.abort
+        return _Service
 
     def start_workers(self):
         """Start a new worker for each queue."""

@@ -2,15 +2,19 @@ import json
 import socket
 import logging
 from datetime import datetime
+from time import sleep
+from functools import total_ordering
 
 from flask import Flask, render_template, redirect, request, url_for, jsonify
 from werkzeug.serving import run_simple
+import rpyc
+from rpyc.utils.server import ThreadedServer
 
 from kuyruk.requeue import Requeuer
 from kuyruk.helpers import human_time, start_daemon_thread
-from kuyruk.manager.server import ManagerServer
 from kuyruk.helpers.json_datetime import JSONDecoder
 
+ACTION_WAIT_TIME = 1  # seconds
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +31,10 @@ class Manager(Flask):
         if self.config['MANAGER_HOST'] is None:
             self.config['MANAGER_HOST'] = '127.0.0.1'
 
-        self.server = ManagerServer(
-            self.config['MANAGER_HOST'],
-            self.config['MANAGER_PORT'])
+        self.server = ThreadedServer(self._service_class(),
+                                     hostname=self.config['MANAGER_HOST'],
+                                     port=self.config['MANAGER_PORT'])
+        self.services = {}
 
         @self.route('/')
         def index():
@@ -38,11 +43,11 @@ class Manager(Flask):
         @self.route('/masters')
         def masters():
             return render_template('masters.html',
-                                   sockets=get_sockets('master'))
+                                   sockets=get_services('master'))
 
         @self.route('/workers')
         def workers():
-            sockets = get_sockets('worker')
+            sockets = get_services('worker')
             sockets2 = {}
             ppid = request.args.get('ppid', None, int)
             if ppid:
@@ -64,32 +69,36 @@ class Manager(Flask):
                 return jsonify(**ret)
             return render_template('failed_tasks.html', tasks=tasks)
 
-        def get_sockets(type_):
+        def get_services(type_):
             def gen():
-                for addr, client in self.server.clients.iteritems():
-                    if client.get_stat('type') == type_:
-                        yield addr, client
+                for addr, service in self.services.iteritems():
+                    if service.get_stat('type') == type_:
+                        yield addr, service
             return dict(gen())
 
         @self.route('/queues')
         def queues():
             queues = {}
-            for addr, client in get_sockets('worker').iteritems():
+            for addr, client in get_services('worker').iteritems():
                 queue = client.get_stat('queue')
                 queues[queue['name']] = queue
             return render_template('queues.html', queues=queues.values())
 
         @self.route('/action', methods=['POST'])
         def action():
-            addr = str(request.args['host']), int(request.args['port'])
-            master = self.server.clients[addr]
-            master.actions.put((request.form['action'], (), {}))
+            addr = (request.args['host'], int(request.args['port']))
+            client = self.services[addr]
+            f = getattr(client._conn.root, request.form['action'])
+            rpyc.async(f)()
+            sleep(ACTION_WAIT_TIME)
             return redirect_back()
 
         @self.route('/action_all', methods=['POST'])
         def action_all():
-            for addr, client in get_sockets(request.args['type']).iteritems():
-                client.actions.put((request.form['action'], (), {}))
+            for addr, client in get_services(request.args['type']).iteritems():
+                f = getattr(client._conn.root, request.form['action'])
+                rpyc.async(f)()
+            sleep(ACTION_WAIT_TIME)
             return redirect_back()
 
         @self.route('/requeue', methods=['POST'])
@@ -143,12 +152,54 @@ class Manager(Flask):
             password=self.config['REDIS_PASSWORD'])
 
     def run(self):
-        t = start_daemon_thread(self.server.serve_forever)
+        t = start_daemon_thread(self.server.start)
         logger.info("Manager running in thread: %s", t.name)
 
         run_simple(self.config['MANAGER_HOST'],
                    self.config['MANAGER_HTTP_PORT'],
                    self, threaded=True, use_debugger=True)
+
+    def _service_class(this):
+        @total_ordering
+        class _Service(rpyc.Service):
+            def __lt__(self, other):
+                return self.sort_key < other.sort_key
+
+            @property
+            def sort_key(self):
+                order = ('hostname', 'queue', 'uptime', 'pid')
+                # TODO replace get_stat with operator.itemgetter
+                return tuple(self.get_stat(attr) for attr in order)
+
+            @property
+            def addr(self):
+                return self._conn._config['endpoints'][1]
+
+            def on_connect(self):
+                print "Client connected:", self.addr
+                self.stats = {}
+                this.services[self.addr] = self
+                start_daemon_thread(target=self.read_stats)
+
+            def on_disconnect(self):
+                print "Client disconnected:", self.addr
+                del this.services[self.addr]
+
+            def read_stats(self):
+                while True:
+                    try:
+                        self.stats = rpyc.classic.obtain(self._conn.root.get_stats())
+                    except Exception:
+                        try:
+                            self._conn.close()
+                        except Exception:
+                            pass
+                        return
+                    sleep(1)
+
+            def get_stat(self, name):
+                return self.stats.get(name, None)
+        return _Service
 
 
 def redirect_back():

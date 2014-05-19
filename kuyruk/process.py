@@ -8,8 +8,9 @@ import threading
 import subprocess
 from time import time
 
-from kuyruk.helpers import monkeypatch_method, print_stack
-from kuyruk.manager.client import ManagerClientThread
+import rpyc
+
+from kuyruk.helpers import monkeypatch_method, print_stack, start_daemon_thread, retry
 
 
 logger = logging.getLogger(__name__)
@@ -73,15 +74,19 @@ class KuyrukProcess(object):
         sys.stderr.flush()
         os._exit(status)
 
-    def maybe_start_manager_thread(self, socket_lock=None):
+    def maybe_start_manager_rpc_service(self):
         if self.config.MANAGER_HOST:
-            self.manager_thread = ManagerClientThread(
-                self.config.MANAGER_HOST,
-                self.config.MANAGER_PORT,
-                self.get_stats,
-                self.on_action,
-                socket_lock=socket_lock)
-            self.manager_thread.start()
+            start_daemon_thread(target=retry()(self._connect_rpc))
+
+    def _connect_rpc(self):
+        conn = rpyc.connect(self.config.MANAGER_HOST,
+                            self.config.MANAGER_PORT,
+                            service=self.rpc_service_class(),
+                            config={"allow_pickle": True})
+        rpyc.BgServingThread(conn)._thread.join()
+
+    def rpc_service_class(self):
+        raise NotImplementedError
 
     def get_stats(self):
         """Returns the stats for sending to Kuyruk Manager.

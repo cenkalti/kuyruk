@@ -11,6 +11,7 @@ from datetime import datetime
 from functools import wraps
 from contextlib import contextmanager
 
+import rpyc
 from setproctitle import setproctitle
 
 import kuyruk
@@ -96,9 +97,17 @@ class Worker(KuyrukProcess):
         self.queue.basic_qos(prefetch_count=1)
         self.import_modules()
         self.start_daemon_threads()
-        self.maybe_start_manager_thread()
+        self.maybe_start_manager_rpc_service()
         self.consume_messages()
         logger.debug("End run worker")
+
+    def rpc_service_class(this):
+        class _Service(rpyc.Service):
+            exposed_get_stats = this.get_stats
+            exposed_warm_shutdown = this.warm_shutdown
+            exposed_cold_shutdown = this.cold_shutdown
+            exposed_quit_task = this.quit_task
+        return _Service
 
     def consume_messages(self):
         """Consumes messages from the queue and run tasks until
