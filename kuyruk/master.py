@@ -102,7 +102,7 @@ class Master(KuyrukProcess):
             del self.workers[pid]
             if not self.shutdown_pending.is_set():
                 self.respawn_worker(worker)
-                sleep(1) # Prevent cpu burning in case a worker cant start
+                sleep(1)  # Prevent cpu burning in case a worker cant start
 
     def respawn_worker(self, worker):
         """Spawn a new process with parameters same as the old worker."""
@@ -151,7 +151,7 @@ class Master(KuyrukProcess):
     def abort(self):
         """Exit immediately making workers orphan."""
         logger.warning("Aborting")
-        sys.exit(0)
+        self._exit(0)
 
     def get_stats(self):
         """Generate stats to be sent to manager."""
