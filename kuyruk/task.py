@@ -151,6 +151,9 @@ class Task(EventMixin):
 
         return task_result
 
+    def delay(self, *args, **kwargs):
+        self.__call__(*args, **kwargs)
+
     def __get__(self, obj, objtype):
         """If the task is accessed from an instance via attribute syntax
         returns a bound task object that wraps the task itself, otherwise
