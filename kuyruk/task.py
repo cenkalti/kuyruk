@@ -152,6 +152,8 @@ class Task(EventMixin):
         return task_result
 
     def delay(self, *args, **kwargs):
+        """Compatibility function for migrating existing Celery project to
+        Kuyruk."""
         self.__call__(*args, **kwargs)
 
     def __get__(self, obj, objtype):
