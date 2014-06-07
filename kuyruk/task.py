@@ -56,6 +56,9 @@ class Task(object):
 
         return TaskResult()
 
+    def delay(self, *args, **kwargs):
+        self.__call__(*args, **kwargs)
+
     def _send_task(self, task_description):
         connection = LazyConnection(
             self.kuyruk.config.RABBIT_HOST, self.kuyruk.config.RABBIT_PORT,
