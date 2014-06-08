@@ -30,6 +30,13 @@ class Scheduler(KuyrukProcess):
 
     SCHEDULER_FILE_NAME = '/home/users/ybrs/scheduler'
 
+    then you can run scheduler with
+
+    kuyruk --config=tasks.py --logging-level=debug scheduler
+
+    Currently it saves the last runing times to a shelve file database. It can only run
+    periodic tasks - no cron like syntax.
+
     """
     def __init__(self, kuyruk):
         super(Scheduler, self).__init__(kuyruk)
