@@ -235,11 +235,12 @@ class KuyrukTestCase(unittest.TestCase):
 
     def test_scheduler(self):
         """Scheduler schedules correctly"""
+        delete_queue('scheduled')
 
         def get_message_count():
             from kuyruk import Worker
             k = Kuyruk()
-            w = Worker(kuyruk=k, queue_name='kuyruk')
+            w = Worker(kuyruk=k, queue_name='scheduled')
             w.started = time()
             return w.get_stats()['queue']['messages_ready']
 
@@ -249,7 +250,7 @@ class KuyrukTestCase(unittest.TestCase):
         config = {
             'SCHEDULE': {
                 'runs-every-5-seconds': {
-                    'task': 'kuyruk.test.tasks.print_task',
+                    'task': 'kuyruk.test.tasks.scheduled',
                     'schedule': timedelta(seconds=5),
                     'args': ['hello world from scheduler']
                 }
