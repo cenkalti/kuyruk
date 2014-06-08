@@ -1,3 +1,5 @@
+import os
+from time import sleep
 import signal
 import logging
 import unittest
@@ -10,6 +12,10 @@ from kuyruk.task import BoundTask
 from kuyruk.test import tasks
 from kuyruk.test.integration.util import *
 from kuyruk.connection import Channel
+
+from datetime import timedelta
+from multiprocessing import Process
+
 
 Channel.SKIP_REDECLARE_QUEUE = False
 
@@ -226,3 +232,45 @@ class KuyrukTestCase(unittest.TestCase):
             worker.expect('Exiting')
             worker.expect_exit(0)
         assert is_empty('kuyruk'), worker.get_output()
+
+    def test_scheduler(self):
+
+        def get_message_count():
+            from kuyruk import Worker
+            k = Kuyruk()
+            w = Worker(kuyruk=k, queue_name='kuyruk')
+            w.started = time()
+            return w.get_stats()['queue']['messages_ready']
+
+        if os.path.exists('/tmp/kuyruk-scheduler.db'):
+            os.unlink('/tmp/kuyruk-scheduler.db')
+
+        config = {
+            'SCHEDULE': {
+                'runs-every-5-seconds': {
+                    'task': 'kuyruk.test.tasks.print_task',
+                    'schedule': timedelta(seconds=5),
+                    'args': ['hello world from scheduler']
+                }
+            },
+            'SCHEDULER_FILE_NAME': '/tmp/kuyruk-scheduler'
+        }
+
+        p = Process(target=run_scheduler, kwargs={'config': config})
+        p.start()
+        sleep(6)
+        p.terminate()
+        self.assertEqual(get_message_count(), 2)
+
+        # checking shelve, this shouldnt send a job
+        p = Process(target=run_scheduler, kwargs={'config': config})
+        p.start()
+        p.terminate()
+        self.assertEqual(get_message_count(), 2)
+
+        # # restart again, now it should send a job
+        p = Process(target=run_scheduler, kwargs={'config': config})
+        p.start()
+        sleep(2)
+        p.terminate()
+        self.assertEqual(get_message_count(), 3)

@@ -77,7 +77,6 @@ class Scheduler(KuyrukProcess):
                 'args': v.get('args', [])
             }
             logging.info("loaded task %s with schedule %s", task, v['schedule'])
-
         while True:
             for k, v in self.schedule.iteritems():
                 last_run = self.get_last_run(k)
