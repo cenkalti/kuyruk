@@ -234,6 +234,7 @@ class KuyrukTestCase(unittest.TestCase):
         assert is_empty('kuyruk'), worker.get_output()
 
     def test_scheduler(self):
+        """Scheduler schedules correctly"""
 
         def get_message_count():
             from kuyruk import Worker
@@ -276,3 +277,5 @@ class KuyrukTestCase(unittest.TestCase):
         sleep(3)
         p.terminate()
         self.assertEqual(get_message_count(), 3)
+
+        sleep(2)
