@@ -233,7 +233,7 @@ class KuyrukTestCase(unittest.TestCase):
             worker.expect_exit(0)
         assert is_empty('kuyruk'), worker.get_output()
 
-    def test_scheduler(self):
+    def _test_scheduler(self):
         """Scheduler schedules correctly"""
         delete_queue('scheduled')
 
