@@ -271,6 +271,6 @@ class KuyrukTestCase(unittest.TestCase):
         # # restart again, now it should send a job
         p = Process(target=run_scheduler, kwargs={'config': config})
         p.start()
-        sleep(2)
+        sleep(3)
         p.terminate()
         self.assertEqual(get_message_count(), 3)
