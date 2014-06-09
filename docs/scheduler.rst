@@ -3,7 +3,7 @@ Scheduler
 
 Scheduler is a basic process scheduler, that kicks off tasks at regular intervals
 
-To run the scheduler, you need to have a config like this.
+To run the scheduler, you need to have a config like this:
 
 .. code-block:: python
 
@@ -32,7 +32,3 @@ location of the database can be altered by
 .. code-block:: python
 
     SCHEDULER_FILE_NAME = '/home/users/ybrs/scheduler'
-
-
-
-

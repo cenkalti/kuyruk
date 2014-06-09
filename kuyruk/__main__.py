@@ -15,6 +15,7 @@ from kuyruk.requeue import Requeuer
 from kuyruk.manager import Manager
 from kuyruk.scheduler import Scheduler
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,7 +65,7 @@ def main():
         '-q', '--queue', default='kuyruk', help='consume tasks from')
 
     # Parser for the "master" sub-command
-    parser_master = subparsers.add_parser('master', help='run a master')
+    parser_master = subparsers.add_parser('master', help='run master')
     parser_master.set_defaults(func=run_master)
     parser_master.add_argument(
         '-q', '--queues', help='comma seperated list of queues')
@@ -78,7 +79,8 @@ def main():
     parser_master = subparsers.add_parser('manager', help='run manager')
     parser_master.set_defaults(func=run_manager)
 
-    parser_scheduler = subparsers.add_parser('scheduler', help='run a scheduler')
+    # Parser for the "scheduler" sub-command
+    parser_scheduler = subparsers.add_parser('scheduler', help='run scheduler')
     parser_scheduler.set_defaults(func=run_scheduler)
 
     # Parse arguments

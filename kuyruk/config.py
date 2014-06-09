@@ -129,14 +129,14 @@ class Config(object):
     """Manager HTTP port that the Flask application will run on."""
 
     # Scheduler Options
-    ################
+    ###################
 
     SCHEDULE = {}
     """Basic scheduler for kuyruk.
     see :class:`~kuyruk.scheduler.Scheduler` for more details."""
 
     SCHEDULER_FILE_NAME = 'kuyruk_scheduler'
-    """we save last sent tasks timestamps to this file"""
+    """Last sent tasks' timestamps are saved to this file."""
 
     def from_object(self, obj):
         """Load values from an object."""

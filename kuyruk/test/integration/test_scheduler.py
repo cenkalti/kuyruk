@@ -1,20 +1,9 @@
-import os
-from time import sleep
-import signal
-import logging
 import unittest
-
-import redis
-from mock import patch
-
-from kuyruk import Task
-from kuyruk.task import BoundTask
-from kuyruk.test import tasks
-from kuyruk.test.integration.util import *
-from kuyruk.connection import Channel
-
 from datetime import timedelta
 from multiprocessing import Process
+
+from kuyruk.test.integration.util import *
+from kuyruk.connection import Channel
 
 
 Channel.SKIP_REDECLARE_QUEUE = False
@@ -66,7 +55,7 @@ class SchedulerTestCase(unittest.TestCase):
 
         sleep(2)
 
-        # # restart again, now it should send a job
+        # restart again, now it should send a job
         p = Process(target=run_scheduler, kwargs={'config': config})
         p.start()
         sleep(3)

@@ -198,6 +198,7 @@ def spawn_process(args=['sleep', '60']):
     import subprocess
     subprocess.check_call(args)
 
+
 @kuyruk.task(queue='scheduled')
 def scheduled(message):
     print message

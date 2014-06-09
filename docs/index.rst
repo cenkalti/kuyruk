@@ -1,5 +1,5 @@
 Kuyruk: A distributed task runner
-==================================
+=================================
 
 Welcome to Kuyruk’s documentation. This documentation covers the usage of the
 library and gives information about running workers.
