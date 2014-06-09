@@ -1,3 +1,5 @@
+import os
+from time import sleep
 import signal
 import logging
 import unittest
@@ -10,6 +12,10 @@ from kuyruk.task import BoundTask
 from kuyruk.test import tasks
 from kuyruk.test.integration.util import *
 from kuyruk.connection import Channel
+
+from datetime import timedelta
+from multiprocessing import Process
+
 
 Channel.SKIP_REDECLARE_QUEUE = False
 

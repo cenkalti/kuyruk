@@ -28,6 +28,7 @@ User's Guide
    events
    classtasks
    extending
+   scheduler
 
 
 API Reference

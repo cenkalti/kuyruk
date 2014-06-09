@@ -128,6 +128,16 @@ class Config(object):
     MANAGER_HTTP_PORT = 16500
     """Manager HTTP port that the Flask application will run on."""
 
+    # Scheduler Options
+    ################
+
+    SCHEDULE = {}
+    """Basic scheduler for kuyruk.
+    see :class:`~kuyruk.scheduler.Scheduler` for more details."""
+
+    SCHEDULER_FILE_NAME = 'kuyruk_scheduler'
+    """we save last sent tasks timestamps to this file"""
+
     def from_object(self, obj):
         """Load values from an object."""
         for key in dir(obj):
@@ -163,7 +173,7 @@ class Config(object):
                 conn.send(values)
                 logger.debug("Config read successfully")
             except:
-                logger.debug("Cannot read config")
+                logger.exception("Cannot read config")
                 conn.send(None)
         parent_conn, child_conn = multiprocessing.Pipe()
         process = multiprocessing.Process(target=readfile,

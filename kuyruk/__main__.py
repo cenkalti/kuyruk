@@ -13,7 +13,7 @@ from kuyruk.master import Master
 from kuyruk.config import Config
 from kuyruk.requeue import Requeuer
 from kuyruk.manager import Manager
-
+from kuyruk.scheduler import Scheduler
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,11 @@ def run_requeue(kuyruk, args):
 def run_manager(kuyruk, args):
     m = Manager(kuyruk)
     m.run()
+
+
+def run_scheduler(kuyruk, args):
+    s = Scheduler(kuyruk)
+    s.run()
 
 
 def main():
@@ -72,6 +77,9 @@ def main():
     # Parser for the "manager" sub-command
     parser_master = subparsers.add_parser('manager', help='run manager')
     parser_master.set_defaults(func=run_manager)
+
+    parser_scheduler = subparsers.add_parser('scheduler', help='run a scheduler')
+    parser_scheduler.set_defaults(func=run_scheduler)
 
     # Parse arguments
     args = parser.parse_args()

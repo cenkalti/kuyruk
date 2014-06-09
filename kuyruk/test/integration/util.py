@@ -114,6 +114,12 @@ def run_requeue():
     from kuyruk.__main__ import run_requeue
     run_requeue(Kuyruk(), None)
 
+def run_scheduler(config):
+    from kuyruk.__main__ import run_scheduler
+    from kuyruk.config import Config
+    c = Config()
+    c.from_dict(config)
+    run_scheduler(Kuyruk(c), None)
 
 def get_pids(pattern):
     logger.debug('get_pids: %s', pattern)
