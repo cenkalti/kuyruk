@@ -131,7 +131,7 @@ def get_pids(pattern):
     logger.debug("\n%s", out)
     lines = out.splitlines()
     lines = [l.split(" ", 1) for l in lines]
-    lines = [(pid, cmd) for (pid, cmd) in lines if cmd not in ("sh", "/bin/sh")]
+    lines = [(pid, cmd) for (pid, cmd) in lines if not cmd.startswith(("sh", "/bin/sh"))]
     pids = [int(pid) for (pid, cmd) in lines]
     logger.debug('pids: %s', pids)
     return pids
