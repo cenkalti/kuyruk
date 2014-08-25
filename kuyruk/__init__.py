@@ -1,6 +1,4 @@
 from __future__ import absolute_import
-import errno
-import select
 import logging
 
 import pika
@@ -28,19 +26,6 @@ logger.addHandler(null_handler)
 
 # Pika should do this. Patch submitted to Pika.
 logging.getLogger('pika').addHandler(null_handler)
-
-
-# Monkey patch ReadPoller until pika 0.9.14 is released
-def ready(self):
-    while True:
-        try:
-            return original_method(self)
-        except select.error as e:
-            if e[0] != errno.EINTR:
-                raise
-from pika.adapters.blocking_connection import ReadPoller
-original_method = ReadPoller.ready
-ReadPoller.ready = ready
 
 
 class Kuyruk(EventMixin):
