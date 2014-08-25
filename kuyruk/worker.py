@@ -274,15 +274,7 @@ class Worker(KuyrukProcess):
             task_description['sentry_id'] = ident
 
     def is_master_alive(self):
-        ppid = os.getppid()
-        if ppid == 1:
-            return False
-
-        try:
-            os.kill(ppid, 0)
-            return True
-        except OSError:
-            return False
+        return os.getppid() != 1
 
     def watch_master(self):
         """Watch the master and shutdown gracefully when it is dead."""
