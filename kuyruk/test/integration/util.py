@@ -130,9 +130,7 @@ def get_pids(pattern):
     out = p.communicate()[0]
     logger.debug("\n%s", out)
     lines = out.splitlines()
-    # filter pgrep itself. travis runs it like "/bin/sh -c pgrep -fl 'kuyruk:'"
-    lines = filter(lambda x: not cmd in x, lines)
-    lines = [l.split(" ", 1) for l in lines]  # take first column
+    lines = [l.split(" ", 1) for l in lines]
     lines = [(pid, cmd) for (pid, cmd) in lines if cmd != "sh"]
     pids = [int(pid) for (pid, cmd) in lines]
     logger.debug('pids: %s', pids)
