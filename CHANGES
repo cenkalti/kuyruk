@@ -3,6 +3,13 @@ Kuyruk Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 1.2.1
+-------------
+
+Released on 25-08-2014.
+
+Fixed a worker startup bug happens when running workers as another user.
+
 Version 1.2.0
 -------------
 
