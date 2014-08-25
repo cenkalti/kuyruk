@@ -23,12 +23,12 @@ setup(
     author=u'Cenk Altı',
     author_email='cenkalti@gmail.com',
     keywords='rabbitmq distributed task queue',
-    url='http://github.com/cenkalti/kuyruk',
+    url='https://github.com/cenkalti/kuyruk',
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
         'Flask>=0.9',
-        'pika>=0.9.12',
+        'pika>=0.9.14',
         'setproctitle>=1.1.7',
         'blinker>=1.2',
         'argparse>=1.2.1',
@@ -43,7 +43,7 @@ setup(
         ],
     },
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
