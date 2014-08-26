@@ -1,5 +1,6 @@
 import os
 import ast
+import sys
 import types
 import logging
 import multiprocessing
@@ -175,13 +176,18 @@ class Config(object):
             except:
                 logger.exception("Cannot read config")
                 conn.send(None)
+                raise
+
         parent_conn, child_conn = multiprocessing.Pipe()
         process = multiprocessing.Process(target=readfile,
                                           args=(child_conn, ))
         process.start()
         values = parent_conn.recv()
         process.join()
-        assert values is not None, "Cannot load config file: %s" % filename
+        if values is None:
+            print "Cannot load config file: %s" % filename
+            sys.exit(1)
+
         self.from_dict(values)
         logger.info("Config is loaded from file: %s", filename)
 
