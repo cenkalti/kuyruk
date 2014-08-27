@@ -125,14 +125,9 @@ class Kuyruk(EventMixin):
 
     def _new_connection(self):
         """Returns a new connection."""
-        # TODO put connection parameters
-        # parameters = pika.ConnectionParameters(
-        #     heartbeat_interval=0,  # We don't want heartbeats
-        #     socket_timeout=2,
-        #     connection_attempts=2)
         logger.info("Connection to RabbitMQ...")
         connection = rabbitpy.Connection(
-            "amqp://{user}:{password}@{host}:{port}/{virtual_host}".format(
+            "amqp://{user}:{password}@{host}:{port}/{virtual_host}?heartbeat=0&connection_timeout=2".format(
             user=self.config.RABBIT_USER,
             password=self.config.RABBIT_PASSWORD,
             host=self.config.RABBIT_HOST,
