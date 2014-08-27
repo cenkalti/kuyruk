@@ -10,9 +10,6 @@ from contextlib import contextmanager
 
 from what import What
 
-from kuyruk import Kuyruk
-
-
 if os.environ.get('TRAVIS', '') == 'true':
     TIMEOUT = 30
 else:
@@ -95,11 +92,6 @@ def not_running():
 
 def is_running():
     return bool(get_pids('kuyruk:'))
-
-
-def run_requeue():
-    from kuyruk.__main__ import run_requeue
-    run_requeue(Kuyruk(), None)
 
 
 def get_pids(pattern):

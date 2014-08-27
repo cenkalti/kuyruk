@@ -10,7 +10,7 @@ from mock import patch
 from kuyruk import Kuyruk, Task
 from kuyruk.task import BoundTask
 from kuyruk.test import tasks
-from kuyruk.test.integration.util import run_kuyruk, run_requeue, wait_until, \
+from kuyruk.test.integration.util import run_kuyruk, wait_until, \
     not_running, get_pid, get_pids, TIMEOUT
 
 logger = logging.getLogger(__name__)
@@ -127,7 +127,9 @@ class KuyrukTestCase(unittest.TestCase):
         assert len(self.queue) == 0
         assert r.hvals('failed_tasks')
 
-        run_requeue()
+        with run_kuyruk(process="requeue") as p:
+            p.expect("1 failed tasks have been requeued")
+
         assert not r.hvals('failed_tasks')
         assert len(self.queue) == 1
 
@@ -147,7 +149,9 @@ class KuyrukTestCase(unittest.TestCase):
         assert len(self.queue) == 0
         assert r.hvals('failed_tasks')
 
-        run_requeue()
+        with run_kuyruk(process="requeue") as p:
+            p.expect("1 failed tasks have been requeued")
+
         assert not r.hvals('failed_tasks')
         assert len(self.queue) == 1
 
@@ -166,7 +170,9 @@ class KuyrukTestCase(unittest.TestCase):
         assert len(self.queue) == 0
         assert r.hvals('failed_tasks')
 
-        run_requeue()
+        with run_kuyruk(process="requeue") as p:
+            p.expect("1 failed tasks have been requeued")
+
         assert not r.hvals('failed_tasks')
         assert len(self.queue) == 1
 

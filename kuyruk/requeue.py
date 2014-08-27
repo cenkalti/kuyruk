@@ -3,16 +3,19 @@ import json
 import logging
 
 import rabbitpy
+from setproctitle import setproctitle
 
 from kuyruk.helpers import json_datetime
+from kuyruk.process import KuyrukProcess
 
 logger = logging.getLogger(__name__)
 
 
-class Requeuer(object):
+class Requeuer(KuyrukProcess):
 
     def __init__(self, kuyruk):
         import redis
+        super(Requeuer, self).__init__(kuyruk)
         self.kuyruk = kuyruk
         self.redis = redis.StrictRedis(
             host=self.kuyruk.config.REDIS_HOST,
@@ -21,6 +24,8 @@ class Requeuer(object):
             password=self.kuyruk.config.REDIS_PASSWORD)
 
     def run(self):
+        super(Requeuer, self).run()
+        setproctitle("kuyruk: requeuer")
         tasks = self.redis.hvals('failed_tasks')
         channel = self.kuyruk.channel()
         for task in tasks:
@@ -29,6 +34,7 @@ class Requeuer(object):
             Requeuer.requeue(task, channel, self.redis)
 
         print "%i failed tasks have been requeued." % len(tasks)
+        logger.debug("End run requeue")
 
     @staticmethod
     def requeue(task_description, channel, redis):
