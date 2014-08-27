@@ -11,11 +11,11 @@ from kuyruk.process import KuyrukProcess
 logger = logging.getLogger(__name__)
 
 
-class Requeuer(KuyrukProcess):
+class Requeue(KuyrukProcess):
 
     def __init__(self, kuyruk):
         import redis
-        super(Requeuer, self).__init__(kuyruk)
+        super(Requeue, self).__init__(kuyruk)
         self.kuyruk = kuyruk
         self.redis = redis.StrictRedis(
             host=self.kuyruk.config.REDIS_HOST,
@@ -24,14 +24,14 @@ class Requeuer(KuyrukProcess):
             password=self.kuyruk.config.REDIS_PASSWORD)
 
     def run(self):
-        super(Requeuer, self).run()
-        setproctitle("kuyruk: requeuer")
+        super(Requeue, self).run()
+        setproctitle("kuyruk: requeue")
         tasks = self.redis.hvals('failed_tasks')
         channel = self.kuyruk.channel()
         for task in tasks:
             task = json.loads(task)
             print "Requeueing task: %r" % task
-            Requeuer.requeue(task, channel, self.redis)
+            Requeue.requeue(task, channel, self.redis)
 
         print "%i failed tasks have been requeued." % len(tasks)
         logger.debug("End run requeue")
