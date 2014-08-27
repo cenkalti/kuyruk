@@ -4,7 +4,6 @@ import unittest
 from mock import patch
 
 from kuyruk import Task
-from kuyruk.task import TaskResult
 from kuyruk.test import tasks
 
 
@@ -24,14 +23,14 @@ class KuyrukTestCase(unittest.TestCase):
     def test_eager(self, mock_func):
         """Test eager mode for using in test environments"""
         result = tasks.eager_task()
-        assert isinstance(result, TaskResult)
+        assert result is None
         mock_func.assert_called_once_with()
 
     @patch('kuyruk.test.tasks.must_be_called')
     def test_apply(self, mock_func):
         """Test Task.apply()"""
         result = tasks.print_task.apply("hello")
-        assert isinstance(result, TaskResult)
+        assert result is None
         mock_func.assert_called_once_with()
 
     @patch('kuyruk.test.tasks.must_be_called')
