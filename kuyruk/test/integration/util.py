@@ -40,18 +40,23 @@ def is_empty(queue):
 
 @contextmanager
 def run_kuyruk(queue='kuyruk', save_failed_tasks=False, terminate=True,
-               process='worker'):
+               config_filename=None, process='worker'):
     assert not_running()
     args = [
         sys.executable, '-u',
         '-m', 'kuyruk.__main__',  # run main module
-        '--max-load', '999',  # do not pause because of load
+        '--max-load=999',  # do not pause because of load
+        '--logging-level=DEBUG',
     ]
-    args.extend(['--logging-level=DEBUG'])
+
+    if config_filename:
+        args.extend(["--config", config_filename])
+
     if save_failed_tasks:
-        args.extend(['--save-failed-tasks', 'True'])
+        args.append('--save-failed-tasks=True')
 
     args.append(process)
+
     if process == 'worker':
         args.extend(['--queue', queue])
 
