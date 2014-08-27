@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class KuyrukProcess(object):
     """Base class for Master and Worker classes.
-    Contains some shared code betwee these 2 classes.
+    Contains some shared code between these 2 classes.
 
     """
     def __init__(self, kuyruk):
@@ -35,14 +35,14 @@ class KuyrukProcess(object):
 
     def run(self):
         if self.config.CLOSE_FDS is True:
-            self.patch_popen()
+            self._patch_popen()
 
         self.setup_logging()
         self.register_signals()
         logger.debug('PID: %s PGID: %s', os.getpid(), os.getpgrp())
         self.started = time()
 
-    def patch_popen(self):
+    def _patch_popen(self):
         """Patch subprocess.Popen constructor to close_fds by default."""
         original_init = subprocess.Popen.__init__
 
