@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import atexit
 import logging
 from threading import RLock
 
@@ -45,6 +46,7 @@ class Kuyruk(EventMixin):
         self._channel = None
         if config:
             self.config.from_object(config)
+        atexit.register(self.close)
 
     def __enter__(self):
         return self
