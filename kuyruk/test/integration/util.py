@@ -29,9 +29,13 @@ def delete_queue(*queues):
             rabbitpy.Queue(k.channel(), name=name).delete()
 
 
-def is_empty(queue):
+def len_queue(queue):
     with Kuyruk() as k:
-        return len(rabbitpy.Queue(k.channel(), name=queue)) == 0
+        return len(rabbitpy.Queue(k.channel(), name=queue))
+
+
+def is_empty(queue):
+    len_queue(queue) == 0
 
 
 @contextmanager
