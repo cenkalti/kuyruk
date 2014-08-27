@@ -8,11 +8,10 @@ from time import time, sleep
 from functools import partial
 from contextlib import contextmanager
 
-from pika.exceptions import ChannelClosed
+import rabbitpy
 from what import What
 
 from kuyruk import Kuyruk
-from kuyruk.queue import Queue as RabbitQueue
 
 
 if os.environ.get('TRAVIS', '') == 'true':
@@ -25,18 +24,14 @@ logger = logging.getLogger(__name__)
 
 def delete_queue(*queues):
     """Delete queues from RabbitMQ"""
-    for name in queues:
-        try:
-            ch = Kuyruk().channel()
-            RabbitQueue(name, ch).delete()
-            ch.close()
-        except ChannelClosed:
-            pass
+    with Kuyruk() as k:
+        for name in queues:
+            rabbitpy.Queue(k.channel(), name=name).delete()
 
 
 def is_empty(queue):
-    queue = RabbitQueue(queue, Kuyruk().channel())
-    return len(queue) == 0
+    with Kuyruk() as k:
+        return len(rabbitpy.Queue(k.channel(), name=queue)) == 0
 
 
 @contextmanager

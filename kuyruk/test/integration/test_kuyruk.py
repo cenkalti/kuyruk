@@ -7,10 +7,6 @@ from kuyruk import Task
 from kuyruk.task import BoundTask
 from kuyruk.test import tasks
 from kuyruk.test.integration.util import *
-from kuyruk.connection import Channel
-
-
-Channel.SKIP_REDECLARE_QUEUE = False
 
 logger = logging.getLogger(__name__)
 

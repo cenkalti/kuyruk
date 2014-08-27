@@ -3,10 +3,6 @@ from datetime import timedelta
 from multiprocessing import Process
 
 from kuyruk.test.integration.util import *
-from kuyruk.connection import Channel
-
-
-Channel.SKIP_REDECLARE_QUEUE = False
 
 logger = logging.getLogger(__name__)
 

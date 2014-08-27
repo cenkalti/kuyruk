@@ -2,10 +2,11 @@ import os
 import sys
 import unittest
 
+import rabbitpy
 from what import What
 
 from kuyruk import Kuyruk
-from kuyruk.queue import Queue
+from kuyruk.helpers import json_datetime
 from kuyruk.test.integration.util import delete_queue
 
 
@@ -49,5 +50,9 @@ def run_python(args, cwd):
 
 
 def get_name():
-    desc = Queue('kuyruk', Kuyruk().channel()).receive()[1]
-    return '.'.join([desc['module'], desc['function']])
+    with Kuyruk() as k:
+        q = rabbitpy.Queue(k.channel(), name="kuyruk", durable=True)
+        q.declare()
+        m = q.get()
+    d = json_datetime.loads(m.body)
+    return '.'.join([d['module'], d['function']])
