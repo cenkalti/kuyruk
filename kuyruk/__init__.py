@@ -25,7 +25,7 @@ logger.addHandler(null_handler)
 
 
 # Pika should do this. Patch submitted to Pika.
-logging.getLogger('pika').addHandler(null_handler)
+logging.getLogger('rabbitpy').addHandler(null_handler)
 
 
 class Kuyruk(EventMixin):
