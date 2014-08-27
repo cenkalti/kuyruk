@@ -1,12 +1,17 @@
+import os
+import signal
+import logging
 import unittest
 
 import redis
+import rabbitpy
 from mock import patch
 
-from kuyruk import Task
+from kuyruk import Kuyruk, Task
 from kuyruk.task import BoundTask
 from kuyruk.test import tasks
-from kuyruk.test.integration.util import *
+from kuyruk.test.integration.util import run_kuyruk, run_requeue, wait_until, \
+    not_running, get_pid, get_pids, TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +28,9 @@ class KuyrukTestCase(unittest.TestCase):
 
     """
     def setUp(self):
-        delete_queue('kuyruk')
+        self.kuyruk = Kuyruk()
+        self.queue = rabbitpy.Queue(self.kuyruk.channel(), "kuyruk", durable=True)
+        self.queue.delete()
 
     def test_simple_task(self):
         """Run a task on default queue"""
@@ -44,7 +51,7 @@ class KuyrukTestCase(unittest.TestCase):
         tasks.raise_exception()
         with run_kuyruk() as worker:
             worker.expect('ZeroDivisionError')
-        assert is_empty('kuyruk')
+        assert len(self.queue) == 0
 
     def test_retry(self):
         """Errored tasks must be retried"""
@@ -52,7 +59,7 @@ class KuyrukTestCase(unittest.TestCase):
         with run_kuyruk() as worker:
             worker.expect('ZeroDivisionError')
             worker.expect('ZeroDivisionError')
-        assert is_empty('kuyruk')
+        assert len(self.queue) == 0
 
     def test_cold_shutdown(self):
         """If the worker is stuck on the task it can be stopped by
@@ -74,7 +81,7 @@ class KuyrukTestCase(unittest.TestCase):
         with run_kuyruk() as worker:
             worker.expect('Task is rejected')
             worker.expect('Task is rejected')
-        assert not is_empty('kuyruk')
+        assert len(self.queue) == 1
 
     def test_respawn(self):
         """Respawn a new worker if dead
@@ -106,6 +113,9 @@ class KuyrukTestCase(unittest.TestCase):
 
     def test_save_failed(self):
         """Failed tasks are saved to Redis"""
+        r = redis.StrictRedis()
+        r.delete("failed_tasks")
+
         tasks.raise_exception()
         with run_kuyruk(save_failed_tasks=True) as worker:
             worker.expect('ZeroDivisionError')
@@ -114,15 +124,17 @@ class KuyrukTestCase(unittest.TestCase):
             worker.expect('Saved')
             worker.expect('Task is processed')
 
-        assert is_empty('kuyruk')
-        r = redis.StrictRedis()
+        assert len(self.queue) == 0
         assert r.hvals('failed_tasks')
 
         run_requeue()
         assert not r.hvals('failed_tasks')
-        assert not is_empty('kuyruk')
+        assert len(self.queue) == 1
 
     def test_save_failed_class_task(self):
+        r = redis.StrictRedis()
+        r.delete("failed_tasks")
+
         """Failed tasks are saved to Redis (class tasks)"""
         cat = tasks.Cat(1, 'Felix')
 
@@ -132,31 +144,31 @@ class KuyrukTestCase(unittest.TestCase):
             worker.expect('Saving failed task')
             worker.expect('Saved')
 
-        assert is_empty('kuyruk')
-        r = redis.StrictRedis()
+        assert len(self.queue) == 0
         assert r.hvals('failed_tasks')
 
         run_requeue()
         assert not r.hvals('failed_tasks')
-        assert not is_empty('kuyruk')
+        assert len(self.queue) == 1
 
     def test_save_failed_arg_class(self):
         """Failed tasks are saved to Redis (arg class)"""
-        cat = tasks.Cat(1, 'Felix')
+        r = redis.StrictRedis()
+        r.delete("failed_tasks")
 
+        cat = tasks.Cat(1, 'Felix')
         tasks.jump_fail(cat)
         with run_kuyruk(save_failed_tasks=True) as worker:
             worker.expect('ZeroDivisionError')
             worker.expect('Saving failed task')
             worker.expect('Saved')
 
-        assert is_empty('kuyruk')
-        r = redis.StrictRedis()
+        assert len(self.queue) == 0
         assert r.hvals('failed_tasks')
 
         run_requeue()
         assert not r.hvals('failed_tasks')
-        assert not is_empty('kuyruk')
+        assert len(self.queue) == 1
 
     def test_dead_master(self):
         """If master is dead worker should exit gracefully"""
@@ -220,4 +232,4 @@ class KuyrukTestCase(unittest.TestCase):
             worker.expect('Acking current task')
             worker.expect('Exiting')
             worker.expect_exit(0)
-        assert is_empty('kuyruk'), worker.get_output()
+        assert len(self.queue) == 0, worker.get_output()

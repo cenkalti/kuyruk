@@ -7,7 +7,6 @@ from what import What
 
 from kuyruk import Kuyruk
 from kuyruk.helpers import json_datetime
-from kuyruk.test.integration.util import delete_queue
 
 
 class LoaderTestCase(unittest.TestCase):
@@ -35,12 +34,18 @@ class LoaderTestCase(unittest.TestCase):
                 'apppackage.tasks.print_message'
             ),
         ]
-        for args, cwd, name in cases:
-            print cwd, args, name
-            delete_queue('kuyruk')
-            run_python(args, cwd=cwd)  # Every call sends a task to the queue
-            name_from_queue = get_name()
-            assert name_from_queue == name  # Can we load the task by name?
+        with Kuyruk() as k:
+            for args, cwd, name in cases:
+                print cwd, args, name
+
+                queue = rabbitpy.Queue(k.channel(), "kuyruk", durable=True)
+                queue.delete()
+
+                # Every call sends a task to the queue
+                run_python(args, cwd=cwd)
+
+                # Can we load the task by name?
+                assert get_task_name(queue) == name
 
 
 def run_python(args, cwd):
@@ -49,10 +54,7 @@ def run_python(args, cwd):
     What(sys.executable, *args.split(' '), cwd=cwd).expect_exit(0)
 
 
-def get_name():
-    with Kuyruk() as k:
-        q = rabbitpy.Queue(k.channel(), name="kuyruk", durable=True)
-        q.declare()
-        m = q.get()
+def get_task_name(queue):
+    m = queue.get()
     d = json_datetime.loads(m.body)
     return '.'.join([d['module'], d['function']])

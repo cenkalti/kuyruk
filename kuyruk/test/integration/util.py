@@ -8,7 +8,6 @@ from time import time, sleep
 from functools import partial
 from contextlib import contextmanager
 
-import rabbitpy
 from what import What
 
 from kuyruk import Kuyruk
@@ -20,22 +19,6 @@ else:
     TIMEOUT = 5
 
 logger = logging.getLogger(__name__)
-
-
-def delete_queue(*queues):
-    """Delete queues from RabbitMQ"""
-    with Kuyruk() as k:
-        for name in queues:
-            rabbitpy.Queue(k.channel(), name=name).delete()
-
-
-def len_queue(queue):
-    with Kuyruk() as k:
-        return len(rabbitpy.Queue(k.channel(), name=queue))
-
-
-def is_empty(queue):
-    len_queue(queue) == 0
 
 
 @contextmanager
@@ -117,14 +100,6 @@ def is_running():
 def run_requeue():
     from kuyruk.__main__ import run_requeue
     run_requeue(Kuyruk(), None)
-
-
-def run_scheduler(config):
-    from kuyruk.__main__ import run_scheduler
-    from kuyruk.config import Config
-    c = Config()
-    c.from_dict(config)
-    run_scheduler(Kuyruk(c), None)
 
 
 def get_pids(pattern):

@@ -3,7 +3,10 @@ import logging
 import unittest
 from time import sleep
 
-from kuyruk.test.integration.util import delete_queue, len_queue, run_kuyruk
+import rabbitpy
+
+from kuyruk import Kuyruk
+from kuyruk.test.integration.util import run_kuyruk
 
 logger = logging.getLogger(__name__)
 
@@ -13,10 +16,13 @@ CONFIG_FILENAME = "/tmp/kuyruk-config.py"
 
 class SchedulerTestCase(unittest.TestCase):
 
+    def setUp(self):
+        self.kuyruk = Kuyruk()
+        self.queue = rabbitpy.Queue(self.kuyruk.channel(), "scheduled", durable=True)
+        self.queue.delete()
+
     def test_scheduler(self):
         """Scheduler schedules correctly"""
-        delete_queue('scheduled')
-
         if os.path.exists(DB_FILENAME):
             os.unlink(DB_FILENAME)
 
@@ -39,17 +45,17 @@ SCHEDULE = {
             p.expect("Start loop")
             p.expect("sending due task", timeout=1)
             p.expect("sending due task", timeout=6)
-        self.assertEqual(len_queue("scheduled"), 2)
+        assert len(self.queue) == 2
 
         # checking shelve, this shouldnt send a job
         with run_kuyruk(process="scheduler", config_filename=CONFIG_FILENAME) as p:
             p.expect("Start loop")
             p.expect("last run of runs-every-5-seconds")
             sleep(2)
-        self.assertEqual(len_queue("scheduled"), 2)
+        assert len(self.queue) == 2
 
         # restart again, now it should send a job
         with run_kuyruk(process="scheduler", config_filename=CONFIG_FILENAME) as p:
             p.expect("Start loop")
             p.expect("sending due task", timeout=5)
-        self.assertEqual(len_queue("scheduled"), 3)
+        assert len(self.queue) == 3
