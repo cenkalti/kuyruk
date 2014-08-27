@@ -1,16 +1,14 @@
 from __future__ import absolute_import
 import logging
+from threading import RLock
 
-import pika
-import pika.exceptions
+import rabbitpy
 
 from kuyruk import exceptions
 from kuyruk.task import Task
-from kuyruk.queue import Queue
 from kuyruk.config import Config
 from kuyruk.worker import Worker
 from kuyruk.events import EventMixin
-from kuyruk.connection import Connection
 
 __version__ = '2.0.0-alpha'
 __all__ = ['Kuyruk', 'Task', 'Worker']
@@ -42,10 +40,17 @@ class Kuyruk(EventMixin):
     def __init__(self, config=None, task_class=Task):
         self.task_class = task_class
         self.config = Config()
+        self._lock = RLock()
         self._connection = None
         self._channel = None
         if config:
             self.config.from_object(config)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def task(self, queue='kuyruk', eager=False, retry=0, task_class=None,
              max_run_time=None, local=False, arg_class=None):
@@ -95,10 +100,10 @@ class Kuyruk(EventMixin):
         Creates a new connection if it is not connected.
 
         """
-        if self._connection is None or not self._connection.is_open:
-            self._connection = self._connect()
-
-        return self._connection
+        with self._lock:
+            if self._connection is None or self._connection.closed:
+                self._connection = self._new_connection()
+            return self._connection
 
     def channel(self):
         """
@@ -106,50 +111,37 @@ class Kuyruk(EventMixin):
         Creates a new channel if there is no available.
 
         """
-        if self._channel is None or not self._channel.is_open:
-            self._channel = self._open_channel()
-
-        return self._channel
+        with self._lock:
+            if self._channel is None or self._channel.closed:
+                self._channel = self._new_channel()
+            return self._channel
 
     def close(self):
-        if self._connection is not None:
-            if self._connection.is_open:
+        with self._lock:
+            if self._connection is not None:
                 self._connection.close()
 
-    def _connect(self):
-        """Returns new connection object."""
-        parameters = pika.ConnectionParameters(
+    def _new_connection(self):
+        """Returns a new connection."""
+        # TODO put connection parameters
+        # parameters = pika.ConnectionParameters(
+        #     heartbeat_interval=0,  # We don't want heartbeats
+        #     socket_timeout=2,
+        #     connection_attempts=2)
+        logger.info("Connection to RabbitMQ...")
+        connection = rabbitpy.Connection(
+            "amqp://{user}:{password}@{host}:{port}/{virtual_host}".format(
+            user=self.config.RABBIT_USER,
+            password=self.config.RABBIT_PASSWORD,
             host=self.config.RABBIT_HOST,
             port=self.config.RABBIT_PORT,
-            virtual_host=self.config.RABBIT_VIRTUAL_HOST,
-            credentials=pika.PlainCredentials(
-                self.config.RABBIT_USER,
-                self.config.RABBIT_PASSWORD),
-            heartbeat_interval=0,  # We don't want heartbeats
-            socket_timeout=2,
-            connection_attempts=2)
-        connection = Connection(parameters)
+            virtual_host=self.config.RABBIT_VIRTUAL_HOST))
         logger.info('Connected to RabbitMQ')
         return connection
 
-    def _open_channel(self):
+    def _new_channel(self):
         """Returns a new channel."""
-        CLOSED = (pika.exceptions.ConnectionClosed,
-                  pika.exceptions.ChannelClosed)
-
-        try:
-            channel = self.connection().channel()
-        except CLOSED:
-            logger.warning("Connection is closed. Reconnecting...")
-
-            # If there is a connection, try to close it
-            if self._connection:
-                try:
-                    self._connection.close()
-                except CLOSED:
-                    pass
-
-            self._connection = self._connect()
-            channel = self._connection.channel()
-
-        return channel
+        logger.info("Opening new channel...")
+        ch = self.connection().channel()
+        logger.info("Opened new channel")
+        return ch
