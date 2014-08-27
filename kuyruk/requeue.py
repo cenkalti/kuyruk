@@ -2,7 +2,9 @@ from __future__ import absolute_import
 import json
 import logging
 
-from kuyruk.queue import Queue
+import rabbitpy
+
+from kuyruk.helpers import json_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,9 @@ class Requeuer(object):
         del task_description['queue']
         count = task_description.get('requeue_count', 0)
         task_description['requeue_count'] = count + 1
-        task_queue = Queue(queue_name, channel)
-        task_queue.send(task_description)
+        body = json_datetime.dumps(task_description)
+        msg = rabbitpy.Message(channel, body, properties={
+            "delivery_mode": 2,
+            "content_type": "application/json"})
+        msg.publish("", routing_key=queue_name, mandatory=True)
         redis.hdel('failed_tasks', task_description['id'])
