@@ -36,12 +36,15 @@ class KuyrukTestCase(unittest.TestCase):
         """Run a task on default queue"""
         tasks.print_task('hello world')
         with run_kuyruk() as worker:
+            worker.expect('Start consuming')
             worker.expect('hello world')
+            worker.expect('Task is processed')
 
     def test_another_queue(self):
         """Run a task on different queue"""
         tasks.print_task2('hello another')
         with run_kuyruk(queue='another_queue') as worker:
+            worker.expect('Start consuming')
             worker.expect('another_queue')
             worker.expect('hello another')
             worker.expect('Task is processed')

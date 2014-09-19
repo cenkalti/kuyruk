@@ -55,6 +55,7 @@ class Worker(KuyrukProcess):
         if is_local:
             queue_name = ".".join((queue_name[1:], socket.gethostname()))
         self.queue = rabbitpy.Queue(self.channel, name=queue_name, durable=True)
+        self.consumer = None
         self._pause = False
         self.current_message = None
         self.current_task = None
@@ -112,17 +113,12 @@ class Worker(KuyrukProcess):
 
         """
         self.queue.declare()
-        self.channel.prefetch_count(1)
         logger.debug("Start consuming")
-        while not self.shutdown_pending.isSet():
-            logger.debug("Waiting for new message...")
-            message = self.queue.get()
-            if not message:
-                sleep(1)
-                continue
-
-            with self._set_current_message(message):
-                self.process_message(message)
+        with self.queue.consumer() as consumer:
+            self.consumer = consumer
+            for message in consumer.next_message():
+                with self._set_current_message(message):
+                    self.process_message(message)
 
     @contextmanager
     def _set_current_message(self, message):
@@ -349,6 +345,8 @@ class Worker(KuyrukProcess):
         """Exit after the last task is finished."""
         logger.warning("Warm shutdown")
         self.shutdown_pending.set()
+        if self.consumer:
+            self.consumer.cancel()
 
     def cold_shutdown(self):
         """Exit immediately."""
