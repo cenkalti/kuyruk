@@ -232,7 +232,7 @@ def parse_queues_str(s):
     :param s: Command line or configuration queues string
     :return: list of queue names
     """
-    queues = (q.strip() for q in s.split(','))
+    queues = filter(None, [q.strip() for q in s.split(',')])
     return list(itertools.chain.from_iterable(expand_count(q) for q in queues))
 
 

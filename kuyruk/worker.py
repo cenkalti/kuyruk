@@ -51,6 +51,9 @@ class Worker(KuyrukProcess):
 
     """
     def __init__(self, kuyruk, queue_name):
+        if not queue_name:
+            raise ValueError("empty queue name")
+
         super(Worker, self).__init__(kuyruk)
         self.channel = self.kuyruk.channel()
         is_local = queue_name.startswith('@')
