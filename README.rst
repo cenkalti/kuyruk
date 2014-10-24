@@ -47,8 +47,7 @@ using the return value of the function.
    def echo(message):
        print message
 
-   # This will send a message to queue
-   echo('Hello, Kuyruk.')
+   echo('Hello, Kuyruk.')  # This will send a message to queue
 
 
 How to run the worker?
