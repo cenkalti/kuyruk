@@ -4,7 +4,7 @@ import sys
 import types
 import logging
 import multiprocessing
-
+import importer
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +153,16 @@ class Config(object):
             if key.isupper():
                 setattr(self, key, value)
         logger.info("Config is loaded from dict: %r", d)
+
+    def from_pymodule(self, module_name):
+        mdl = importer.import_module(module_name)
+        values = {}
+        for key, value in mdl.__dict__.iteritems():
+            if (key.isupper() and not isinstance(value, types.ModuleType)):
+                values[key] = value
+        self.from_dict(values)
+        logger.info("Config is loaded from module: %s", module_name)
+
 
     def from_pyfile(self, filename):
         """Load values from a Python file."""

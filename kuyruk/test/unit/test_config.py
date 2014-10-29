@@ -8,6 +8,12 @@ from kuyruk.test.unit import config as user_config
 
 class ConfigTestCase(unittest.TestCase):
 
+    def test_from_pymodule(self):
+        dirname = os.path.dirname(__file__)
+        config = Config()
+        config.from_pymodule('kuyruk.test.unit.config')
+        self.assertEqual(config.MAX_LOAD, 20)
+
     def test_from_pyfile(self):
         dirname = os.path.dirname(__file__)
         path = os.path.join(dirname, 'config.py')
