@@ -17,3 +17,4 @@ IMPORTS = [
     'kuyruk.test.config',
     'kuyruk',
 ]
+REDIS_DB = 2

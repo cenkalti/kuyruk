@@ -12,7 +12,7 @@ class ConfigTestCase(unittest.TestCase):
         dirname = os.path.dirname(__file__)
         config = Config()
         config.from_pymodule('kuyruk.test.unit.config')
-        self.assertEqual(config.MAX_LOAD, 20)
+        self.assertEqual(config.REDIS_DB, 2)
 
     def test_from_pyfile(self):
         dirname = os.path.dirname(__file__)
