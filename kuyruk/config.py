@@ -163,7 +163,6 @@ class Config(object):
         self.from_dict(values)
         logger.info("Config is loaded from module: %s", module_name)
 
-
     def from_pyfile(self, filename):
         """Load values from a Python file."""
         # Read the config file from a seperate process because it may contain
