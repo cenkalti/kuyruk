@@ -4,7 +4,7 @@ import sys
 import types
 import logging
 import multiprocessing
-
+import importer
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +153,37 @@ class Config(object):
             if key.isupper():
                 setattr(self, key, value)
         logger.info("Config is loaded from dict: %r", d)
+
+    def from_pymodule(self, module_name):
+        def readfile(conn):
+            logger.debug("Reading config file from seperate process...")
+            try:
+                mdl = importer.import_module(module_name)
+                values = {}
+                for key, value in mdl.__dict__.iteritems():
+                    if (key.isupper() and not isinstance(value, types.ModuleType)):
+                        values[key] = value
+                self.from_dict(values)
+                logger.info("Config is loaded from module: %s", module_name)
+                conn.send(values)
+                logger.debug("Config read successfully")
+            except:
+                logger.exception("Cannot read config")
+                conn.send(None)
+                raise
+
+        parent_conn, child_conn = multiprocessing.Pipe()
+        process = multiprocessing.Process(target=readfile,
+                                          args=(child_conn, ))
+        process.start()
+        values = parent_conn.recv()
+        process.join()
+        if values is None:
+            print "Cannot load config module: %s" % module_name
+            sys.exit(1)
+
+        self.from_dict(values)
+        logger.info("Config is loaded from module: %s", module_name)
 
     def from_pyfile(self, filename):
         """Load values from a Python file."""
