@@ -32,7 +32,7 @@ setup(
         'setproctitle>=1.1.7',
         'blinker>=1.2',
         'argparse>=1.2.1',
-        'rpyc>=3.2.3',
+        'rpyc>=3.3.0',
     ],
     description='A distributed task runner',
     long_description=read('README.rst'),

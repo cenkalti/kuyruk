@@ -56,6 +56,12 @@ def main():
         help='Python file containing Kuyruk configuration parameters')
     add_config_options(parser)
 
+    parser.add_argument(
+        '-m', '--module',
+        help='Python module containing Kuyruk configuration parameters')
+    add_config_options(parser)
+
+
     subparsers = parser.add_subparsers(help='sub-command name')
 
     # Parser for the "worker" sub-command
@@ -113,6 +119,8 @@ def create_config(args):
     if args.config:
         # Load config file from command line option
         config.from_pyfile(args.config)
+    elif args.module:
+        config.from_pymodule(args.module)
     else:
         # Load config file from environment variable
         env_config = os.environ.get('KUYRUK_CONFIG')

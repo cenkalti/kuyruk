@@ -43,12 +43,11 @@ using the return value of the function.
 
    kuyruk = Kuyruk()
 
-   @kuyruk.task
+   @kuyruk.task  # The decorator turns a function into a task
    def echo(message):
        print message
 
-   # This will send a message to queue
-   echo('Hello, Kuyruk.')
+   echo('Hello, Kuyruk.')  # This will send a message to queue
 
 
 How to run the worker?
@@ -70,9 +69,8 @@ Here it is: http://kuyruk.readthedocs.org
 How to run tests?
 -----------------
 
-Normally you don't need this but it is easy.
-``kuyruk/test`` directory contains files of both unit and integration tests.
 Make sure that RabbitMQ is running before running tests.
+``kuyruk/test`` directory contains files of both unit and integration tests.
 If you want to test failed task saving, make sure Redis is also running.
 Tests also run on `Travis CI <https://travis-ci.org/cenkalti/kuyruk>`_
 automatically on push.

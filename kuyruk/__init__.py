@@ -11,7 +11,7 @@ from kuyruk.config import Config
 from kuyruk.worker import Worker
 from kuyruk.events import EventMixin
 
-__version__ = '2.0.0-alpha'
+__version__ = '1.2.4'
 __all__ = ['Kuyruk', 'Task', 'Worker']
 
 
