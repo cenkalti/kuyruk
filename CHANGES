@@ -13,6 +13,7 @@ Version 2.0.0
 - Removed manager subcommand.
 - Failed tasks are not saved to redis anymore.
 - Failed tasks are retried in the same worker.
+- Unknown keys in config are errors.
 
 Version 1.2.1
 -------------

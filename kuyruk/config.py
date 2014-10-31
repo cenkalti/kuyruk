@@ -73,14 +73,14 @@ class Config(object):
         for key in dir(obj):
             if key.isupper():
                 value = getattr(obj, key)
-                setattr(self, key, value)
+                self._setattr(key, value)
         logger.info("Config is loaded from object: %r", obj)
 
     def from_dict(self, d):
         """Load values from a dict."""
         for key, value in d.iteritems():
             if key.isupper():
-                setattr(self, key, value)
+                self._setattr(key, value)
         logger.info("Config is loaded from dict: %r", d)
 
     def from_pymodule(self, module_name):
@@ -88,7 +88,7 @@ class Config(object):
         for key, value in module.__dict__.iteritems():
             if (key.isupper() and
                     not isinstance(value, types.ModuleType)):
-                setattr(self, key, value)
+                self._setattr(key, value)
         logger.info("Config is loaded from module: %s", module_name)
 
     def from_pyfile(self, filename):
@@ -98,7 +98,7 @@ class Config(object):
         for key, value in locals_.iteritems():
             if (key.isupper() and
                     not isinstance(value, types.ModuleType)):
-                setattr(self, key, value)
+                self._setattr(key, value)
         logger.info("Config is loaded from file: %s", filename)
 
     def from_env_vars(self):
@@ -122,4 +122,9 @@ class Config(object):
                 value = ast.literal_eval(value)
             except (ValueError, SyntaxError):
                 pass
-            setattr(self, key, value)
+            self._setattr(key, value)
+
+    def _setattr(self, key, value):
+        if not hasattr(self.__class__, key):
+            raise ValueError("Unknown config key: %s" % key)
+        setattr(self, key, value)

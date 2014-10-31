@@ -9,8 +9,8 @@ class ConfigTestCase(unittest.TestCase):
 
     def test_from_pymodule(self):
         config = Config()
-        config.from_pymodule('kuyruk.test.unit.config')
-        self.assertEqual(config.REDIS_DB, 2)
+        config.from_pymodule('kuyruk.test.unit.config2')
+        self.assertEqual(config.MAX_LOAD, 20)
 
     def test_from_pyfile(self):
         dirname = os.path.dirname(__file__)
