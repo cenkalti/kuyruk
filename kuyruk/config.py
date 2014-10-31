@@ -62,7 +62,7 @@ class Config(object):
 
     LOGGING_CONFIG = None
     """INI style logging configuration file.
-    This has pecedence over ``LOGGING_LEVEL``."""
+    This has precedence over ``LOGGING_LEVEL``."""
 
     SENTRY_DSN = None
     """Send exceptions to Sentry. Raven must be installed in order that
