@@ -53,11 +53,12 @@ class Worker(KuyrukProcess):
             raise ValueError("empty queue name")
 
         super(Worker, self).__init__(kuyruk)
-        self.channel = self.kuyruk.channel()
         is_local = queue_name.startswith('@')
         if is_local:
-            queue_name = ".".join((queue_name[1:], socket.gethostname()))
-        self.queue = rabbitpy.Queue(self.channel, name=queue_name, durable=True)
+            self.queue_name = "%s.%s" % (queue_name[1:], socket.gethostname())
+        else:
+            self.queue_name = queue_name
+        self.queue = None
         self._pause = False
         self.current_message = None
         self.current_task = None
@@ -94,7 +95,7 @@ class Worker(KuyrukProcess):
 
         """
         super(Worker, self).run()
-        setproctitle("kuyruk: worker on %s" % self.queue.name)
+        setproctitle("kuyruk: worker on %s" % self.queue_name)
         self.import_modules()
         self.start_daemon_threads()
         self.maybe_start_manager_rpc_service()
@@ -114,14 +115,18 @@ class Worker(KuyrukProcess):
         consumer is cancelled via a signal or another thread.
 
         """
-        self.queue.declare()
-        logger.debug("Start consuming")
-        with self.queue.consumer() as consumer:
-            for message in consumer.next_message():
-                if message is None:
-                    break
-                with self._set_current_message(message):
-                    self.process_message(message)
+        with self.kuyruk.channel() as ch:
+            logger.debug("Declaring queue")
+            queue = rabbitpy.Queue(ch, name=self.queue_name, durable=True)
+            queue.declare()
+            logger.debug("Start consuming")
+            with queue.consumer(prefetch=1) as consumer:
+                self.queue = queue
+                for message in consumer.next_message():
+                    if message is None:
+                        break
+                    with self._set_current_message(message):
+                        self.process_message(message)
 
     @contextmanager
     def _set_current_message(self, message):
@@ -347,6 +352,8 @@ class Worker(KuyrukProcess):
     def warm_shutdown(self):
         """Exit after the last task is finished."""
         logger.warning("Warm shutdown")
+        if self.queue is None:
+            sys.exit(0)
         self.shutdown_pending.set()
         self.queue.stop_consuming()
 

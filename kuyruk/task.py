@@ -8,9 +8,11 @@ from time import time
 from uuid import uuid1
 from datetime import datetime
 from functools import wraps
+from threading import Lock
 from contextlib import contextmanager
 
 import rabbitpy
+import rabbitpy.exceptions
 
 from kuyruk import events, importer
 from kuyruk.events import EventMixin
@@ -114,6 +116,8 @@ class Task(EventMixin):
         self.max_run_time = max_run_time
         self.cls = None
         self.arg_class = arg_class
+        self._declared_queues = set()
+        self._declared_queues_lock = Lock()
         self.setup()
 
     def setup(self):
@@ -173,6 +177,13 @@ class Task(EventMixin):
             return BoundTask(self, obj)
         return self
 
+    def _declare_queue(self, channel, name, force=False):
+        with self._declared_queues_lock:
+            if name not in self._declared_queues or force:
+                logger.debug("declaring queue...")
+                rabbitpy.Queue(channel, name=name, durable=True).declare()
+                self._declared_queues.add(name)
+
     def send_to_queue(self, args, kwargs, host=None):
         """
         Sends this task to queue.
@@ -196,14 +207,17 @@ class Task(EventMixin):
 
         desc = self.get_task_description(args, kwargs, queue_name)
         body = json_datetime.dumps(desc)
-        ch = self.kuyruk.channel()
-        msg = rabbitpy.Message(ch, body, properties={
-            "delivery_mode": 2,
-            "content_type": "application/json"})
-        logger.debug("declaring queue...")
-        rabbitpy.Queue(ch, name=queue_name, durable=True).declare()
+        properties = {"delivery_mode": 2, "content_type": "application/json"}
+
+        ch = self.kuyruk._channel_for_publishing
+        self._declare_queue(ch, queue_name)
         logger.debug("publishing message...")
-        msg.publish(exchange="", routing_key=queue_name, mandatory=True)
+        msg = rabbitpy.Message(ch, body, properties=properties)
+        try:
+            msg.publish(exchange="", routing_key=queue_name, mandatory=True)
+        except rabbitpy.exceptions.MessageReturnedException:
+            self._declare_queue(ch, queue_name, force=True)
+            msg.publish(exchange="", routing_key=queue_name, mandatory=True)
         logger.debug("published.")
 
     def get_task_description(self, args, kwargs, queue):

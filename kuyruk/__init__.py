@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 import atexit
 import logging
-from threading import RLock
+from threading import Lock
 
 import rabbitpy
 
@@ -37,18 +37,13 @@ class Kuyruk(EventMixin):
     def __init__(self, config=None, task_class=Task):
         self.task_class = task_class
         self.config = Config()
-        self._lock = RLock()
         self._connection = None
+        self._connection_lock = Lock()
         self._channel = None
+        self._channel_lock = Lock()
         if config:
             self.config.from_object(config)
         atexit.register(self.close)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
 
     def task(self, queue='kuyruk', eager=False, retry=0, task_class=None,
              max_run_time=None, local=False, arg_class=None):
@@ -92,49 +87,51 @@ class Kuyruk(EventMixin):
             logger.debug('task with args')
             return decorator()
 
+    def close(self):
+        """Close RabbitMQ connection if open."""
+        with self._connection_lock:
+            if self._connection is not None:
+                self._connection.close()
+
+    @property
     def connection(self):
         """
         Returns the shared RabbitMQ connection.
         Creates a new connection if it is not connected.
 
         """
-        with self._lock:
+        with self._connection_lock:
             if self._connection is None or self._connection.closed:
-                self._connection = self._new_connection()
+                self._connection = self._connect()
             return self._connection
 
-    def channel(self):
-        """
-        Returns the shared channel.
-        Creates a new channel if there is no available.
-
-        """
-        with self._lock:
-            if self._channel is None or self._channel.closed:
-                self._channel = self._new_channel()
-            return self._channel
-
-    def close(self):
-        with self._lock:
-            if self._connection is not None:
-                self._connection.close()
-
-    def _new_connection(self):
-        """Returns a new connection."""
+    def _connect(self):
         logger.info("Connection to RabbitMQ...")
         connection = rabbitpy.Connection(
-            "amqp://{user}:{password}@{host}:{port}/{virtual_host}?heartbeat=0&connection_timeout=2".format(
-            user=self.config.RABBIT_USER,
-            password=self.config.RABBIT_PASSWORD,
-            host=self.config.RABBIT_HOST,
-            port=self.config.RABBIT_PORT,
-            virtual_host=self.config.RABBIT_VIRTUAL_HOST))
+            "amqp://{user}:{password}@{host}:{port}/{virtual_host}"
+            "?heartbeat=0&connection_timeout=2".format(
+                user=self.config.RABBIT_USER,
+                password=self.config.RABBIT_PASSWORD,
+                host=self.config.RABBIT_HOST,
+                port=self.config.RABBIT_PORT,
+                virtual_host=self.config.RABBIT_VIRTUAL_HOST))
         logger.info('Connected to RabbitMQ')
         return connection
 
-    def _new_channel(self):
-        """Returns a new channel."""
+    def channel(self):
+        """Returns a new channel. Don't forget to close when you are done."""
         logger.info("Opening new channel...")
-        ch = self.connection().channel()
+        ch = self.connection.channel()
         logger.info("Opened new channel")
         return ch
+
+    @property
+    def _channel_for_publishing(self):
+        """This function is used to get the channel when sending tasks to
+        queues."""
+        with self._channel_lock:
+            if self._channel is None or self._channel.closed:
+                self._channel = self.channel()
+                # We will use mandatory flag when publishing.
+                self._channel.enable_publisher_confirms()
+            return self._channel
