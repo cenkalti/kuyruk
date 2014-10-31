@@ -11,7 +11,6 @@ import argparse
 from kuyruk import __version__, importer, Kuyruk
 from kuyruk.config import Config
 from kuyruk.requeue import Requeue
-from kuyruk.manager import Manager
 
 
 logger = logging.getLogger(__name__)
@@ -26,11 +25,6 @@ def run_worker(kuyruk, args):
 def run_requeue(kuyruk, args):
     r = Requeue(kuyruk)
     r.run()
-
-
-def run_manager(kuyruk, args):
-    m = Manager(kuyruk)
-    m.run()
 
 
 def main():
@@ -61,10 +55,6 @@ def main():
     parser_master = subparsers.add_parser('requeue',
                                           help='requeue failed tasks')
     parser_master.set_defaults(func=run_requeue)
-
-    # Parser for the "manager" sub-command
-    parser_master = subparsers.add_parser('manager', help='run manager')
-    parser_master.set_defaults(func=run_manager)
 
     # Parse arguments
     args = parser.parse_args()
