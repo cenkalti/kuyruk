@@ -34,18 +34,20 @@ class LoaderTestCase(unittest.TestCase):
                 'apppackage.tasks.print_message'
             ),
         ]
-        with Kuyruk() as k:
-            for args, cwd, name in cases:
-                print cwd, args, name
+        k = Kuyruk()
+        with k.connection as conn:
+            with conn.channel() as ch:
+                for args, cwd, name in cases:
+                    print cwd, args, name
 
-                queue = rabbitpy.Queue(k.channel(), "kuyruk", durable=True)
-                queue.delete()
+                    queue = rabbitpy.Queue(ch, "kuyruk", durable=True)
+                    queue.delete()
 
-                # Every call sends a task to the queue
-                run_python(args, cwd=cwd)
+                    # Every call sends a task to the queue
+                    run_python(args, cwd=cwd)
 
-                # Can we load the task by name?
-                assert get_task_name(queue) == name
+                    # Can we load the task by name?
+                    assert get_task_name(queue) == name
 
 
 def run_python(args, cwd):
