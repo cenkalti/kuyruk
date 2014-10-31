@@ -35,11 +35,11 @@ class Kuyruk(EventMixin):
     Reject = exceptions.Reject  # Shortcut for raising from tasks
 
     def __init__(self, config=None, task_class=Task):
-        if not isinstance(config, (Config, None)):
+        if config is None:
+            config = Config()
+        if not isinstance(config, Config):
             raise TypeError
         self.config = config
-        if self.config is None:
-            self.config = Config()
         self.task_class = task_class
         self._connection = None
         self._connection_lock = Lock()
