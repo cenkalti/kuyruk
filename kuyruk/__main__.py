@@ -12,7 +12,6 @@ from kuyruk import __version__, importer, Kuyruk
 from kuyruk.config import Config
 from kuyruk.requeue import Requeue
 from kuyruk.manager import Manager
-from kuyruk.scheduler import Scheduler
 
 
 logger = logging.getLogger(__name__)
@@ -34,11 +33,6 @@ def run_manager(kuyruk, args):
     m.run()
 
 
-def run_scheduler(kuyruk, args):
-    s = Scheduler(kuyruk)
-    s.run()
-
-
 def main():
     parser = argparse.ArgumentParser(conflict_handler='resolve')
 
@@ -54,7 +48,6 @@ def main():
         '-m', '--module',
         help='Python module containing Kuyruk configuration parameters')
     add_config_options(parser)
-
 
     subparsers = parser.add_subparsers(help='sub-command name')
 
@@ -72,10 +65,6 @@ def main():
     # Parser for the "manager" sub-command
     parser_master = subparsers.add_parser('manager', help='run manager')
     parser_master.set_defaults(func=run_manager)
-
-    # Parser for the "scheduler" sub-command
-    parser_scheduler = subparsers.add_parser('scheduler', help='run scheduler')
-    parser_scheduler.set_defaults(func=run_scheduler)
 
     # Parse arguments
     args = parser.parse_args()
