@@ -23,10 +23,6 @@ null_handler = logging.NullHandler()
 logger.addHandler(null_handler)
 
 
-# Pika should do this. Patch submitted to Pika.
-logging.getLogger('rabbitpy').addHandler(null_handler)
-
-
 class Kuyruk(EventMixin):
     """
     Main class for Kuyruk distributed task queue. It holds the configuration
