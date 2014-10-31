@@ -5,12 +5,11 @@ import signal
 import logging
 import logging.config
 import threading
-import subprocess
 from time import time
 
 import rpyc
 
-from kuyruk.helpers import monkeypatch_method, print_stack, start_daemon_thread, retry
+from kuyruk.helpers import print_stack
 
 
 logger = logging.getLogger(__name__)
@@ -34,22 +33,10 @@ class KuyrukProcess(object):
         return self.kuyruk.config
 
     def run(self):
-        if self.config.CLOSE_FDS is True:
-            self._patch_popen()
-
         self.setup_logging()
         self.register_signals()
         logger.debug('PID: %s PGID: %s', os.getpid(), os.getpgrp())
         self.started = time()
-
-    def _patch_popen(self):
-        """Patch subprocess.Popen constructor to close_fds by default."""
-        original_init = subprocess.Popen.__init__
-
-        @monkeypatch_method(subprocess.Popen)
-        def __init__(self, *args, **kwargs):
-            close_fds = kwargs.pop('close_fds', True)
-            original_init(self, *args, close_fds=close_fds, **kwargs)
 
     def register_signals(self):
         signal.signal(signal.SIGINT, self.handle_sigint)
@@ -73,10 +60,6 @@ class KuyrukProcess(object):
         sys.stdout.flush()
         sys.stderr.flush()
         os._exit(status)
-
-    def maybe_start_manager_rpc_service(self):
-        if self.config.MANAGER_HOST:
-            start_daemon_thread(target=retry()(self._connect_rpc))
 
     def _connect_rpc(self):
         conn = rpyc.connect(self.config.MANAGER_HOST,

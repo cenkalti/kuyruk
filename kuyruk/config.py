@@ -44,29 +44,6 @@ class Config(object):
     MAX_TASK_RUN_TIME = None
     """Fail the task if it takes more than this seconds."""
 
-    SAVE_FAILED_TASKS = False
-    """Save failed tasks to a queue (named kuyruk_failed) for inspecting and
-    requeueing later."""
-
-    QUEUES = {}
-    """You can specify the hostnames and correspondant queues here.
-    Master starts workers by getting the list of queues from this dictionary
-    by hostname. If the hostname is not found in the keys then the master
-    start a single worker to run on default queue (``kuyruk``).
-
-    Keys are hostnames (socket.gethostname()), values are comma seperated
-    list of queue names.
-
-    Example::
-
-        {'host1.example.com': 'a, 2*b'}
-
-    host1 will run 3 worker processes; 1 for "a" and 2 for "b" queue."""
-
-    DEFAULT_QUEUES = 'kuyruk, @kuyruk'
-    """If the hostname is not found in :attr:`~kuyruk.Config.QUEUES`
-    this value will be used as default."""
-
     LOGGING_LEVEL = 'INFO'
     """Logging level of root logger."""
 
@@ -80,12 +57,6 @@ class Config(object):
 
     SENTRY_PROJECT_URL = None
     """Sentry project URL. Required to generate links to Sentry in Manager."""
-
-    CLOSE_FDS = True
-    """Patch subprocess.Popen constructor to always set close_fds=True.
-    See `subprocess.Popen
-    <http://docs.python.org/2/library/subprocess.html#popen-constructor>`_
-    for additional information."""
 
     # Connection Options
     ####################
@@ -104,40 +75,6 @@ class Config(object):
 
     RABBIT_PASSWORD = 'guest'
     """RabbitMQ password."""
-
-    REDIS_HOST = 'localhost'
-    """Redis host."""
-
-    REDIS_PORT = 6379
-    """Redis port."""
-
-    REDIS_DB = 0
-    """Redis database."""
-
-    REDIS_PASSWORD = None
-    """Redis password."""
-
-    # Manager Options
-    #################
-
-    MANAGER_HOST = None
-    """Manager host that the workers will connect and send stats."""
-
-    MANAGER_PORT = 16501
-    """Manager port that the workers will connect and send stats."""
-
-    MANAGER_HTTP_PORT = 16500
-    """Manager HTTP port that the Flask application will run on."""
-
-    # Scheduler Options
-    ###################
-
-    SCHEDULE = {}
-    """Basic scheduler for kuyruk.
-    see :class:`~kuyruk.scheduler.Scheduler` for more details."""
-
-    SCHEDULER_FILE_NAME = 'kuyruk_scheduler'
-    """Last sent tasks' timestamps are saved to this file."""
 
     def from_object(self, obj):
         """Load values from an object."""

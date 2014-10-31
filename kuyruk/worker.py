@@ -7,7 +7,6 @@ import logging
 import traceback
 import multiprocessing
 from time import time, sleep
-from datetime import datetime
 from functools import wraps
 from contextlib import contextmanager
 
@@ -77,16 +76,6 @@ class Worker(KuyrukProcess):
         else:
             self.sentry = None
 
-        if self.config.SAVE_FAILED_TASKS:
-            import redis
-            self.redis = redis.StrictRedis(
-                host=self.config.REDIS_HOST,
-                port=self.config.REDIS_PORT,
-                db=self.config.REDIS_DB,
-                password=self.config.REDIS_PASSWORD)
-        else:
-            self.redis = None
-
     def run(self):
         """Runs the worker and opens a connection to RabbitMQ.
         After connection is opened, starts consuming messages.
@@ -97,7 +86,6 @@ class Worker(KuyrukProcess):
         setproctitle("kuyruk: worker on %s" % self.queue_name)
         self.import_modules()
         self.start_daemon_threads()
-        self.maybe_start_manager_rpc_service()
         self.consume_messages()
         logger.debug("End run worker")
 
@@ -202,8 +190,6 @@ class Worker(KuyrukProcess):
             logger.debug('No retry left')
             self.capture_exception(task_description)
             message.reject()
-            if self.config.SAVE_FAILED_TASKS:
-                self.save_failed_task(task_description)
 
     def handle_not_found(self, message, task_description):
         """Called if the task is class task but the object with the given id
@@ -231,32 +217,6 @@ class Worker(KuyrukProcess):
         logger.error("Invalid message.")
         self.capture_exception(task_description)
         message.reject()
-
-    def save_failed_task(self, task_description):
-        """Saves the task to ``kuyruk_failed`` queue. Failed tasks can be
-        investigated later and requeued with ``kuyruk reuqueue`` command.
-
-        """
-        logger.info('Saving failed task')
-        task_description['queue'] = self.queue.name
-        task_description['worker_hostname'] = socket.gethostname()
-        task_description['worker_pid'] = os.getpid()
-        task_description['worker_cmd'] = ' '.join(sys.argv)
-        task_description['worker_timestamp'] = datetime.utcnow()
-        task_description['exception'] = traceback.format_exc()
-        exc_type = sys.exc_info()[0]
-        task_description['exception_type'] = "%s.%s" % (
-            exc_type.__module__, exc_type.__name__)
-
-        try:
-            self.redis.hset('failed_tasks', task_description['id'],
-                            json_datetime.dumps(task_description))
-            logger.debug('Saved')
-        except Exception:
-            logger.error('Cannot save failed task to Redis!')
-            logger.debug(traceback.format_exc())
-            if self.sentry:
-                self.sentry.captureException()
 
     @set_current_task
     def apply_task(self, task, args, kwargs):
