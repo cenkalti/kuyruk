@@ -136,11 +136,12 @@ class Worker(object):
             try:
                 logger.warning("Acking current task...")
                 self.current_message.ack()
+                self.current_message.channel.close()
             except Exception:
                 logger.critical("Cannot send ACK for the current task.")
                 traceback.print_exc()
         logger.warning("Exiting...")
-        sys.exit(0)
+        _exit(0)
 
     def consume_messages(self):
         """Consumes messages from the queue and run tasks until
@@ -331,6 +332,9 @@ class Worker(object):
     def cold_shutdown(self):
         """Exit immediately."""
         logger.warning("Cold shutdown")
-        sys.stdout.flush()
-        sys.stderr.flush()
-        os._exit(0)
+        _exit(0)
+
+def _exit(code):
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(0)
