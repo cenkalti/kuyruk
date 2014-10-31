@@ -7,8 +7,6 @@ import logging.config
 import threading
 from time import time
 
-import rpyc
-
 from kuyruk.helpers import print_stack
 
 
@@ -60,13 +58,6 @@ class KuyrukProcess(object):
         sys.stdout.flush()
         sys.stderr.flush()
         os._exit(status)
-
-    def _connect_rpc(self):
-        conn = rpyc.connect(self.config.MANAGER_HOST,
-                            self.config.MANAGER_PORT,
-                            service=self.rpc_service_class(),
-                            config={"allow_pickle": True})
-        rpyc.BgServingThread(conn)._thread.join()
 
     def rpc_service_class(self):
         raise NotImplementedError

@@ -10,7 +10,6 @@ from time import time, sleep
 from functools import wraps
 from contextlib import contextmanager
 
-import rpyc
 import rabbitpy
 from setproctitle import setproctitle
 
@@ -88,14 +87,6 @@ class Worker(KuyrukProcess):
         self.start_daemon_threads()
         self.consume_messages()
         logger.debug("End run worker")
-
-    def rpc_service_class(this):
-        class _Service(rpyc.Service):
-            exposed_get_stats = this.get_stats
-            exposed_warm_shutdown = this.warm_shutdown
-            exposed_cold_shutdown = this.cold_shutdown
-            exposed_quit_task = this.quit_task
-        return _Service
 
     def consume_messages(self):
         """Consumes messages from the queue and run tasks until

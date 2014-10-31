@@ -3,7 +3,6 @@ import signal
 import logging
 import unittest
 
-import redis
 import rabbitpy
 from mock import patch
 
@@ -11,7 +10,7 @@ from kuyruk import Kuyruk, Task
 from kuyruk.task import BoundTask
 from kuyruk.test import tasks
 from kuyruk.test.integration.util import run_kuyruk, wait_until, \
-    not_running, get_pid, get_pids, TIMEOUT
+    not_running, get_pid, TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -84,71 +83,6 @@ class KuyrukTestCase(unittest.TestCase):
         with run_kuyruk() as worker:
             worker.expect('Task is rejected')
             worker.expect('Task is rejected')
-        assert len(self.queue) == 1
-
-    def test_save_failed(self):
-        """Failed tasks are saved to Redis"""
-        r = redis.StrictRedis()
-        r.delete("failed_tasks")
-
-        tasks.raise_exception()
-        with run_kuyruk(save_failed_tasks=True) as worker:
-            worker.expect('ZeroDivisionError')
-            worker.expect('No retry left')
-            worker.expect('Saving failed task')
-            worker.expect('Saved')
-            worker.expect('Task is processed')
-
-        assert len(self.queue) == 0
-        assert r.hvals('failed_tasks')
-
-        with run_kuyruk(process="requeue") as p:
-            p.expect("1 failed tasks have been requeued")
-
-        assert not r.hvals('failed_tasks')
-        assert len(self.queue) == 1
-
-    def test_save_failed_class_task(self):
-        r = redis.StrictRedis()
-        r.delete("failed_tasks")
-
-        """Failed tasks are saved to Redis (class tasks)"""
-        cat = tasks.Cat(1, 'Felix')
-
-        cat.raise_exception()
-        with run_kuyruk(save_failed_tasks=True) as worker:
-            worker.expect('raise Exception')
-            worker.expect('Saving failed task')
-            worker.expect('Saved')
-
-        assert len(self.queue) == 0
-        assert r.hvals('failed_tasks')
-
-        with run_kuyruk(process="requeue") as p:
-            p.expect("1 failed tasks have been requeued")
-
-        assert not r.hvals('failed_tasks')
-        assert len(self.queue) == 1
-
-    def test_save_failed_arg_class(self):
-        """Failed tasks are saved to Redis (arg class)"""
-        r = redis.StrictRedis()
-        r.delete("failed_tasks")
-
-        cat = tasks.Cat(1, 'Felix')
-        tasks.jump_fail(cat)
-        with run_kuyruk(save_failed_tasks=True) as worker:
-            worker.expect('ZeroDivisionError')
-            worker.expect('Saving failed task')
-            worker.expect('Saved')
-
-        assert len(self.queue) == 0
-        assert r.hvals('failed_tasks')
-
-        with run_kuyruk(process="requeue") as p:
-            p.expect("1 failed tasks have been requeued")
-
-        assert not r.hvals('failed_tasks')
         assert len(self.queue) == 1
 
     @patch('kuyruk.test.tasks.must_be_called')
