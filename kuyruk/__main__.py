@@ -9,7 +9,6 @@ import logging
 import argparse
 
 from kuyruk import __version__, importer, Kuyruk
-from kuyruk.master import Master
 from kuyruk.config import Config
 from kuyruk.requeue import Requeue
 from kuyruk.manager import Manager
@@ -23,11 +22,6 @@ def run_worker(kuyruk, args):
     worker_class = importer.import_class_str(kuyruk.config.WORKER_CLASS)
     w = worker_class(kuyruk, args.queue)
     w.run()
-
-
-def run_master(kuyruk, args):
-    m = Master(kuyruk)
-    m.run()
 
 
 def run_requeue(kuyruk, args):
@@ -69,12 +63,6 @@ def main():
     parser_worker.set_defaults(func=run_worker)
     parser_worker.add_argument(
         '-q', '--queue', default='kuyruk', help='consume tasks from')
-
-    # Parser for the "master" sub-command
-    parser_master = subparsers.add_parser('master', help='run master')
-    parser_master.set_defaults(func=run_master)
-    parser_master.add_argument(
-        '-q', '--queues', help='comma seperated list of queues')
 
     # Parser for the "requeue" sub-command
     parser_master = subparsers.add_parser('requeue',

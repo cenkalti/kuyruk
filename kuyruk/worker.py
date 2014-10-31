@@ -65,7 +65,6 @@ class Worker(KuyrukProcess):
         self.current_args = None
         self.current_kwargs = None
         self.daemon_threads = [
-            self.watch_master,
             self.watch_load,
             self.shutdown_timer,
         ]
@@ -285,14 +284,6 @@ class Worker(KuyrukProcess):
                     'uptime': self.uptime}))
             logger.error("Exception caught; reference is %s", ident)
             task_description['sentry_id'] = ident
-
-    def watch_master(self):
-        """Watch the master and shutdown gracefully when it is dead."""
-        while True:
-            if os.getppid() == 1:
-                logger.critical('Master is dead')
-                self.warm_shutdown()
-            sleep(1)
 
     def watch_load(self):
         """Pause consuming messages if lood goes above the allowed limit."""

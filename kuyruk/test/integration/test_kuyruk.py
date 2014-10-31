@@ -23,7 +23,7 @@ class KuyrukTestCase(unittest.TestCase):
     """
     Tests here are mostly integration tests. They require a running
     RabbitMQ and Redis instances to pass succesfully.
-    Just like the normal user they spawn a real master/worker process
+    Just like the normal user they spawn a real worker process
     and make some assertion in their output.
 
     """
@@ -68,14 +68,14 @@ class KuyrukTestCase(unittest.TestCase):
         """If the worker is stuck on the task it can be stopped by
         invoking cold shutdown"""
         tasks.loop_forever()
-        with run_kuyruk(process='master', terminate=False) as master:
-            master.expect('looping forever')
-            master.send_signal(signal.SIGINT)
-            master.expect('Warm shutdown')
-            master.expect('Handled SIGINT')
-            master.send_signal(signal.SIGINT)
-            master.expect('Cold shutdown')
-            master.expect_exit(0)
+        with run_kuyruk(terminate=False) as worker:
+            worker.expect('looping forever')
+            worker.send_signal(signal.SIGINT)
+            worker.expect('Warm shutdown')
+            worker.expect('Handled SIGINT')
+            worker.send_signal(signal.SIGINT)
+            worker.expect('Cold shutdown')
+            worker.expect_exit(0)
             wait_until(not_running, timeout=TIMEOUT)
 
     def test_reject(self):
@@ -85,34 +85,6 @@ class KuyrukTestCase(unittest.TestCase):
             worker.expect('Task is rejected')
             worker.expect('Task is rejected')
         assert len(self.queue) == 1
-
-    def test_respawn(self):
-        """Respawn a new worker if dead
-
-        This test also covers the broker disconnect case because when the
-        connection drops the master worker will raise an unhandled exception.
-        This exception will cause the worker to exit. After exiting, master
-        worker will spawn a new master worker.
-
-        """
-        def get_worker_pids():
-            pids = get_pids('kuyruk: worker')
-            assert len(pids) == 2
-            return pids
-
-        with run_kuyruk(process='master') as master:
-            master.expect('Start consuming')
-            master.expect('Start consuming')
-            pids_old = get_worker_pids()
-            for pid in pids_old:
-                os.kill(pid, signal.SIGKILL)
-            master.expect('Respawning worker')
-            master.expect('Start consuming')
-            master.expect('Start consuming')
-            pids_new = get_worker_pids()
-
-        assert pids_new[0] not in pids_old
-        assert pids_new[1] not in pids_old
 
     def test_save_failed(self):
         """Failed tasks are saved to Redis"""
@@ -178,15 +150,6 @@ class KuyrukTestCase(unittest.TestCase):
 
         assert not r.hvals('failed_tasks')
         assert len(self.queue) == 1
-
-    def test_dead_master(self):
-        """If master is dead worker should exit gracefully"""
-        tasks.print_task('hello world')
-        with run_kuyruk(terminate=False) as worker:
-            worker.expect('hello world')
-            worker.kill()
-            worker.expect_exit(-signal.SIGKILL)
-            wait_until(not_running, timeout=TIMEOUT)
 
     @patch('kuyruk.test.tasks.must_be_called')
     def test_before_after(self, mock_func):
