@@ -7,17 +7,14 @@ import rabbitpy
 import rabbitpy.exceptions
 from mock import patch
 
-from kuyruk import Kuyruk, Task
 import kuyruk.task
+from kuyruk import Kuyruk, Task
 from kuyruk.task import BoundTask
 from kuyruk.test import tasks
 from kuyruk.test.integration.util import run_kuyruk, wait_until, \
     not_running, get_pid, TIMEOUT
 
 logger = logging.getLogger(__name__)
-
-logger.debug('Process id: %s', os.getpid())
-logger.debug('Process group id: %s', os.getpgrp())
 
 kuyruk.task._DECLARE_ALWAYS = True
 
@@ -31,8 +28,7 @@ class KuyrukTestCase(unittest.TestCase):
 
     """
     def setUp(self):
-        self.kuyruk = Kuyruk()
-        self._channel = self.kuyruk.channel()
+        self._channel = Kuyruk().channel()
         self.queue = rabbitpy.Queue(self._channel, "kuyruk", durable=True)
         try:
             self.queue.delete()
