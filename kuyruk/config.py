@@ -3,8 +3,8 @@ import ast
 import sys
 import types
 import logging
-import multiprocessing
 import importer
+import multiprocessing
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +14,24 @@ class Config(object):
     class attributes.
 
     """
+    # Connection Options
+    ####################
+
+    RABBIT_HOST = 'localhost'
+    """RabbitMQ host."""
+
+    RABBIT_PORT = 5672
+    """RabbitMQ port."""
+
+    RABBIT_VIRTUAL_HOST = '/'
+    """RabbitMQ virtual host."""
+
+    RABBIT_USER = 'guest'
+    """RabbitMQ user."""
+
+    RABBIT_PASSWORD = 'guest'
+    """RabbitMQ password."""
+
     # Worker Options
     ################
 
@@ -54,27 +72,6 @@ class Config(object):
     SENTRY_DSN = None
     """Send exceptions to Sentry. Raven must be installed in order that
     this feature to work."""
-
-    SENTRY_PROJECT_URL = None
-    """Sentry project URL. Required to generate links to Sentry in Manager."""
-
-    # Connection Options
-    ####################
-
-    RABBIT_HOST = 'localhost'
-    """RabbitMQ host."""
-
-    RABBIT_PORT = 5672
-    """RabbitMQ port."""
-
-    RABBIT_VIRTUAL_HOST = '/'
-    """RabbitMQ virtual host."""
-
-    RABBIT_USER = 'guest'
-    """RabbitMQ user."""
-
-    RABBIT_PASSWORD = 'guest'
-    """RabbitMQ password."""
 
     def from_object(self, obj):
         """Load values from an object."""
