@@ -90,9 +90,9 @@ class Worker(object):
 
         """
         self.setup_logging()
-        signal.signal(signal.SIGINT, self.handle_sigint)
-        signal.signal(signal.SIGTERM, self.handle_sigterm)
-        signal.signal(signal.SIGQUIT, self.handle_sigquit)
+        signal.signal(signal.SIGINT, self._handle_sigint)
+        signal.signal(signal.SIGTERM, self._handle_sigterm)
+        signal.signal(signal.SIGQUIT, self._handle_sigquit)
         signal.signal(signal.SIGUSR1, print_stack)  # for debugging
 
         signal.signal(signal.SIGUSR1, print_stack)  # for debugging
@@ -112,7 +112,7 @@ class Worker(object):
                   "%(name)s.%(funcName)s:%(lineno)d - %(message)s"
             logging.basicConfig(level=level, format=fmt)
 
-    def handle_sigint(self, signum, frame):
+    def _handle_sigint(self, signum, frame):
         """If running from terminal pressing Ctrl-C will initiate a warm
         shutdown. The second interrupt will do a cold shutdown.
 
@@ -124,12 +124,12 @@ class Worker(object):
             self.cold_shutdown()
         logger.debug("Handled SIGINT")
 
-    def handle_sigterm(self, signum, frame):
+    def _handle_sigterm(self, signum, frame):
         """Initiates a warm shutdown."""
         logger.warning("Catched SIGTERM")
         self.warm_shutdown()
 
-    def handle_sigquit(self, signum, frame):
+    def _handle_sigquit(self, signum, frame):
         """Send ACK for the current task and exit."""
         logger.warning("Catched SIGQUIT")
         if self.current_message:
