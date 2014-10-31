@@ -85,25 +85,20 @@ class Config(object):
 
     def from_pymodule(self, module_name):
         module = importer.import_module(module_name)
-        values = {}
         for key, value in module.__dict__.iteritems():
             if (key.isupper() and
                     not isinstance(value, types.ModuleType)):
-                values[key] = value
-        self.from_dict(values)
+                setattr(self, key, value)
         logger.info("Config is loaded from module: %s", module_name)
 
     def from_pyfile(self, filename):
         """Load values from a Python file."""
         globals_, locals_ = {}, {}
         execfile(filename, globals_, locals_)
-        values = {}
         for key, value in locals_.iteritems():
             if (key.isupper() and
                     not isinstance(value, types.ModuleType)):
-                values[key] = value
-
-        self.from_dict(values)
+                setattr(self, key, value)
         logger.info("Config is loaded from file: %s", filename)
 
     def from_env_vars(self):
@@ -115,9 +110,7 @@ class Config(object):
 
     def from_cmd_args(self, args):
         """Load values from command line arguments."""
-        def to_attr(option):
-            return option.upper().replace('-', '_')
-
+        to_attr = lambda x: x.upper().replace('-', '_')
         for key, value in vars(args).iteritems():
             if value is not None:
                 key = to_attr(key)
