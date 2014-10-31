@@ -4,6 +4,8 @@ import sys
 import socket
 import signal
 import logging
+import logging.config
+import threading
 import traceback
 import multiprocessing
 from time import time, sleep
@@ -15,8 +17,7 @@ from setproctitle import setproctitle
 
 import kuyruk
 from kuyruk import importer
-from kuyruk.process import KuyrukProcess
-from kuyruk.helpers import start_daemon_thread, json_datetime
+from kuyruk.helpers import start_daemon_thread, json_datetime, print_stack
 from kuyruk.exceptions import Reject, ObjectNotFound, Timeout, InvalidTask
 
 logger = logging.getLogger(__name__)
@@ -39,25 +40,29 @@ def set_current_task(f):
     return inner
 
 
-class Worker(KuyrukProcess):
+class Worker(object):
     """Consumes messages from a queue and runs tasks.
 
     :param kuyruk: A :class:`~kuyurk.kuyruk.Kuyruk` instance
     :param queue_name: The queue name to work on
 
     """
-    def __init__(self, kuyruk, queue_name):
+    def __init__(self, kuyruk_, queue_name):
+        assert isinstance(kuyruk_, kuyruk.Kuyruk)
+        self.kuyruk = kuyruk_
+
         if not queue_name:
             raise ValueError("empty queue name")
+        self.queue_name = queue_name
 
-        super(Worker, self).__init__(kuyruk)
         is_local = queue_name.startswith('@')
         if is_local:
             self.queue_name = "%s.%s" % (queue_name[1:], socket.gethostname())
-        else:
-            self.queue_name = queue_name
+
         self.queue = None
         self._pause = False
+        self.shutdown_pending = threading.Event()
+        self.manager_thread = None
         self.current_message = None
         self.current_task = None
         self.current_args = None
@@ -75,18 +80,73 @@ class Worker(KuyrukProcess):
         else:
             self.sentry = None
 
+    @property
+    def config(self):
+        return self.kuyruk.config
+
     def run(self):
         """Runs the worker and opens a connection to RabbitMQ.
         After connection is opened, starts consuming messages.
         Consuming is cancelled if an external signal is received.
 
         """
-        super(Worker, self).run()
+        self.setup_logging()
+        signal.signal(signal.SIGINT, self.handle_sigint)
+        signal.signal(signal.SIGTERM, self.handle_sigterm)
+        signal.signal(signal.SIGQUIT, self.handle_sigquit)
+        signal.signal(signal.SIGUSR1, print_stack)  # for debugging
+
+        signal.signal(signal.SIGUSR1, print_stack)  # for debugging
         setproctitle("kuyruk: worker on %s" % self.queue_name)
         self.import_modules()
+        self.started = time()
         self.start_daemon_threads()
         self.consume_messages()
         logger.debug("End run worker")
+
+    def setup_logging(self):
+        if self.config.LOGGING_CONFIG:
+            logging.config.fileConfig(self.config.LOGGING_CONFIG)
+        else:
+            logging.getLogger('rabbitpy').level = logging.WARNING
+            level = getattr(logging, self.config.LOGGING_LEVEL.upper())
+            fmt = "%(levelname).1s %(process)d " \
+                  "%(name)s.%(funcName)s:%(lineno)d - %(message)s"
+            logging.basicConfig(level=level, format=fmt)
+
+    def handle_sigint(self, signum, frame):
+        """If running from terminal pressing Ctrl-C will initiate a warm
+        shutdown. The second interrupt will do a cold shutdown.
+
+        """
+        logger.warning("Handling SIGINT")
+        if sys.stdin.isatty() and not self.shutdown_pending.is_set():
+            self.warm_shutdown()
+        else:
+            self.cold_shutdown()
+        logger.debug("Handled SIGINT")
+
+    def handle_sigterm(self, signum, frame):
+        """Initiates a warm shutdown."""
+        logger.warning("Catched SIGTERM")
+        self.warm_shutdown()
+
+    def handle_sigquit(self, signum, frame):
+        """Send ACK for the current task and exit."""
+        logger.warning("Catched SIGQUIT")
+        if self.current_message:
+            try:
+                logger.warning("Acking current task...")
+                self.current_message.ack()
+            except Exception:
+                logger.critical("Cannot send ACK for the current task.")
+                traceback.print_exc()
+        logger.warning("Exiting...")
+        sys.exit(0)
+
+    @property
+    def uptime(self):
+        return int(time() - self.started)
 
     def consume_messages(self):
         """Consumes messages from the queue and run tasks until
@@ -265,29 +325,6 @@ class Worker(KuyrukProcess):
                 self.warm_shutdown()
                 break
 
-    def register_signals(self):
-        super(Worker, self).register_signals()
-        signal.signal(signal.SIGTERM, self.handle_sigterm)
-        signal.signal(signal.SIGQUIT, self.handle_sigquit)
-
-    def handle_sigterm(self, signum, frame):
-        """Initiates a warm shutdown."""
-        logger.warning("Catched SIGTERM")
-        self.warm_shutdown()
-
-    def handle_sigquit(self, signum, frame):
-        """Send ACK for the current task and exit."""
-        logger.warning("Catched SIGQUIT")
-        if self.current_message:
-            try:
-                logger.warning("Acking current task...")
-                self.current_message.ack()
-            except Exception:
-                logger.critical("Cannot send ACK for the current task.")
-                traceback.print_exc()
-        logger.warning("Exiting...")
-        sys.exit(0)
-
     def quit_task(self):
         self.handle_sigquit(None, None)
 
@@ -302,30 +339,6 @@ class Worker(KuyrukProcess):
     def cold_shutdown(self):
         """Exit immediately."""
         logger.warning("Cold shutdown")
-        self._exit(0)
-
-    def get_stats(self):
-        """Generate stats to be sent to manager."""
-        message_count, consumer_count = self.queue.declare()
-        try:
-            current_task = self.current_task.name
-        except AttributeError:
-            current_task = None
-
-        return {
-            'type': 'worker',
-            'hostname': socket.gethostname(),
-            'uptime': self.uptime,
-            'pid': os.getpid(),
-            'ppid': os.getppid(),
-            'version': kuyruk.__version__,
-            'current_task': current_task,
-            'current_args': self.current_args,
-            'current_kwargs': self.current_kwargs,
-            'consuming': not self._pause,
-            'queue': {
-                'name': self.queue.name,
-                'messages_ready': message_count,
-                'consumers': consumer_count,
-            }
-        }
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os._exit(0)
