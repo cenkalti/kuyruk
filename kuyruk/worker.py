@@ -62,7 +62,6 @@ class Worker(object):
         self.queue = None
         self._pause = False
         self.shutdown_pending = threading.Event()
-        self.manager_thread = None
         self.current_message = None
         self.current_task = None
         self.current_args = None
@@ -99,7 +98,6 @@ class Worker(object):
         signal.signal(signal.SIGUSR1, print_stack)  # for debugging
         setproctitle("kuyruk: worker on %s" % self.queue_name)
         self.import_modules()
-        self.started = time()
         self.start_daemon_threads()
         self.consume_messages()
         logger.debug("End run worker")
@@ -143,10 +141,6 @@ class Worker(object):
                 traceback.print_exc()
         logger.warning("Exiting...")
         sys.exit(0)
-
-    @property
-    def uptime(self):
-        return int(time() - self.started)
 
     def consume_messages(self):
         """Consumes messages from the queue and run tasks until
@@ -315,8 +309,9 @@ class Worker(object):
         if not self.config.MAX_WORKER_RUN_TIME:
             return
 
+        started = time()
         while True:
-            passed = time() - self.started
+            passed = time() - started
             remaining = self.config.MAX_WORKER_RUN_TIME - passed
             if remaining > 0:
                 sleep(remaining)
@@ -324,9 +319,6 @@ class Worker(object):
                 logger.warning('Run time reached zero')
                 self.warm_shutdown()
                 break
-
-    def quit_task(self):
-        self.handle_sigquit(None, None)
 
     def warm_shutdown(self):
         """Exit after the last task is finished."""
