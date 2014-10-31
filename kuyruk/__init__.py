@@ -12,7 +12,7 @@ from kuyruk.worker import Worker
 from kuyruk.events import EventMixin
 
 __version__ = '1.2.4'
-__all__ = ['Kuyruk', 'Task', 'Worker']
+__all__ = ['Kuyruk', 'Config', 'Task', 'Worker']
 
 
 logger = logging.getLogger(__name__)
