@@ -10,7 +10,6 @@ import argparse
 
 from kuyruk import __version__, importer, Kuyruk
 from kuyruk.config import Config
-from kuyruk.requeue import Requeue
 
 
 logger = logging.getLogger(__name__)
@@ -20,11 +19,6 @@ def run_worker(kuyruk, args):
     worker_class = importer.import_class_str(kuyruk.config.WORKER_CLASS)
     w = worker_class(kuyruk, args.queue)
     w.run()
-
-
-def run_requeue(kuyruk, args):
-    r = Requeue(kuyruk)
-    r.run()
 
 
 def main():
@@ -50,11 +44,6 @@ def main():
     parser_worker.set_defaults(func=run_worker)
     parser_worker.add_argument(
         '-q', '--queue', default='kuyruk', help='consume tasks from')
-
-    # Parser for the "requeue" sub-command
-    parser_master = subparsers.add_parser('requeue',
-                                          help='requeue failed tasks')
-    parser_master.set_defaults(func=run_requeue)
 
     # Parse arguments
     args = parser.parse_args()
