@@ -1,5 +1,5 @@
 class KuyrukError(Exception):
-    """Base class for Kuyruk related exceptions."""
+    """Base class for Kuyruk exceptions."""
     pass
 
 
@@ -24,5 +24,5 @@ class Timeout(KuyrukError):
 
 
 class InvalidTask(KuyrukError):
-    """Raised when the message from queue is not valid."""
+    """Raised when the received task is not valid."""
     pass
