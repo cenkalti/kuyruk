@@ -6,7 +6,6 @@ import socket
 import logging
 from time import time
 from uuid import uuid1
-from datetime import datetime
 from functools import wraps
 from threading import Lock
 from contextlib import contextmanager
@@ -16,7 +15,6 @@ import rabbitpy.exceptions
 
 from kuyruk import events, importer
 from kuyruk.events import EventMixin
-from kuyruk.helpers import json_datetime
 from kuyruk.exceptions import Timeout, InvalidTask, ObjectNotFound
 
 logger = logging.getLogger(__name__)
@@ -208,13 +206,12 @@ class Task(EventMixin):
             queue_name = self.queue_name
 
         desc = self._get_task_description(args, kwargs, queue_name)
-        body = json_datetime.dumps(desc)
         properties = {"delivery_mode": 2, "content_type": "application/json"}
 
         ch = self.kuyruk._channel_for_publishing
         self._declare_queue(ch, queue_name)
         logger.debug("publishing message...")
-        msg = rabbitpy.Message(ch, body, properties=properties)
+        msg = rabbitpy.Message(ch, desc, properties=properties)
         try:
             msg.publish(exchange="", routing_key=queue_name, mandatory=True)
         except rabbitpy.exceptions.MessageReturnedException:
@@ -233,7 +230,6 @@ class Task(EventMixin):
             'function': self.f.__name__,
             'class': self._class_name,
             'retry': self.retry,
-            'sender_timestamp': datetime.utcnow(),
             'sender_hostname': socket.gethostname(),
             'sender_pid': os.getpid(),
             'sender_cmd': ' '.join(sys.argv),

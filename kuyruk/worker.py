@@ -17,7 +17,6 @@ from setproctitle import setproctitle
 
 import kuyruk
 from kuyruk import importer
-from kuyruk.helpers import start_daemon_thread, json_datetime, print_stack
 from kuyruk.exceptions import Reject, ObjectNotFound, Timeout, InvalidTask
 
 logger = logging.getLogger(__name__)
@@ -187,7 +186,7 @@ class Worker(object):
     def process_message(self, message):
         """Processes the message received from the queue."""
         try:
-            task_description = json_datetime.loads(message.body)
+            task_description = message.json()
             logger.info("Processing task: %r", task_description)
         except Exception:
             message.ack()
@@ -334,4 +333,17 @@ class Worker(object):
 def _exit(code):
     sys.stdout.flush()
     sys.stderr.flush()
-    os._exit(0)
+    os._exit(code)
+
+
+def start_daemon_thread(target, args=()):
+    t = threading.Thread(target=target, args=args)
+    t.daemon = True
+    t.start()
+    return t
+
+
+def print_stack(sig, frame):
+    print '=' * 70
+    print ''.join(traceback.format_stack())
+    print '-' * 70

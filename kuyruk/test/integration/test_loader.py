@@ -1,12 +1,12 @@
 import os
 import sys
+import json
 import unittest
 
 import rabbitpy
 from what import What
 
 from kuyruk import Kuyruk
-from kuyruk.helpers import json_datetime
 
 
 class LoaderTestCase(unittest.TestCase):
@@ -58,5 +58,5 @@ def run_python(args, cwd):
 
 def get_task_name(queue):
     m = queue.get()
-    d = json_datetime.loads(m.body)
+    d = json.loads(m.body)
     return '.'.join([d['module'], d['function']])
