@@ -30,8 +30,6 @@ def main():
     parser.add_argument(
         '-c', '--config',
         help='Python file containing Kuyruk configuration parameters')
-    add_config_options(parser)
-
     parser.add_argument(
         '-m', '--module',
         help='Python module containing Kuyruk configuration parameters')
@@ -72,13 +70,11 @@ def create_config(args):
     """Creates Config object and overrides it's values from args."""
     config = Config()
 
-    if args.config:
-        # Load config file from command line option
-        config.from_pyfile(args.config)
-    elif args.module:
+    if args.module:
         config.from_pymodule(args.module)
+    elif args.config:
+        config.from_pyfile(args.config)
     else:
-        # Load config file from environment variable
         env_config = os.environ.get('KUYRUK_CONFIG')
         if env_config:
             assert os.path.isabs(env_config)
