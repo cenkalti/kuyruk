@@ -3,6 +3,17 @@ Kuyruk Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 2.0.0
+-------------
+
+- Replaced pika library with rabbitpy.
+- Removed master subcommand.
+- Removed scheduler subcommand.
+- Removed requeue subcommand.
+- Removed manager subcommand.
+- Failed tasks are not saved to redis anymore.
+- Failed tasks are retried in the same worker.
+
 Version 1.2.1
 -------------
 

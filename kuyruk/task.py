@@ -21,6 +21,8 @@ from kuyruk.exceptions import Timeout, InvalidTask, ObjectNotFound
 
 logger = logging.getLogger(__name__)
 
+_DECLARE_ALWAYS = False
+
 
 def profile(f):
     """Logs the time spent while running the task."""
@@ -96,13 +98,12 @@ def send_client_signals(f):
     """Sends the presend and postsend signals."""
     @wraps(f)
     def inner(self, *args, **kwargs):
-        self.send_signal(events.task_presend, args, kwargs, reverse=True)
+        self._send_signal(events.task_presend, args, kwargs, reverse=True)
         rv = f(self, *args, **kwargs)
-        self.send_signal(events.task_postsend, args, kwargs)
+        self._send_signal(events.task_postsend, args, kwargs)
         return rv
     return inner
 
-_DECLARE_ALWAYS = False
 
 class Task(EventMixin):
 
@@ -122,8 +123,8 @@ class Task(EventMixin):
         self.setup()
 
     def setup(self):
-        """Convenience function for extending classes
-        that run after __init__."""
+        """Override from subclass to initialize the task.
+        This function is called only once when the task is created."""
         pass
 
     def __repr__(self):
@@ -148,7 +149,7 @@ class Task(EventMixin):
             self._run(*args, **kwargs)
         else:
             # Send it to the queue
-            self.send_to_queue(args, kwargs, host=host)
+            self._send_to_queue(args, kwargs, host=host)
 
     def delay(self, *args, **kwargs):
         """Compatibility function for migrating existing Celery project to
@@ -185,7 +186,7 @@ class Task(EventMixin):
                 rabbitpy.Queue(channel, name=name, durable=True).declare()
                 self._declared_queues.add(name)
 
-    def send_to_queue(self, args, kwargs, host=None):
+    def _send_to_queue(self, args, kwargs, host=None):
         """
         Sends this task to queue.
 
@@ -206,7 +207,7 @@ class Task(EventMixin):
         else:
             queue_name = self.queue_name
 
-        desc = self.get_task_description(args, kwargs, queue_name)
+        desc = self._get_task_description(args, kwargs, queue_name)
         body = json_datetime.dumps(desc)
         properties = {"delivery_mode": 2, "content_type": "application/json"}
 
@@ -221,16 +222,16 @@ class Task(EventMixin):
             msg.publish(exchange="", routing_key=queue_name, mandatory=True)
         logger.debug("published.")
 
-    def get_task_description(self, args, kwargs, queue):
+    def _get_task_description(self, args, kwargs, queue):
         """Return the dictionary to be sent to the queue."""
         return {
             'id': uuid1().hex,
             'queue': queue,
             'args': args,
             'kwargs': kwargs,
-            'module': self.module_name,
+            'module': self._module_name,
             'function': self.f.__name__,
-            'class': self.class_name,
+            'class': self._class_name,
             'retry': self.retry,
             'sender_timestamp': datetime.utcnow(),
             'sender_hostname': socket.gethostname(),
@@ -238,7 +239,7 @@ class Task(EventMixin):
             'sender_cmd': ' '.join(sys.argv),
         }
 
-    def send_signal(self, sig, args, kwargs, reverse=False, **extra):
+    def _send_signal(self, sig, args, kwargs, reverse=False, **extra):
         """
         Sends a signal for each sender.
         This allows the user to register for a specific sender.
@@ -262,7 +263,7 @@ class Task(EventMixin):
     def _run(self, *args, **kwargs):
         """Run the wrapped function and event handlers."""
         def send_signal(sig, reverse=False, **extra):
-            self.send_signal(sig, args, kwargs, reverse, **extra)
+            self._send_signal(sig, args, kwargs, reverse, **extra)
 
         logger.debug("Task._apply args=%r, kwargs=%r", args, kwargs)
 
@@ -292,18 +293,18 @@ class Task(EventMixin):
 
     @property
     def name(self):
-        """Location for the wrapped function.
-        This value is by the worker to find the task.
+        """Full path to the task.
+        Worker imports the task from this path.
 
         """
-        if self.class_name:
+        if self._class_name:
             return "%s:%s.%s" % (
-                self.module_name, self.class_name, self.f.__name__)
+                self._module_name, self._class_name, self.f.__name__)
         else:
-            return "%s:%s" % (self.module_name, self.f.__name__)
+            return "%s:%s" % (self._module_name, self.f.__name__)
 
     @property
-    def module_name(self):
+    def _module_name(self):
         """Module name of the function wrapped."""
         name = self.f.__module__
         if name == '__main__':
@@ -311,7 +312,7 @@ class Task(EventMixin):
         return name
 
     @property
-    def class_name(self):
+    def _class_name(self):
         """Name of the class if this is a class task,
         otherwise :const:`None`."""
         if self.cls:

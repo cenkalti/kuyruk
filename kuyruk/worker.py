@@ -194,6 +194,9 @@ class Worker(object):
             logger.error("Canot decode message. Dropped!")
             return
 
+        self.process_task(message, task_description)
+
+    def process_task(self, message, task_description):
         try:
             task = self.import_task(task_description)
             task.message = message
@@ -213,7 +216,6 @@ class Worker(object):
             self.handle_exception(message, task_description)
         else:
             logger.info('Task is successful')
-            delattr(task, 'message')
             message.ack()
         finally:
             logger.debug("Task is processed")
@@ -225,16 +227,11 @@ class Worker(object):
         retry_count = task_description.get('retry', 0)
         if retry_count:
             logger.debug('Retry count: %s', retry_count)
-            message.reject()
-            task_description['retry'] = retry_count - 1
-            body = json_datetime.dumps(task_description)
-            msg = rabbitpy.Message(message.channel, body, properties={
-                "delivery_mode": 2,
-                "content_type": "application/json"})
-            msg.publish("", self.queue_name, mandatory=True)
+            task_description['retry'] -= 1
+            self.process_task(message, task_description)
         else:
             logger.debug('No retry left')
-            self.capture_exception(task_description)
+            self._capture_exception(task_description)
             message.reject()
 
     def handle_not_found(self, message, task_description):
@@ -261,7 +258,7 @@ class Worker(object):
     def handle_invalid(self, message, task_description):
         """Called when the message from queue is invalid."""
         logger.error("Invalid message.")
-        self.capture_exception(task_description)
+        self._capture_exception(task_description)
         message.reject()
 
     @set_current_task
@@ -279,7 +276,7 @@ class Worker(object):
         return importer.import_task(
             module, cls, function, self.config.IMPORT_PATH)
 
-    def capture_exception(self, task_description):
+    def _capture_exception(self, task_description):
         """Sends the exceptin in current stack to Sentry."""
         if self.sentry:
             ident = self.sentry.get_ident(self.sentry.captureException(
