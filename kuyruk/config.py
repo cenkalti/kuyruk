@@ -37,25 +37,22 @@ class Config(object):
     """Worker implementation class. It can be replaced with a subclass of
     :class:`~kuyruk.worker.Worker` to change specific behavior."""
 
-    IMPORT_PATH = None
-    """Worker imports tasks from this directory."""
-
     IMPORTS = []
     """By default worker imports the task modules lazily when it receive a
     task from the queue. If you specify the modules here they will be
     imported when the worker is started."""
 
+    IMPORT_PATH = None
+    """Worker imports tasks from this directory."""
+
     EAGER = False
     """Run tasks in the process without sending to queue. Useful in tests."""
 
     MAX_LOAD = None
-    """Stop consuming queue when the load goes above this level."""
+    """Pause consuming queue when the load goes above this level."""
 
     MAX_WORKER_RUN_TIME = None
-    """Gracefully shutdown worker after running this seconds.
-    Master will detect that the worker is exited and will spawn a new
-    worker with identical config.
-    Can be used to force loading of new application code."""
+    """Gracefully shutdown worker after running this seconds."""
 
     MAX_TASK_RUN_TIME = None
     """Fail the task if it takes more than this seconds."""
