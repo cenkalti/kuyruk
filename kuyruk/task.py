@@ -102,6 +102,7 @@ def send_client_signals(f):
         return rv
     return inner
 
+_DECLARE_ALWAYS = False
 
 class Task(EventMixin):
 
@@ -179,7 +180,7 @@ class Task(EventMixin):
 
     def _declare_queue(self, channel, name, force=False):
         with self._declared_queues_lock:
-            if name not in self._declared_queues or force:
+            if name not in self._declared_queues or force or _DECLARE_ALWAYS:
                 logger.debug("declaring queue...")
                 rabbitpy.Queue(channel, name=name, durable=True).declare()
                 self._declared_queues.add(name)

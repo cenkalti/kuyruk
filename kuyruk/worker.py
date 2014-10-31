@@ -227,10 +227,10 @@ class Worker(object):
             message.reject()
             task_description['retry'] = retry_count - 1
             body = json_datetime.dumps(task_description)
-            msg = rabbitpy.Message(self.channel, body, properties={
+            msg = rabbitpy.Message(message.channel, body, properties={
                 "delivery_mode": 2,
                 "content_type": "application/json"})
-            msg.publish("", self.queue.name, mandatory=True)
+            msg.publish("", self.queue_name, mandatory=True)
         else:
             logger.debug('No retry left')
             self.capture_exception(task_description)

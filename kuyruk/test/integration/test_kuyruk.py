@@ -4,9 +4,11 @@ import logging
 import unittest
 
 import rabbitpy
+import rabbitpy.exceptions
 from mock import patch
 
 from kuyruk import Kuyruk, Task
+import kuyruk.task
 from kuyruk.task import BoundTask
 from kuyruk.test import tasks
 from kuyruk.test.integration.util import run_kuyruk, wait_until, \
@@ -16,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 logger.debug('Process id: %s', os.getpid())
 logger.debug('Process group id: %s', os.getpgrp())
+
+kuyruk.task._DECLARE_ALWAYS = True
 
 
 class KuyrukTestCase(unittest.TestCase):
@@ -28,8 +32,15 @@ class KuyrukTestCase(unittest.TestCase):
     """
     def setUp(self):
         self.kuyruk = Kuyruk()
-        self.queue = rabbitpy.Queue(self.kuyruk.channel(), "kuyruk", durable=True)
-        self.queue.delete()
+        self._channel = self.kuyruk.channel()
+        self.queue = rabbitpy.Queue(self._channel, "kuyruk", durable=True)
+        try:
+            self.queue.delete()
+        except rabbitpy.exceptions.AMQPNotFound:
+            pass
+
+    def tearDown(self):
+        self._channel.close()
 
     def test_simple_task(self):
         """Run a task on default queue"""
