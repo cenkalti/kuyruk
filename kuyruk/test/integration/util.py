@@ -1,7 +1,6 @@
 import os
 import sys
 import errno
-import signal
 import logging
 import subprocess
 from time import time, sleep
@@ -19,8 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 @contextmanager
-def run_kuyruk(queue='kuyruk', save_failed_tasks=False, terminate=True,
-               config_filename=None, process='worker'):
+def run_kuyruk(queue='kuyruk', terminate=True, config_filename=None):
     assert not_running()
     args = [
         sys.executable, '-u',
@@ -32,13 +30,9 @@ def run_kuyruk(queue='kuyruk', save_failed_tasks=False, terminate=True,
     if config_filename:
         args.extend(["--config", config_filename])
 
-    if save_failed_tasks:
-        args.append('--save-failed-tasks=True')
+    args.append("worker")
 
-    args.append(process)
-
-    if process == 'worker':
-        args.extend(['--queue', queue])
+    args.extend(['--queue', queue])
 
     environ = os.environ.copy()
     environ['COVERAGE_PROCESS_START'] = '.coveragerc'
@@ -51,7 +45,7 @@ def run_kuyruk(queue='kuyruk', save_failed_tasks=False, terminate=True,
         if terminate:
             # Send SIGTERM to worker for gracefull shutdown
             popen.terminate()
-            popen.expect("End run %s" % process)
+            popen.expect("End run worker")
 
         popen.expect_exit()
 
@@ -59,7 +53,7 @@ def run_kuyruk(queue='kuyruk', save_failed_tasks=False, terminate=True,
         # We need to make sure that not any process of kuyruk is running
         # after the test is finished.
 
-        # Kill master process and wait until it is dead
+        # Kill the process and wait until it is dead
         try:
             popen.kill()
             popen.wait()
@@ -68,14 +62,6 @@ def run_kuyruk(queue='kuyruk', save_failed_tasks=False, terminate=True,
                 raise
 
         logger.debug('Worker return code: %s', popen.returncode)
-
-        # Kill worker processes by sending SIGKILL to their process group id
-        try:
-            logger.info('Killing process group: %s', popen.pid)
-            os.killpg(popen.pid, signal.SIGTERM)
-        except OSError as e:
-            if e.errno != errno.ESRCH:  # No such process
-                raise
 
         try:
             wait_while(lambda: get_pids('kuyruk:'))
