@@ -43,12 +43,10 @@ class Message(object):
         if body is None:
             return None, None
 
-        if properties.content_type == 'application/json':
-            obj = json.loads(body, cls=JSONDecoder)
-        elif properties.content_type == 'application/python-pickle':
+        if properties.content_type == 'application/python-pickle':
             obj = pickle.loads(body)
         else:
-            raise TypeError('Unknown content type')
+            obj = json.loads(body, cls=JSONDecoder)
 
         logger.debug('Message decoded: %s', obj)
         return method.delivery_tag, obj
