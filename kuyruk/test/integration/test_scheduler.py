@@ -1,63 +1,61 @@
+import os
+import logging
 import unittest
-from datetime import timedelta
-from multiprocessing import Process
+from time import sleep
 
-from kuyruk.test.integration.util import *
-from kuyruk.connection import Channel
+import rabbitpy
 
-
-Channel.SKIP_REDECLARE_QUEUE = False
+from kuyruk import Kuyruk
+from kuyruk.test.integration.util import run_kuyruk
 
 logger = logging.getLogger(__name__)
 
-logger.debug('Process id: %s', os.getpid())
-logger.debug('Process group id: %s', os.getpgrp())
+DB_FILENAME = "/tmp/kuyruk-scheduler.db"
+CONFIG_FILENAME = "/tmp/kuyruk-config.py"
 
 
 class SchedulerTestCase(unittest.TestCase):
 
+    def setUp(self):
+        self.kuyruk = Kuyruk()
+        self.queue = rabbitpy.Queue(self.kuyruk.channel(), "scheduled", durable=True)
+        self.queue.delete()
+
     def test_scheduler(self):
         """Scheduler schedules correctly"""
-        delete_queue('scheduled')
+        if os.path.exists(DB_FILENAME):
+            os.unlink(DB_FILENAME)
 
-        def get_message_count():
-            from kuyruk import Worker
-            k = Kuyruk()
-            w = Worker(kuyruk=k, queue_name='scheduled')
-            w.started = time()
-            return w.get_stats()['queue']['messages_ready']
+        config = """\
+from datetime import timedelta
 
-        if os.path.exists('/tmp/kuyruk-scheduler.db'):
-            os.unlink('/tmp/kuyruk-scheduler.db')
+SCHEDULER_FILE_NAME = "%s"
+SCHEDULE = {
+    'runs-every-5-seconds': {
+        'task': 'kuyruk.test.tasks.scheduled',
+        'schedule': timedelta(seconds=5),
+        'args': ['hello world from scheduler']
+    }
+}
+""" % DB_FILENAME
+        with open(CONFIG_FILENAME, "w+") as f:
+            f.write(config)
 
-        config = {
-            'SCHEDULE': {
-                'runs-every-5-seconds': {
-                    'task': 'kuyruk.test.tasks.scheduled',
-                    'schedule': timedelta(seconds=5),
-                    'args': ['hello world from scheduler']
-                }
-            },
-            'SCHEDULER_FILE_NAME': '/tmp/kuyruk-scheduler'
-        }
-
-        p = Process(target=run_scheduler, kwargs={'config': config})
-        p.start()
-        sleep(6)
-        p.terminate()
-        self.assertEqual(get_message_count(), 2)
+        with run_kuyruk(process="scheduler", config_filename=CONFIG_FILENAME) as p:
+            p.expect("Start loop")
+            p.expect("sending due task", timeout=1)
+            p.expect("sending due task", timeout=6)
+        assert len(self.queue) == 2
 
         # checking shelve, this shouldnt send a job
-        p = Process(target=run_scheduler, kwargs={'config': config})
-        p.start()
-        p.terminate()
-        self.assertEqual(get_message_count(), 2)
-
-        sleep(2)
+        with run_kuyruk(process="scheduler", config_filename=CONFIG_FILENAME) as p:
+            p.expect("Start loop")
+            p.expect("last run of runs-every-5-seconds")
+            sleep(2)
+        assert len(self.queue) == 2
 
         # restart again, now it should send a job
-        p = Process(target=run_scheduler, kwargs={'config': config})
-        p.start()
-        sleep(3)
-        p.terminate()
-        self.assertEqual(get_message_count(), 3)
+        with run_kuyruk(process="scheduler", config_filename=CONFIG_FILENAME) as p:
+            p.expect("Start loop")
+            p.expect("sending due task", timeout=5)
+        assert len(self.queue) == 3

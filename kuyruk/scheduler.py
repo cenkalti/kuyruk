@@ -1,4 +1,5 @@
 import sys
+import signal
 import shelve
 import logging
 from time import sleep
@@ -59,8 +60,17 @@ class Scheduler(KuyrukProcess):
         task(*args)
         self.last_run[k] = datetime.utcnow()
 
+    def register_signals(self):
+        super(Scheduler, self).register_signals()
+        signal.signal(signal.SIGTERM, self.handle_sigterm)
+
+    def handle_sigterm(self, signum, frame):
+        """Initiates a warm shutdown."""
+        logger.warning("Catched SIGTERM")
+        self.warm_shutdown()
+
     def warm_shutdown(self):
-        sys.exit(0)
+        self.shutdown_pending.set()
 
     def run(self):
         super(Scheduler, self).run()
@@ -83,7 +93,8 @@ class Scheduler(KuyrukProcess):
             }
             logging.info("loaded task %s with schedule %s", task, v['schedule'])
 
-        while True:
+        logger.debug("Start loop")
+        while not self.shutdown_pending.isSet():
             for k, v in self.schedule.iteritems():
                 last_run = self.get_last_run(k)
                 logging.debug('last run of %s %s - %s', k, v['task'], last_run)
@@ -94,3 +105,5 @@ class Scheduler(KuyrukProcess):
                     if diff > v['schedule']:
                         self.fire_task(k, v['task'], v['args'])
             sleep(1)
+
+        logger.debug("End run scheduler")

@@ -8,12 +8,7 @@ from time import time, sleep
 from functools import partial
 from contextlib import contextmanager
 
-from pika.exceptions import ChannelClosed
 from what import What
-
-from kuyruk import Kuyruk
-from kuyruk.queue import Queue as RabbitQueue
-
 
 if os.environ.get('TRAVIS', '') == 'true':
     TIMEOUT = 30
@@ -23,36 +18,25 @@ else:
 logger = logging.getLogger(__name__)
 
 
-def delete_queue(*queues):
-    """Delete queues from RabbitMQ"""
-    for name in queues:
-        try:
-            ch = Kuyruk().channel()
-            RabbitQueue(name, ch).delete()
-            ch.close()
-        except ChannelClosed:
-            pass
-
-
-def is_empty(queue):
-    queue = RabbitQueue(queue, Kuyruk().channel())
-    return len(queue) == 0
-
-
 @contextmanager
 def run_kuyruk(queue='kuyruk', save_failed_tasks=False, terminate=True,
-               process='worker'):
+               config_filename=None, process='worker'):
     assert not_running()
     args = [
         sys.executable, '-u',
         '-m', 'kuyruk.__main__',  # run main module
-        '--max-load', '999',  # do not pause because of load
+        '--max-load=999',  # do not pause because of load
+        '--logging-level=DEBUG',
     ]
-    args.extend(['--logging-level=DEBUG'])
+
+    if config_filename:
+        args.extend(["--config", config_filename])
+
     if save_failed_tasks:
-        args.extend(['--save-failed-tasks', 'True'])
+        args.append('--save-failed-tasks=True')
 
     args.append(process)
+
     if process == 'worker':
         args.extend(['--queue', queue])
 
@@ -108,19 +92,6 @@ def not_running():
 
 def is_running():
     return bool(get_pids('kuyruk:'))
-
-
-def run_requeue():
-    from kuyruk.__main__ import run_requeue
-    run_requeue(Kuyruk(), None)
-
-
-def run_scheduler(config):
-    from kuyruk.__main__ import run_scheduler
-    from kuyruk.config import Config
-    c = Config()
-    c.from_dict(config)
-    run_scheduler(Kuyruk(c), None)
 
 
 def get_pids(pattern):

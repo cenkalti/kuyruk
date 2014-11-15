@@ -8,11 +8,15 @@ from time import time
 from uuid import uuid1
 from datetime import datetime
 from functools import wraps
+from threading import Lock
 from contextlib import contextmanager
 
+import rabbitpy
+import rabbitpy.exceptions
+
 from kuyruk import events, importer
-from kuyruk.queue import Queue
 from kuyruk.events import EventMixin
+from kuyruk.helpers import json_datetime
 from kuyruk.exceptions import Timeout, InvalidTask, ObjectNotFound
 
 logger = logging.getLogger(__name__)
@@ -98,6 +102,7 @@ def send_client_signals(f):
         return rv
     return inner
 
+_DECLARE_ALWAYS = False
 
 class Task(EventMixin):
 
@@ -112,6 +117,8 @@ class Task(EventMixin):
         self.max_run_time = max_run_time
         self.cls = None
         self.arg_class = arg_class
+        self._declared_queues = set()
+        self._declared_queues_lock = Lock()
         self.setup()
 
     def setup(self):
@@ -133,23 +140,15 @@ class Task(EventMixin):
         """
         logger.debug("Task.__call__ args=%r, kwargs=%r", args, kwargs)
 
-        # These keyword argument allow the sender to override
-        # the destination of the message.
+        # Allow the sender to override the destination of the message.
         host = kwargs.pop('kuyruk_host', None)
-        local = kwargs.pop('kuyruk_local', None)
-        expiration = kwargs.pop('kuyruk_expiration', None)
 
         if self.eager or self.kuyruk.config.EAGER:
             # Run the task in process
-            task_result = self._run(*args, **kwargs)
+            self._run(*args, **kwargs)
         else:
             # Send it to the queue
-            task_result = TaskResult(self)
-            task_result.id = self.send_to_queue(args, kwargs,
-                                                host=host, local=local,
-                                                expiration=expiration)
-
-        return task_result
+            self.send_to_queue(args, kwargs, host=host)
 
     def delay(self, *args, **kwargs):
         """Compatibility function for migrating existing Celery project to
@@ -179,8 +178,14 @@ class Task(EventMixin):
             return BoundTask(self, obj)
         return self
 
-    def send_to_queue(self, args, kwargs, host=None, local=None,
-                      expiration=None):
+    def _declare_queue(self, channel, name, force=False):
+        with self._declared_queues_lock:
+            if name not in self._declared_queues or force or _DECLARE_ALWAYS:
+                logger.debug("declaring queue...")
+                rabbitpy.Queue(channel, name=name, durable=True).declare()
+                self._declared_queues.add(name)
+
+    def send_to_queue(self, args, kwargs, host=None):
         """
         Sends this task to queue.
 
@@ -189,36 +194,32 @@ class Task(EventMixin):
             on execution.
         :param host: Send this task to specific host. ``host`` will be
             appended to the queue name.
-        :param local: Send this task to this host. Hostname of this host will
-            be appended to the queue name.
-        :param expiration: Expire message after expiration milliseconds.
         :return: :const:`None`
 
         """
         logger.debug("Task.send_to_queueue args=%r, kwargs=%r", args, kwargs)
 
-        with self.queue(host=host, local=local) as queue:
-            desc = self.get_task_description(args, kwargs, queue.name)
-            queue.send(desc, expiration=expiration)
-
-        # We are returning the unique identifier of the task sent to queue
-        # so we can query the result backend for completion.
-        # TODO no result backend is available yet
-        return desc['id']
-
-    @contextmanager
-    def queue(self, host=None, local=None):
-        queue_ = self.queue_name
-        local_ = self.local
-
-        if local is not None:
-            local_ = local
-
         if host:
-            queue_ = "%s.%s" % (self.queue_name, host)
-            local_ = False
+            queue_name = ".".join((self.queue_name, host))
+        elif self.local:
+            queue_name = ".".join((self.queue_name, socket.gethostname()))
+        else:
+            queue_name = self.queue_name
 
-        yield Queue(queue_, self.kuyruk.channel(), local_)
+        desc = self.get_task_description(args, kwargs, queue_name)
+        body = json_datetime.dumps(desc)
+        properties = {"delivery_mode": 2, "content_type": "application/json"}
+
+        ch = self.kuyruk._channel_for_publishing
+        self._declare_queue(ch, queue_name)
+        logger.debug("publishing message...")
+        msg = rabbitpy.Message(ch, body, properties=properties)
+        try:
+            msg.publish(exchange="", routing_key=queue_name, mandatory=True)
+        except rabbitpy.exceptions.MessageReturnedException:
+            self._declare_queue(ch, queue_name, force=True)
+            msg.publish(exchange="", routing_key=queue_name, mandatory=True)
+        logger.debug("published.")
 
     def get_task_description(self, args, kwargs, queue):
         """Return the dictionary to be sent to the queue."""
@@ -265,8 +266,6 @@ class Task(EventMixin):
 
         logger.debug("Task._apply args=%r, kwargs=%r", args, kwargs)
 
-        result = TaskResult(self)
-
         limit = (self.max_run_time or
                  self.kuyruk.config.MAX_TASK_RUN_TIME or 0)
 
@@ -280,14 +279,8 @@ class Task(EventMixin):
             raise
         else:
             send_signal(events.task_success, return_value=return_value)
-            result.result = return_value
         finally:
             send_signal(events.task_postrun)
-
-        # We are returning a TaskResult here because __call__ returns a
-        # TaskResult object too. Return value must be consistent whether
-        # task is sent to queue or executed in process with apply().
-        return result
 
     def run(self, *args, **kwargs):
         """
@@ -353,33 +346,6 @@ class BoundTask(Task):
         args = list(args)
         args.insert(0, self.obj)
         return super(BoundTask, self).apply(*args, **kwargs)
-
-
-class TaskResult(object):
-    """Insance of this class is returned after the task is sent to queue.
-    Since Kuyruk does not support a result backend yet it will raise
-    exception on any attribute or item access.
-
-    """
-    def __init__(self, task):
-        self.task = task
-
-    def __getattr__(self, name):
-        raise NotImplementedError(name)
-
-    def __setattr__(self, name, value):
-        if name not in ('task', 'id', 'result'):
-            raise NotImplementedError(name)
-        super(TaskResult, self).__setattr__(name, value)
-
-    def __getitem__(self, key):
-        raise NotImplementedError(key)
-
-    def __setitem__(self, key, value):
-        raise NotImplementedError(key)
-
-    def __repr__(self):
-        return "<TaskResult of %r>" % self.task.name
 
 
 @contextmanager

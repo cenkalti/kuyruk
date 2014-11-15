@@ -28,7 +28,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'Flask>=0.9',
-        'pika>=0.9.14',
+        'rabbitpy>=0.20.0',
         'setproctitle>=1.1.7',
         'blinker>=1.2',
         'argparse>=1.2.1',

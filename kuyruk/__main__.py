@@ -11,7 +11,7 @@ import argparse
 from kuyruk import __version__, importer, Kuyruk
 from kuyruk.master import Master
 from kuyruk.config import Config
-from kuyruk.requeue import Requeuer
+from kuyruk.requeue import Requeue
 from kuyruk.manager import Manager
 from kuyruk.scheduler import Scheduler
 
@@ -31,7 +31,7 @@ def run_master(kuyruk, args):
 
 
 def run_requeue(kuyruk, args):
-    r = Requeuer(kuyruk)
+    r = Requeue(kuyruk)
     r.run()
 
 

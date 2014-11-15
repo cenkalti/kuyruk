@@ -10,7 +10,7 @@ from werkzeug.serving import run_simple
 import rpyc
 from rpyc.utils.server import ThreadedServer
 
-from kuyruk.requeue import Requeuer
+from kuyruk.requeue import Requeue
 from kuyruk.helpers import human_time, start_daemon_thread
 from kuyruk.helpers.json_datetime import JSONDecoder
 
@@ -114,7 +114,7 @@ class Manager(Flask):
             channel = self.kuyruk.channel()
             for desc in tasks:
                 desc = json.loads(desc)
-                Requeuer.requeue(desc, channel, redis)
+                Requeue.requeue(desc, channel, redis)
 
             return redirect_back()
 

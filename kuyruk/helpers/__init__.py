@@ -8,7 +8,6 @@ import logging
 import threading
 import traceback
 from time import sleep
-from Queue import Empty
 from functools import wraps
 
 
@@ -37,16 +36,6 @@ def retry(sleep_seconds=1, stop_event=threading.Event(),
                         sleep(sleep_seconds)
         return inner
     return decorator
-
-
-def queue_get_all(q):
-    items = []
-    while 1:
-        try:
-            items.append(q.get_nowait())
-        except Empty:
-            break
-    return items
 
 
 def human_time(seconds, suffixes=['y', 'w', 'd', 'h', 'm', 's'],
