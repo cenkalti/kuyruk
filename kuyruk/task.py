@@ -8,6 +8,7 @@ import logging
 from time import time
 from uuid import uuid1
 from functools import wraps
+from datetime import datetime
 from contextlib import contextmanager
 
 import amqp
@@ -210,6 +211,7 @@ class Task(EventMixin):
             'sender_hostname': socket.gethostname(),
             'sender_pid': os.getpid(),
             'sender_cmd': ' '.join(sys.argv),
+            'sender_timestamp': datetime.utcnow().isoformat()[:19],
         }
 
     def _send_signal(self, sig, args, kwargs, reverse=False, **extra):
