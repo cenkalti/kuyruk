@@ -24,23 +24,6 @@ from kuyruk.exceptions import Reject, Discard, ObjectNotFound, Timeout, \
 logger = logging.getLogger(__name__)
 
 
-def set_current_task(f):
-    """Save current task and it's arguments in self so we can send them to
-    manager as stats."""
-    @wraps(f)
-    def inner(self, task, args, kwargs):
-        self._current_task = task
-        self._current_args = args
-        self._current_kwargs = kwargs
-        try:
-            return f(self, task, args, kwargs)
-        finally:
-            self._current_task = None
-            self._current_args = None
-            self._current_kwargs = None
-    return inner
-
-
 class Worker(object):
     """Consumes tasks from a queue and runs them.
 
@@ -171,9 +154,23 @@ class Worker(object):
         before exiting when SIGQUIT is received."""
         self._current_message = message
         try:
-            yield message
+            yield
         finally:
             self._current_message = None
+
+    @contextmanager
+    def _set_current_task(self, task, args, kwargs):
+        """Save current message being processed so we can send ack
+        before exiting when SIGQUIT is received."""
+        self._current_task = task
+        self._current_args = args
+        self._current_kwargs = kwargs
+        try:
+            yield
+        finally:
+            self._current_task = None
+            self._current_args = None
+            self._current_kwargs = None
 
     def _start_daemon_threads(self):
         """Start the function as threads listed in self.daemon_thread."""
@@ -261,10 +258,10 @@ class Worker(object):
         """Called when the task is invalid."""
         self._channel.basic_reject(message.delivery_tag, requeue=False)
 
-    @set_current_task
     def apply_task(self, task, args, kwargs):
         """Runs the wrapped function in task."""
-        task._run(*args, **kwargs)
+        with self._set_current_task(task, args, kwargs):
+            task._run(*args, **kwargs)
 
     def _watch_load(self):
         """Pause consuming messages if lood goes above the allowed limit."""
