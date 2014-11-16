@@ -12,6 +12,7 @@ Version 2.0.0
 - Removed scheduler subcommand.
 - Removed requeue subcommand.
 - Removed manager subcommand.
+- Exceptions are not sent to Sentry.
 - Failed tasks are not saved to redis anymore.
 - Failed tasks are retried in the same worker.
 - Unknown keys in config are now errors.
