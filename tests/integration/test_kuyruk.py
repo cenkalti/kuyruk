@@ -29,7 +29,7 @@ class KuyrukTestCase(unittest.TestCase):
 
     def test_simple_task(self):
         """Run a task on default queue"""
-        tasks.print_task('hello world')
+        tasks.echo('hello world')
         with run_kuyruk() as worker:
             worker.expect('Start consuming')
             worker.expect('hello world')
@@ -37,7 +37,7 @@ class KuyrukTestCase(unittest.TestCase):
 
     def test_another_queue(self):
         """Run a task on different queue"""
-        tasks.print_task2('hello another')
+        tasks.echo_another('hello another')
         with run_kuyruk(queue='another_queue') as worker:
             worker.expect('Start consuming')
             worker.expect('another_queue')
@@ -84,7 +84,7 @@ class KuyrukTestCase(unittest.TestCase):
     @patch('tests.tasks.must_be_called')
     def test_before_after(self, mock_func):
         """Before and after task functions are run"""
-        tasks.task_with_functions('hello world')
+        tasks.task_with_event_handlers('hello world')
         mock_func.assert_called_once_with()
         with run_kuyruk() as worker:
             worker.expect('function1')

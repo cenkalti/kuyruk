@@ -18,13 +18,13 @@ kuyruk = Kuyruk()
 
 
 @kuyruk.task
-def print_task(message):
+def echo(message):
     print message
     must_be_called()
 
 
 @kuyruk.task(queue='another_queue')
-def print_task2(message):
+def echo_another(message):
     print message
 
 
@@ -77,7 +77,7 @@ kuyruk2 = Kuyruk()
 
 
 @kuyruk2.task
-def task_with_functions(message):
+def task_with_event_handlers(message):
     print message
     return 42
 
@@ -97,17 +97,17 @@ def function1(sender, task, args, kwargs):
     assert kwargs == {}
 
 
-@task_with_functions.on_prerun
+@task_with_event_handlers.on_prerun
 def function2(sender, task, args, kwargs):
     print 'function2'
 
 
-@task_with_functions.on_success
+@task_with_event_handlers.on_success
 def function3(sender, task, args, kwargs):
     print 'function3'
 
 
-@task_with_functions.on_postrun
+@task_with_event_handlers.on_postrun
 def function4(sender, task, args, kwargs):
     print 'function4'
 
@@ -159,7 +159,7 @@ def jump_eager(cat):
 
 
 @kuyruk.task(arg_class=Cat)
-def jump_fail(cat):
+def jump_error(cat):
     1/0
 
 
@@ -196,8 +196,3 @@ def use_session():
 def spawn_process(args=['sleep', '60']):
     import subprocess
     subprocess.check_call(args)
-
-
-@kuyruk.task(queue='scheduled')
-def scheduled(message):
-    print message
