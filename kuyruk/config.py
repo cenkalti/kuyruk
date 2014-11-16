@@ -72,6 +72,8 @@ class Config(object):
         logger.info("Config is loaded from dict: %r", d)
 
     def from_pymodule(self, module_name):
+        if not isinstance(module_name, basestring):
+            raise TypeError
         module = importer.import_module(module_name)
         for key, value in module.__dict__.iteritems():
             if (key.isupper() and
