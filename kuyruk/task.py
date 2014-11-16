@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import os
 import sys
+import json
 import signal
 import socket
 import logging
@@ -10,10 +11,12 @@ from datetime import datetime
 from functools import wraps
 from contextlib import contextmanager
 
+import amqp
+
 from kuyruk import events, importer
-from kuyruk.queue import Queue
 from kuyruk.events import EventMixin
 from kuyruk.exceptions import Timeout, InvalidTask, ObjectNotFound
+from kuyruk.helpers.json_datetime import JSONEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -136,20 +139,13 @@ class Task(EventMixin):
         # These keyword argument allow the sender to override
         # the destination of the message.
         host = kwargs.pop('kuyruk_host', None)
-        local = kwargs.pop('kuyruk_local', None)
-        expiration = kwargs.pop('kuyruk_expiration', None)
+        local = kwargs.pop('kuyruk_local', False)
 
         if self.eager or self.kuyruk.config.EAGER:
-            # Run the task in process
-            task_result = self._run(*args, **kwargs)
+            # Run the task in current process
+            self._run(*args, **kwargs)
         else:
-            # Send it to the queue
-            task_result = TaskResult(self)
-            task_result.id = self.send_to_queue(args, kwargs,
-                                                host=host, local=local,
-                                                expiration=expiration)
-
-        return task_result
+            self.send_to_queue(args, kwargs, host=host, local=local)
 
     def delay(self, *args, **kwargs):
         """Compatibility function for migrating existing Celery project to
@@ -179,8 +175,7 @@ class Task(EventMixin):
             return BoundTask(self, obj)
         return self
 
-    def send_to_queue(self, args, kwargs, host=None, local=None,
-                      expiration=None):
+    def send_to_queue(self, args, kwargs, host=None, local=False):
         """
         Sends this task to queue.
 
@@ -189,36 +184,20 @@ class Task(EventMixin):
             on execution.
         :param host: Send this task to specific host. ``host`` will be
             appended to the queue name.
-        :param local: Send this task to this host. Hostname of this host will
-            be appended to the queue name.
-        :param expiration: Expire message after expiration milliseconds.
+        :param local: Send this task to this host. Hostname of current host
+            will be appended to the queue name.
         :return: :const:`None`
 
         """
         logger.debug("Task.send_to_queueue args=%r, kwargs=%r", args, kwargs)
-
-        with self.queue(host=host, local=local) as queue:
-            desc = self.get_task_description(args, kwargs, queue.name)
-            queue.send(desc, expiration=expiration)
-
-        # We are returning the unique identifier of the task sent to queue
-        # so we can query the result backend for completion.
-        # TODO no result backend is available yet
-        return desc['id']
-
-    @contextmanager
-    def queue(self, host=None, local=None):
-        queue_ = self.queue_name
-        local_ = self.local
-
-        if local is not None:
-            local_ = local
-
-        if host:
-            queue_ = "%s.%s" % (self.queue_name, host)
-            local_ = False
-
-        yield Queue(queue_, self.kuyruk.channel(), local_)
+        queue = get_queue_name(self.queue_name, host=host,
+                               local=local or self.local)
+        desc = self.get_task_description(args, kwargs, queue)
+        body = json.dumps(desc, cls=JSONEncoder)
+        msg = amqp.Message(body=body)
+        with self.kuyruk.channel() as ch:
+            ch.queue_declare(queue=queue, durable=True, auto_delete=False)
+            ch.basic_publish(msg, exchange="", routing_key=queue)
 
     def get_task_description(self, args, kwargs, queue):
         """Return the dictionary to be sent to the queue."""
@@ -265,8 +244,6 @@ class Task(EventMixin):
 
         logger.debug("Task._apply args=%r, kwargs=%r", args, kwargs)
 
-        result = TaskResult(self)
-
         limit = (self.max_run_time or
                  self.kuyruk.config.MAX_TASK_RUN_TIME or 0)
 
@@ -280,14 +257,8 @@ class Task(EventMixin):
             raise
         else:
             send_signal(events.task_success, return_value=return_value)
-            result.result = return_value
         finally:
             send_signal(events.task_postrun)
-
-        # We are returning a TaskResult here because __call__ returns a
-        # TaskResult object too. Return value must be consistent whether
-        # task is sent to queue or executed in process with apply().
-        return result
 
     def run(self, *args, **kwargs):
         """
@@ -355,33 +326,6 @@ class BoundTask(Task):
         return super(BoundTask, self).apply(*args, **kwargs)
 
 
-class TaskResult(object):
-    """Insance of this class is returned after the task is sent to queue.
-    Since Kuyruk does not support a result backend yet it will raise
-    exception on any attribute or item access.
-
-    """
-    def __init__(self, task):
-        self.task = task
-
-    def __getattr__(self, name):
-        raise NotImplementedError(name)
-
-    def __setattr__(self, name, value):
-        if name not in ('task', 'id', 'result'):
-            raise NotImplementedError(name)
-        super(TaskResult, self).__setattr__(name, value)
-
-    def __getitem__(self, key):
-        raise NotImplementedError(key)
-
-    def __setitem__(self, key, value):
-        raise NotImplementedError(key)
-
-    def __repr__(self):
-        return "<TaskResult of %r>" % self.task.name
-
-
 @contextmanager
 def time_limit(seconds):
     def signal_handler(signum, frame):
@@ -392,3 +336,11 @@ def time_limit(seconds):
         yield
     finally:
         signal.alarm(0)
+
+
+def get_queue_name(name, host=None, local=False):
+    if local:
+        host = socket.gethostname()
+    if host:
+        name = "%s.%s" % (name, host)
+    return name
