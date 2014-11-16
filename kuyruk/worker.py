@@ -189,9 +189,11 @@ class Worker(object):
 
     def _process_task(self, message, task_description):
         try:
-            task = self._import_task(task_description)
-            args, kwargs = task_description['args'], task_description['kwargs']
-            self._apply_task(task, args, kwargs)
+            task = importer.import_task(task_description['module'],
+                                        task_description['class'],
+                                        task_description['function'])
+            self.apply_task(
+                task, task_description['args'], task_description['kwargs'])
         except Reject:
             logger.warning('Task is rejected')
             if os.environ['KUYRUK_TESTING'] != 'True':
@@ -256,18 +258,9 @@ class Worker(object):
         self._channel.basic_reject(message.delivery_tag, requeue=False)
 
     @set_current_task
-    def _apply_task(self, task, args, kwargs):
-        """Imports and runs the wrapped function in task."""
-        result = task._run(*args, **kwargs)
-        logger.debug('Result: %r', result)
-
-    def _import_task(self, task_description):
-        """Import the task from it's name."""
-        module, function, cls = (
-            task_description['module'],
-            task_description['function'],
-            task_description['class'])
-        return importer.import_task(module, cls, function)
+    def apply_task(self, task, args, kwargs):
+        """Runs the wrapped function in task."""
+        task._run(*args, **kwargs)
 
     def _watch_load(self):
         """Pause consuming messages if lood goes above the allowed limit."""

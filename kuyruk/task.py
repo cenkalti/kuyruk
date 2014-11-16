@@ -263,7 +263,7 @@ class Task(EventMixin):
         You may override this method from a subclass to change the behavior.
 
         """
-        return self.f(*args, **kwargs)
+        self.f(*args, **kwargs)
 
     @property
     def name(self):
