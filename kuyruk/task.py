@@ -38,7 +38,7 @@ def object_to_id(f):
     """
     @wraps(f)
     def inner(self, *args, **kwargs):
-        cls = self.cls or self.arg_class
+        cls = self._cls or self.arg_class
         if cls:
             try:
                 obj = args[0]
@@ -65,7 +65,7 @@ def id_to_object(f):
     """
     @wraps(f)
     def inner(self, *args, **kwargs):
-        cls = self.arg_class or self.cls
+        cls = self.arg_class or self._cls
         if cls:
             if not args:
                 raise InvalidTask
@@ -111,7 +111,7 @@ class Task(EventMixin):
         self.eager = eager
         self.retry = retry
         self.max_run_time = max_run_time
-        self.cls = None
+        self._cls = None
         self.arg_class = arg_class
         self.setup()
 
@@ -159,11 +159,11 @@ class Task(EventMixin):
         modifying the client code. When a function decorated inside a class
         there is no way of accessing that class at that time because methods
         are bounded at run time when they are accessed. The trick here is that
-        we set self.cls when the Task is accessed first time via attribute
+        we set self._cls when the Task is accessed first time via attribute
         syntax.
 
         """
-        self.cls = objtype
+        self._cls = objtype
         if obj:
             # Class tasks needs to know what the object is so they can
             # inject that object in front of args.
@@ -289,8 +289,8 @@ class Task(EventMixin):
     def _class_name(self):
         """Name of the class if this is a class task,
         otherwise :const:`None`."""
-        if self.cls:
-            return self.cls.__name__
+        if self._cls:
+            return self._cls.__name__
 
 
 class BoundTask(Task):

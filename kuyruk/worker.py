@@ -29,15 +29,15 @@ def set_current_task(f):
     manager as stats."""
     @wraps(f)
     def inner(self, task, args, kwargs):
-        self.current_task = task
-        self.current_args = args
-        self.current_kwargs = kwargs
+        self._current_task = task
+        self._current_args = args
+        self._current_kwargs = kwargs
         try:
             return f(self, task, args, kwargs)
         finally:
-            self.current_task = None
-            self.current_args = None
-            self.current_kwargs = None
+            self._current_task = None
+            self._current_args = None
+            self._current_kwargs = None
     return inner
 
 
@@ -58,14 +58,14 @@ class Worker(object):
             raise ValueError("empty queue name")
 
         self.queue = get_queue_name(queue, local=is_local)
-        self.consumer_tag = '%s@%s' % (os.getpid(), socket.gethostname())
-        self.channel = None
+        self._consumer_tag = '%s@%s' % (os.getpid(), socket.gethostname())
+        self._channel = None
         self.shutdown_pending = threading.Event()
-        self.current_message = None
-        self.current_task = None
-        self.current_args = None
-        self.current_kwargs = None
-        self.daemon_threads = [
+        self._current_message = None
+        self._current_task = None
+        self._current_args = None
+        self._current_kwargs = None
+        self._daemon_threads = [
             self._watch_load,
             self._shutdown_timer,
         ]
@@ -91,12 +91,12 @@ class Worker(object):
 
     def _consume_messages(self):
         with self.kuyruk.channel() as ch:
-            self.channel = ch
+            self._channel = ch
             ch.queue_declare(queue=self.queue, durable=True, auto_delete=False)
             ch.basic_qos(0, 1, False)
             logger.debug('Start consuming')
             ch.basic_consume(queue=self.queue,
-                             consumer_tag=self.consumer_tag,
+                             consumer_tag=self._consumer_tag,
                              callback=self._message_callback)
             while not self.shutdown_pending.is_set():
                 try:
@@ -139,14 +139,14 @@ class Worker(object):
         self.warm_shutdown()
 
     def _handle_sigquit(self, signum, frame):
-        """Send ACK for the current task and exit."""
+        """Drop the current task and exit."""
         logger.warning("Catched SIGQUIT")
-        if self.current_message:
+        if self._current_message:
             try:
                 logger.warning("Dropping current task...")
-                self.channel.basic_reject(self.current_message.delivery_tag,
+                self._channel.basic_reject(self._current_message.delivery_tag,
                                           requeue=False)
-                self.channel.close()
+                self._channel.close()
             except Exception:
                 logger.critical("Cannot send ACK for the current task.")
                 traceback.print_exc()
@@ -165,15 +165,15 @@ class Worker(object):
     def _set_current_message(self, message):
         """Save current message being processed so we can send ack
         before exiting when SIGQUIT is received."""
-        self.current_message = message
+        self._current_message = message
         try:
             yield message
         finally:
-            self.current_message = None
+            self._current_message = None
 
     def _start_daemon_threads(self):
         """Start the function as threads listed in self.daemon_thread."""
-        for f in self.daemon_threads:
+        for f in self._daemon_threads:
             start_daemon_thread(f)
 
     def _process_message(self, message):
@@ -181,7 +181,7 @@ class Worker(object):
         try:
             task_description = json.loads(message.body)
         except Exception:
-            self.channel.basic_reject(message.delivery_tag, requeue=False)
+            self._channel.basic_reject(message.delivery_tag, requeue=False)
             logger.error("Canot decode message. Dropped the message!")
         else:
             logger.info("Processing task: %r", task_description)
@@ -195,10 +195,10 @@ class Worker(object):
         except Reject:
             logger.warning('Task is rejected')
             sleep(1)  # Prevent cpu burning
-            self.channel.basic_reject(message.delivery_tag, requeue=True)
+            self._channel.basic_reject(message.delivery_tag, requeue=True)
         except Discard:
             logger.warning('Task is discarded')
-            self.channel.basic_reject(message.delivery_tag, requeue=False)
+            self._channel.basic_reject(message.delivery_tag, requeue=False)
         except ObjectNotFound:
             logger.warning('Object not found')
             self._handle_not_found(message, task_description)
@@ -213,7 +213,7 @@ class Worker(object):
             self._handle_exception(message, task_description)
         else:
             logger.info('Task is successful')
-            self.channel.basic_ack(message.delivery_tag)
+            self._channel.basic_ack(message.delivery_tag)
         finally:
             logger.debug("Task is processed")
 
@@ -228,7 +228,7 @@ class Worker(object):
             self._process_task(message, task_description)
         else:
             logger.debug('No retry left')
-            self.channel.basic_reject(message.delivery_tag, requeue=False)
+            self._channel.basic_reject(message.delivery_tag, requeue=False)
 
     def _handle_not_found(self, message, task_description):
         """Called if the task is class task but the object with the given id
@@ -241,18 +241,18 @@ class Worker(object):
             task_description['module'],
             task_description['class'],
             task_description['args'][0])
-        self.channel.basic_reject(message.delivery_tag, requeue=False)
+        self._channel.basic_reject(message.delivery_tag, requeue=False)
 
     def _handle_timeout(self, message, task_description):
         """Called when the task is timed out while running the wrapped
         function.
 
         """
-        self.channel.basic_reject(message.delivery_tag, requeue=False)
+        self._channel.basic_reject(message.delivery_tag, requeue=False)
 
     def _handle_invalid(self, message, task_description):
         """Called when the task is invalid."""
-        self.channel.basic_reject(message.delivery_tag, requeue=False)
+        self._channel.basic_reject(message.delivery_tag, requeue=False)
 
     @set_current_task
     def _apply_task(self, task, args, kwargs):
@@ -288,7 +288,7 @@ class Worker(object):
             return
 
         started = time()
-        while True:
+        while not self.shutdown_pending.is_set():
             passed = time() - started
             remaining = self.kuyruk.config.MAX_WORKER_RUN_TIME - passed
             if remaining > 0:
