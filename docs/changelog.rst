@@ -1,5 +1,5 @@
-Kuyruk Changelog
-================
+Changelog
+=========
 
 Here you can see the full list of changes between each Kuyruk release.
 

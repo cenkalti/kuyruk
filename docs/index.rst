@@ -29,6 +29,7 @@ User's Guide
    events
    classtasks
    extending
+   changelog
 
 
 API Reference
