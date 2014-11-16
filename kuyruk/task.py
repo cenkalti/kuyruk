@@ -226,7 +226,6 @@ class Task(EventMixin):
         for sender in senders:
             sig.send(sender, task=self, args=args, kwargs=kwargs, **extra)
 
-    @send_client_signals
     @object_to_id
     def apply(self, *args, **kwargs):
         logger.debug("Task.apply args=%r, kwargs=%r", args, kwargs)
