@@ -1,7 +1,6 @@
 import os
 import sys
 import errno
-import signal
 import logging
 import subprocess
 from time import time, sleep
@@ -33,7 +32,7 @@ def delete_queue(*queues):
         k.close()
 
 
-def messages_ready(queue):
+def len_queue(queue):
     k = Kuyruk()
     try:
         with k.channel() as ch:
@@ -45,25 +44,25 @@ def messages_ready(queue):
 
 
 def is_empty(queue):
-    return messages_ready(queue) == 0
+    return len_queue(queue) == 0
 
 
 @contextmanager
-def run_kuyruk(queue='kuyruk', save_failed_tasks=False, terminate=True,
-               process='worker'):
+def run_kuyruk(queue='kuyruk', terminate=True, config_filename=None):
     assert not_running()
     args = [
         sys.executable, '-u',
         '-m', 'kuyruk.__main__',  # run main module
-        '--max-load', '999',  # do not pause because of load
+        '--max-load=999',  # do not pause because of load
+        '--logging-level=DEBUG',
     ]
-    args.extend(['--logging-level=DEBUG'])
-    if save_failed_tasks:
-        args.extend(['--save-failed-tasks', 'True'])
 
-    args.append(process)
-    if process == 'worker':
-        args.extend(['--queue', queue])
+    if config_filename:
+        args.extend(["--config", config_filename])
+
+    args.append("worker")
+
+    args.extend(['--queue', queue])
 
     environ = os.environ.copy()
     environ['COVERAGE_PROCESS_START'] = '.coveragerc'
@@ -76,7 +75,7 @@ def run_kuyruk(queue='kuyruk', save_failed_tasks=False, terminate=True,
         if terminate:
             # Send SIGTERM to worker for gracefull shutdown
             popen.terminate()
-            popen.expect("End run %s" % process)
+            popen.expect("End run worker")
 
         popen.expect_exit()
 
@@ -84,7 +83,7 @@ def run_kuyruk(queue='kuyruk', save_failed_tasks=False, terminate=True,
         # We need to make sure that not any process of kuyruk is running
         # after the test is finished.
 
-        # Kill master process and wait until it is dead
+        # Kill the process and wait until it is dead
         try:
             popen.kill()
             popen.wait()
@@ -93,14 +92,6 @@ def run_kuyruk(queue='kuyruk', save_failed_tasks=False, terminate=True,
                 raise
 
         logger.debug('Worker return code: %s', popen.returncode)
-
-        # Kill worker processes by sending SIGKILL to their process group id
-        try:
-            logger.info('Killing process group: %s', popen.pid)
-            os.killpg(popen.pid, signal.SIGTERM)
-        except OSError as e:
-            if e.errno != errno.ESRCH:  # No such process
-                raise
 
         try:
             wait_while(lambda: get_pids('kuyruk:'))
@@ -117,19 +108,6 @@ def not_running():
 
 def is_running():
     return bool(get_pids('kuyruk:'))
-
-
-def run_requeue():
-    from kuyruk.__main__ import run_requeue
-    run_requeue(Kuyruk(), None)
-
-
-def run_scheduler(config):
-    from kuyruk.__main__ import run_scheduler
-    from kuyruk.config import Config
-    c = Config()
-    c.from_dict(config)
-    run_scheduler(Kuyruk(c), None)
 
 
 def get_pids(pattern):

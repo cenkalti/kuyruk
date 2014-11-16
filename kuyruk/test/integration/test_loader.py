@@ -6,8 +6,6 @@ import unittest
 from what import What
 
 from kuyruk import Kuyruk
-from kuyruk.helpers.json_datetime import JSONDecoder
-from kuyruk.test.integration.util import delete_queue
 
 
 class LoaderTestCase(unittest.TestCase):
@@ -35,12 +33,21 @@ class LoaderTestCase(unittest.TestCase):
                 'apppackage.tasks.print_message'
             ),
         ]
-        for args, cwd, name in cases:
-            print cwd, args, name
-            delete_queue('kuyruk')
-            run_python(args, cwd=cwd)  # Every call sends a task to the queue
-            name_from_queue = get_name()
-            assert name_from_queue == name  # Can we load the task by name?
+        k = Kuyruk()
+        try:
+            with k.channel() as ch:
+                for args, cwd, name in cases:
+                    print cwd, args, name
+
+                    ch.queue_delete("kuyruk")
+
+                    # Every call sends a task to the queue
+                    run_python(args, cwd=cwd)
+
+                    # Can we load the task by name?
+                    assert get_name() == name
+        finally:
+            k.close()
 
 
 def run_python(args, cwd):
@@ -54,7 +61,7 @@ def get_name():
     try:
         with k.channel() as ch:
             message = ch.basic_get("kuyruk")
-            desc = json.loads(message.body, cls=JSONDecoder)
+            desc = json.loads(message.body)
             return '.'.join([desc['module'], desc['function']])
     finally:
         k.close()

@@ -27,12 +27,10 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'Flask>=0.9',
         'amqp>=1.4.6',
         'setproctitle>=1.1.7',
         'blinker>=1.2',
         'argparse>=1.2.1',
-        'rpyc>=3.3.0',
     ],
     description='A distributed task runner',
     long_description=read('README.rst'),

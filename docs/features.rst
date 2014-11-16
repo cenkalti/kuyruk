@@ -5,10 +5,8 @@ Features
 Simple
 ------
 Simple means *not complex*. All design decisions is based on simplicity.
-Speed is not first priority.
-
-Kuyruk only supports RabbitMQ and will not support another message broker ever.
-For this reason Kuyruk tries to utilize RabbitMQ and AMQP as much as possible.
+Speed is not first priority. Kuyruk only supports RabbitMQ and will
+not support another message broker ever.
 
 
 Easy
