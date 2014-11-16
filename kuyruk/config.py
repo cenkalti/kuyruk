@@ -37,14 +37,6 @@ class Config(object):
     """Worker implementation class. It can be replaced with a subclass of
     :class:`~kuyruk.worker.Worker` to change specific behavior."""
 
-    IMPORTS = []
-    """By default worker imports the task modules lazily when it receive a
-    task from the queue. If you specify the modules here they will be
-    imported when the worker is started."""
-
-    IMPORT_PATH = None
-    """Worker imports tasks from this directory."""
-
     EAGER = False
     """Run tasks in the process without sending to queue. Useful in tests."""
 
@@ -63,10 +55,6 @@ class Config(object):
     LOGGING_CONFIG = None
     """INI style logging configuration file.
     This has precedence over ``LOGGING_LEVEL``."""
-
-    SENTRY_DSN = None
-    """Send exceptions to Sentry. Raven must be installed in order that
-    this feature to work."""
 
     def from_object(self, obj):
         """Load values from an object."""

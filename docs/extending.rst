@@ -17,6 +17,7 @@ Example:
 .. code-block:: python
 
     from kuyruk import Kuyruk, Task
+    from kuyruk.events import task_prerun, task_postrun
     from myapp.orm import Session
 
     kuyruk = Kuyruk()
@@ -46,6 +47,6 @@ Extending Worker Class
 ----------------------
 
 Worker class can be given as a string as the value of
-:attr:`~kuyruk.config.Config.WORKER_CLASS` in the configuration.
+:attr:`~kuyruk.Config.WORKER_CLASS` in the configuration.
 When a worker is started, this class will be instantiated and
 it's :meth:`~kuyruk.Worker.run` method will be called.

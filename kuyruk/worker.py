@@ -18,7 +18,8 @@ from setproctitle import setproctitle
 import kuyruk
 from kuyruk import importer
 from kuyruk.task import get_queue_name
-from kuyruk.exceptions import Reject, ObjectNotFound, Timeout, InvalidTask
+from kuyruk.exceptions import Reject, Discard, ObjectNotFound, Timeout, \
+    InvalidTask
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +42,10 @@ def set_current_task(f):
 
 
 class Worker(object):
-    """Consumes messages from a queue and runs tasks.
+    """Consumes tasks from a queue and runs them.
 
     :param kuyruk_: A :class:`~kuyurk.kuyruk.Kuyruk` instance
-    :param queue_name: The queue name to work on
+    :param queue: The queue name to work on
 
     """
     def __init__(self, kuyruk_, queue):
@@ -58,15 +59,15 @@ class Worker(object):
 
         self.queue = get_queue_name(queue, local=is_local)
         self.consumer_tag = '%s@%s' % (os.getpid(), socket.gethostname())
-        self._channel = None
+        self.channel = None
         self.shutdown_pending = threading.Event()
         self.current_message = None
         self.current_task = None
         self.current_args = None
         self.current_kwargs = None
         self.daemon_threads = [
-            self.watch_load,
-            self.shutdown_timer,
+            self._watch_load,
+            self._shutdown_timer,
         ]
         if self.kuyruk.config.MAX_LOAD is None:
             self.kuyruk.config.MAX_LOAD = multiprocessing.cpu_count()
@@ -78,20 +79,19 @@ class Worker(object):
 
         """
         setproctitle("kuyruk: worker on %s" % self.queue)
-        self.setup_logging()
+        self._setup_logging()
         signal.signal(signal.SIGINT, self._handle_sigint)
         signal.signal(signal.SIGTERM, self._handle_sigterm)
         signal.signal(signal.SIGQUIT, self._handle_sigquit)
         signal.signal(signal.SIGUSR1, print_stack)  # for debugging
 
-        self.import_modules()
-        self.start_daemon_threads()
-        self.consume_messages()
+        self._start_daemon_threads()
+        self._consume_messages()
         logger.debug("End run worker")
 
-    def consume_messages(self):
+    def _consume_messages(self):
         with self.kuyruk.channel() as ch:
-            self._channel = ch
+            self.channel = ch
             ch.queue_declare(queue=self.queue, durable=True, auto_delete=False)
             ch.basic_qos(0, 1, False)
             logger.debug('Start consuming')
@@ -111,7 +111,7 @@ class Worker(object):
 
         logger.debug("End run worker")
 
-    def setup_logging(self):
+    def _setup_logging(self):
         if self.kuyruk.config.LOGGING_CONFIG:
             logging.config.fileConfig(self.kuyruk.config.LOGGING_CONFIG)
         else:
@@ -143,9 +143,10 @@ class Worker(object):
         logger.warning("Catched SIGQUIT")
         if self.current_message:
             try:
-                logger.warning("Acking current task...")
-                self._channel.basic_ack(self.current_message.delivery_tag)
-                self._channel.close()
+                logger.warning("Dropping current task...")
+                self.channel.basic_reject(self.current_message.delivery_tag,
+                                          requeue=False)
+                self.channel.close()
             except Exception:
                 logger.critical("Cannot send ACK for the current task.")
                 traceback.print_exc()
@@ -158,7 +159,7 @@ class Worker(object):
 
         """
         with self._set_current_message(message):
-            self.process_message(message)
+            self._process_message(message)
 
     @contextmanager
     def _set_current_message(self, message):
@@ -170,109 +171,104 @@ class Worker(object):
         finally:
             self.current_message = None
 
-    def start_daemon_threads(self):
+    def _start_daemon_threads(self):
         """Start the function as threads listed in self.daemon_thread."""
         for f in self.daemon_threads:
             start_daemon_thread(f)
 
-    def import_modules(self):
-        """Import modules defined in the configuration.
-        This method is called before start consuming messages.
-
-        """
-        for module in self.kuyruk.config.IMPORTS:
-            importer.import_module(module, self.kuyruk.config.IMPORT_PATH)
-
-    def process_message(self, message):
+    def _process_message(self, message):
         """Processes the message received from the queue."""
         try:
             task_description = json.loads(message.body)
-            logger.info("Processing task: %r", task_description)
         except Exception:
-            self._channel.basic_ack(message.delivery_tag)
-            logger.error("Canot decode message. Dropped!")
-            return
+            self.channel.basic_reject(message.delivery_tag, requeue=False)
+            logger.error("Canot decode message. Dropped the message!")
+        else:
+            logger.info("Processing task: %r", task_description)
+            self._process_task(message, task_description)
 
-        self.process_task(message, task_description)
-
-    def process_task(self, message, task_description):
+    def _process_task(self, message, task_description):
         try:
-            task = self.import_task(task_description)
+            task = self._import_task(task_description)
             args, kwargs = task_description['args'], task_description['kwargs']
-            self.apply_task(task, args, kwargs)
+            self._apply_task(task, args, kwargs)
         except Reject:
             logger.warning('Task is rejected')
             sleep(1)  # Prevent cpu burning
-            self._channel.basic_reject(message.delivery_tag, True)
+            self.channel.basic_reject(message.delivery_tag, requeue=True)
+        except Discard:
+            logger.warning('Task is discarded')
+            self.channel.basic_reject(message.delivery_tag, requeue=False)
         except ObjectNotFound:
-            self.handle_not_found(message, task_description)
+            logger.warning('Object not found')
+            self._handle_not_found(message, task_description)
         except Timeout:
-            self.handle_timeout(message, task_description)
+            logger.error('Task timeout')
+            self._handle_timeout(message, task_description)
         except InvalidTask:
-            self.handle_invalid(message, task_description)
+            logger.error('Invalid task')
+            self._handle_invalid(message, task_description)
         except Exception:
-            self.handle_exception(message, task_description)
+            logger.error('Task raised an exception')
+            self._handle_exception(message, task_description)
         else:
             logger.info('Task is successful')
-            self._channel.basic_ack(message.delivery_tag)
+            self.channel.basic_ack(message.delivery_tag)
         finally:
             logger.debug("Task is processed")
 
-    def handle_exception(self, message, task_description):
+    def _handle_exception(self, message, task_description):
         """Handles the exception while processing the message."""
-        logger.error('Task raised an exception')
         logger.error(traceback.format_exc())
         retry_count = task_description.get('retry', 0)
         if retry_count > 0:
+            logger.info('Retrying task')
             logger.debug('Retry count: %s', retry_count)
             task_description['retry'] = retry_count - 1
-            self.process_task(message, task_description)
+            self._process_task(message, task_description)
         else:
             logger.debug('No retry left')
-            self._channel.basic_reject(message.delivery_tag, False)
+            self.channel.basic_reject(message.delivery_tag, requeue=False)
 
-    def handle_not_found(self, message, task_description):
+    def _handle_not_found(self, message, task_description):
         """Called if the task is class task but the object with the given id
-        is not found. The default action is logging the error and acking
+        is not found. The default action is logging the error and dropping
         the message.
 
         """
-        logger.error(
+        logger.warning(
             "<%s.%s id=%r> is not found",
             task_description['module'],
             task_description['class'],
             task_description['args'][0])
-        self._channel.basic_ack(message.delivery_tag)
+        self.channel.basic_reject(message.delivery_tag, requeue=False)
 
-    def handle_timeout(self, message, task_description):
+    def _handle_timeout(self, message, task_description):
         """Called when the task is timed out while running the wrapped
         function.
 
         """
-        logger.error('Task has timed out.')
-        self.handle_exception(message, task_description)
+        self.channel.basic_reject(message.delivery_tag, requeue=False)
 
-    def handle_invalid(self, message, task_description):
-        """Called when the message from queue is invalid."""
-        logger.error("Invalid message.")
-        self._channel.basic_reject(message.delivery_tag, False)
+    def _handle_invalid(self, message, task_description):
+        """Called when the task is invalid."""
+        self.channel.basic_reject(message.delivery_tag, requeue=False)
 
     @set_current_task
-    def apply_task(self, task, args, kwargs):
+    def _apply_task(self, task, args, kwargs):
         """Imports and runs the wrapped function in task."""
         result = task._run(*args, **kwargs)
         logger.debug('Result: %r', result)
 
-    def import_task(self, task_description):
-        """This is the method where user modules are loaded."""
+    def _import_task(self, task_description):
+        """Import the task from it's name."""
         module, function, cls = (
             task_description['module'],
             task_description['function'],
             task_description['class'])
-        return importer.import_task(
-            module, cls, function, self.kuyruk.config.IMPORT_PATH)
+        return importer.import_task(module, cls, function)
 
-    def watch_load(self):
+    def _watch_load(self):
         """Pause consuming messages if lood goes above the allowed limit."""
         while not self.shutdown_pending.is_set():
             load = os.getloadavg()[0]
@@ -283,7 +279,7 @@ class Worker(object):
                 self._pause = False
             sleep(1)
 
-    def shutdown_timer(self):
+    def _shutdown_timer(self):
         """Counts down from MAX_WORKER_RUN_TIME. When it reaches zero sutdown
         gracefully.
 

@@ -1,7 +1,6 @@
 from __future__ import absolute_import
-import atexit
 import logging
-from threading import Lock
+from threading import RLock
 from contextlib import contextmanager, closing
 
 import amqp
@@ -33,7 +32,9 @@ class Kuyruk(EventMixin):
                    See :ref:`configuration-options` for default values.
 
     """
-    Reject = exceptions.Reject  # Shortcut for raising from tasks
+    # Aliases for raising from tasks
+    Reject = exceptions.Reject
+    Discard = exceptions.Discard
 
     def __init__(self, config=None, task_class=Task):
         if config is None:
@@ -43,31 +44,32 @@ class Kuyruk(EventMixin):
         self.config = config
         self.task_class = task_class
         self._connection = None
-        self._lock = Lock()  # protects self._connection
+        self._lock = RLock()  # protects self._connection
         if config:
             self.config.from_object(config)
 
     def task(self, queue='kuyruk', eager=False, retry=0, task_class=None,
              max_run_time=None, local=False, arg_class=None):
         """
-        Wrap functions with this decorator to convert them to background
-        tasks. After wrapping, calling the function will send a message to
-        queue instead of running the function.
+        Wrap functions with this decorator to convert them to *tasks*.
+        After wrapping, calling the function will send a message to
+        a queue instead of running the function.
 
         :param queue: Queue name for the tasks.
         :param eager: Run task in process, do not use RabbitMQ.
         :param retry: Retry this times before give up. Task will be re-routed
             and executed on another worker.
         :param task_class: Custom task class.
-            Must be a subclass of :class:`~Task`.
-            If this is :const:`None` then :attr:`Task.task_class` will be used.
+            Must be a subclass of :class:`~kuyruk.Task`.
+            If this is :const:`None` then :attr:`kuyruk.Task.task_class` will be used.
         :param max_run_time: Maximum allowed time in seconds for task to
             complete.
         :param arg_class: Class of the first argument. If it is present,
             the first argument will be converted to it's ``id`` when sending
             the task to the queue and it will be reloaded on worker when
             running the task.
-        :return: Callable :class:`~Task` object wrapping the original function.
+        :return: Callable :class:`~kuyruk.Task` object wrapping the original
+            function.
 
         """
         def decorator():
@@ -89,7 +91,11 @@ class Kuyruk(EventMixin):
 
     @contextmanager
     def channel(self):
-        """Returns a new channel."""
+        """Returns a new channel as a context manager.
+        A lock will be held when this function is called.
+        Exiting from the context manager will release the lock.
+        Be aware of this when using Kuyruk in a multi-threaded program.
+        """
         with self._lock:
             # Connect once
             if self._connection is None:

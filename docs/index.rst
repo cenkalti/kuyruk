@@ -1,8 +1,9 @@
 Kuyruk: A distributed task runner
 =================================
 
-Welcome to Kuyruk’s documentation. This documentation covers the usage of the
-library and gives information about running workers.
+Welcome to Kuyruk’s documentation.
+This documentation covers the usage of the library
+and describes how to run workers.
 
 
 About Kuyruk
@@ -20,7 +21,7 @@ User's Guide
 .. toctree::
    :maxdepth: 1
 
-   features
+   philosophy
    gettingstarted
    configuration
    commands
@@ -28,7 +29,6 @@ User's Guide
    events
    classtasks
    extending
-   scheduler
 
 
 API Reference

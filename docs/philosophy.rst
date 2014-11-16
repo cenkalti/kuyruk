@@ -1,20 +1,20 @@
-Features
-========
+Philosophy
+==========
 
 
 Simple
 ------
 Simple means *not complex*. All design decisions is based on simplicity.
-Speed is not first priority. Kuyruk only supports RabbitMQ and will
-not support another message broker ever.
+Speed is not first priority. Kuyruk only supports RabbitMQ and does not plan
+to support any other backend.
 
 
 Easy
 ----
 Kuyruk requires no change in client code other than adding a decorator on top
-of a function in order to convert it to a "task".
+of a function in order to convert it to a :class:`~kuyruk.Task`.
 Also, sensible defaults have been set for configuration options and
-can be run without configuring while developing your application.
+can be run without configuring during the development of your application.
 
 
 Robust

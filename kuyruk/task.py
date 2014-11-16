@@ -116,8 +116,9 @@ class Task(EventMixin):
         self.setup()
 
     def setup(self):
-        """Override from subclass to initialize the task.
-        This function is called only once when the task is created."""
+        """This function is called only once when the task is created.
+        You may override this function to make additional initialization
+        for the task. By default it does nothing."""
         pass
 
     def __repr__(self):
@@ -142,11 +143,11 @@ class Task(EventMixin):
             # Run the task in current process
             self._run(*args, **kwargs)
         else:
-            self.send_to_queue(args, kwargs, host=host, local=local)
+            self._send_to_queue(args, kwargs, host=host, local=local)
 
     def delay(self, *args, **kwargs):
-        """Compatibility function for migrating existing Celery project to
-        Kuyruk."""
+        """Compatibility function for migrating existing Celery projects
+        to Kuyruk."""
         self.__call__(*args, **kwargs)
 
     def __get__(self, obj, objtype):
@@ -172,7 +173,7 @@ class Task(EventMixin):
             return BoundTask(self, obj)
         return self
 
-    def send_to_queue(self, args, kwargs, host=None, local=False):
+    def _send_to_queue(self, args, kwargs, host=None, local=False):
         """
         Sends this task to queue.
 
@@ -258,8 +259,8 @@ class Task(EventMixin):
 
     def run(self, *args, **kwargs):
         """
-        Runs the wrapped function.
-        This method is intended to be overriden from subclasses.
+        Runs the wrapped function with args and kwargs.
+        You may override this method from a subclass to change the behavior.
 
         """
         return self.f(*args, **kwargs)
@@ -267,7 +268,7 @@ class Task(EventMixin):
     @property
     def name(self):
         """Full path to the task.
-        Worker imports the task from this path.
+        Workers import tasks by this path.
 
         """
         if self._class_name:
