@@ -1,8 +1,7 @@
 import logging
-
 import unittest
 
-from kuyruk.test import tasks
+from tests import tasks
 
 
 logger = logging.getLogger(__name__)

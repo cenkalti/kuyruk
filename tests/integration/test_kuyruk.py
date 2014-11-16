@@ -7,8 +7,9 @@ from mock import patch
 
 from kuyruk import Task
 from kuyruk.task import BoundTask
-from kuyruk.test import tasks
-from kuyruk.test.integration.util import run_kuyruk, wait_until, \
+
+from tests import tasks
+from util import run_kuyruk, wait_until, \
     not_running, get_pid, TIMEOUT, delete_queue, len_queue
 
 
@@ -80,7 +81,7 @@ class KuyrukTestCase(unittest.TestCase):
             worker.expect('Task is rejected')
         assert len_queue("kuyruk") == 1
 
-    @patch('kuyruk.test.tasks.must_be_called')
+    @patch('tests.tasks.must_be_called')
     def test_before_after(self, mock_func):
         """Before and after task functions are run"""
         tasks.task_with_functions('hello world')

@@ -1,15 +1,18 @@
 import os
+import sys
 import unittest
 
 from kuyruk.config import Config
-from kuyruk.test.unit import config as user_config
+import config as user_config
+
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 
 class ConfigTestCase(unittest.TestCase):
 
     def test_from_pymodule(self):
         config = Config()
-        config.from_pymodule('kuyruk.test.unit.config2')
+        config.from_pymodule('config2')
         self.assertEqual(config.MAX_LOAD, 20)
 
     def test_from_pyfile(self):

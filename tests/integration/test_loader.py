@@ -45,7 +45,8 @@ class LoaderTestCase(unittest.TestCase):
                     run_python(args, cwd=cwd)
 
                     # Can we load the task by name?
-                    assert get_name() == name
+                    got = get_name()
+                    assert got == name, got
         finally:
             k.close()
 
