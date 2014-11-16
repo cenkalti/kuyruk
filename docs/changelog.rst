@@ -21,21 +21,21 @@ Version 1.2.1
 
 Released on 25-08-2014.
 
-Fixed a worker startup bug happens when running workers as another user.
+- Fixed a worker startup bug happens when running workers as another user.
 
 Version 1.2.0
 -------------
 
 Released on 09-06-2014.
 
-Added periodic task scheduler feature.
+- Added periodic task scheduler feature.
 
 Version 1.1.0
 -------------
 
 Released on 07-06-2014.
 
-Added Task.delay() function alias for easy migration from Celery.
+- Added Task.delay() function alias for easy migration from Celery.
 
 Version 1.0.0
 -------------
@@ -126,4 +126,4 @@ Version 0.20.2
 
 Released on 03-08-2013.
 
-First public preview release.
+First public release.
