@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import atexit
 import logging
 from threading import RLock
 from contextlib import contextmanager, closing
@@ -47,6 +48,8 @@ class Kuyruk(EventMixin):
         self._lock = RLock()  # protects self._connection
         if config:
             self.config.from_object(config)
+
+        atexit.register(_close, self)
 
     def task(self, queue='kuyruk', eager=False, retry=0, task_class=None,
              max_run_time=None, local=False, arg_class=None):
@@ -131,3 +134,10 @@ class Kuyruk(EventMixin):
             virtual_host=self.config.RABBIT_VIRTUAL_HOST)
         logger.info('Connected to RabbitMQ')
         return conn
+
+
+def _close(kuyruk):
+    try:
+        kuyruk.close()
+    except Exception:
+        pass
