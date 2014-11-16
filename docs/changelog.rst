@@ -16,6 +16,7 @@ Version 2.0.0
 - Failed tasks are not saved to redis anymore.
 - Failed tasks are retried in the same worker.
 - Unknown keys in config are now errors.
+- Removed return_value argument from Kuyruk.on_success event.
 
 Version 1.2.1
 -------------

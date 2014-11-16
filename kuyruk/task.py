@@ -248,12 +248,12 @@ class Task(EventMixin):
         try:
             send_signal(events.task_prerun, reverse=True)
             with time_limit(limit):
-                return_value = self.run(*args, **kwargs)
+                self.run(*args, **kwargs)
         except Exception:
             send_signal(events.task_failure, exc_info=sys.exc_info())
             raise
         else:
-            send_signal(events.task_success, return_value=return_value)
+            send_signal(events.task_success)
         finally:
             send_signal(events.task_postrun)
 

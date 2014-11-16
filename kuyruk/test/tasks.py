@@ -103,9 +103,8 @@ def function2(sender, task, args, kwargs):
 
 
 @task_with_functions.on_success
-def function3(sender, task, args, kwargs, return_value):
+def function3(sender, task, args, kwargs):
     print 'function3'
-    assert return_value == 42
 
 
 @task_with_functions.on_postrun
