@@ -118,7 +118,7 @@ class KuyrukTestCase(unittest.TestCase):
 
     def test_max_run_time(self):
         """Timeout long running task"""
-        run_time = tasks.sleeping_task.max_run_time + 1
+        run_time = tasks.sleeping_task.max_run_time + 0.1
         tasks.sleeping_task(run_time)
         with run_kuyruk() as worker:
             worker.expect('Task timeout')
