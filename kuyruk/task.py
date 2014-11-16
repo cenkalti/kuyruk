@@ -106,7 +106,7 @@ class Task(EventMixin):
                  retry=0, max_run_time=None, arg_class=None):
         self.f = f
         self.kuyruk = kuyruk
-        self.queue_name = queue
+        self.queue = queue
         self.local = local
         self.eager = eager
         self.retry = retry
@@ -188,8 +188,7 @@ class Task(EventMixin):
 
         """
         logger.debug("Task.send_to_queueue args=%r, kwargs=%r", args, kwargs)
-        queue = get_queue_name(self.queue_name, host=host,
-                               local=local or self.local)
+        queue = get_queue_name(self.queue, host=host, local=local or self.local)
         desc = self._get_task_description(args, kwargs, queue)
         body = json.dumps(desc)
         msg = amqp.Message(body=body)
