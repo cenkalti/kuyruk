@@ -16,7 +16,7 @@ from contextlib import contextmanager
 from setproctitle import setproctitle
 
 import kuyruk
-from kuyruk import importer
+from kuyruk import importer, Config
 from kuyruk.task import get_queue_name
 from kuyruk.exceptions import Reject, Discard, ObjectNotFound, Timeout, \
     InvalidTask
@@ -44,13 +44,13 @@ def set_current_task(f):
 class Worker(object):
     """Consumes tasks from a queue and runs them.
 
-    :param kuyruk_: A :class:`~kuyurk.kuyruk.Kuyruk` instance
+    :param config: A :class:`~kuyruk.config.Config` instance
     :param queue: The queue name to work on
 
     """
-    def __init__(self, kuyruk_, queue):
-        assert isinstance(kuyruk_, kuyruk.Kuyruk)
-        self.kuyruk = kuyruk_
+    def __init__(self, config, queue):
+        assert isinstance(config, Config)
+        self.config = config
 
         is_local = queue.startswith('@')
         queue = queue.lstrip('@')
@@ -69,8 +69,8 @@ class Worker(object):
             self._watch_load,
             self._shutdown_timer,
         ]
-        if self.kuyruk.config.MAX_LOAD is None:
-            self.kuyruk.config.MAX_LOAD = multiprocessing.cpu_count()
+        if self.config.MAX_LOAD is None:
+            self.config.MAX_LOAD = multiprocessing.cpu_count()
 
     def run(self):
         """Runs the worker and opens a connection to RabbitMQ.
@@ -90,7 +90,8 @@ class Worker(object):
         logger.debug("End run worker")
 
     def _consume_messages(self):
-        with self.kuyruk.channel() as ch:
+        k = kuyruk.Kuyruk(self.config)
+        with k.channel() as ch:
             self._channel = ch
             ch.queue_declare(queue=self.queue, durable=True, auto_delete=False)
             # Set prefetch count to 1. If we don't set this, RabbitMQ keeps
@@ -111,14 +112,15 @@ class Worker(object):
                     else:
                         raise
 
+        k.close()
         logger.debug("End run worker")
 
     def _setup_logging(self):
-        if self.kuyruk.config.LOGGING_CONFIG:
-            logging.config.fileConfig(self.kuyruk.config.LOGGING_CONFIG)
+        if self.config.LOGGING_CONFIG:
+            logging.config.fileConfig(self.config.LOGGING_CONFIG)
         else:
             logging.getLogger('rabbitpy').level = logging.WARNING
-            level = getattr(logging, self.kuyruk.config.LOGGING_LEVEL.upper())
+            level = getattr(logging, self.config.LOGGING_LEVEL.upper())
             fmt = "%(levelname).1s %(process)d " \
                   "%(name)s.%(funcName)s:%(lineno)d - %(message)s"
             logging.basicConfig(level=level, format=fmt)
@@ -268,7 +270,7 @@ class Worker(object):
         """Pause consuming messages if lood goes above the allowed limit."""
         while not self.shutdown_pending.is_set():
             load = os.getloadavg()[0]
-            if load > self.kuyruk.config.MAX_LOAD:
+            if load > self.config.MAX_LOAD:
                 logger.warning('Load is high (%s), pausing consume', load)
                 self._pause = True
             else:
@@ -280,13 +282,13 @@ class Worker(object):
         gracefully.
 
         """
-        if not self.kuyruk.config.MAX_WORKER_RUN_TIME:
+        if not self.config.MAX_WORKER_RUN_TIME:
             return
 
         started = time()
         while not self.shutdown_pending.is_set():
             passed = time() - started
-            remaining = self.kuyruk.config.MAX_WORKER_RUN_TIME - passed
+            remaining = self.config.MAX_WORKER_RUN_TIME - passed
             if remaining > 0:
                 sleep(remaining)
             else:
@@ -299,7 +301,8 @@ class Worker(object):
         logger.warning("Warm shutdown")
         self.shutdown_pending.set()
 
-    def cold_shutdown(self):
+    @staticmethod
+    def cold_shutdown():
         """Exit immediately."""
         logger.warning("Cold shutdown")
         _exit(0)

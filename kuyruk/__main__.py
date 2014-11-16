@@ -8,17 +8,11 @@ import os
 import logging
 import argparse
 
-from kuyruk import __version__, importer, Kuyruk
+from kuyruk import __version__, importer
 from kuyruk.config import Config
 
 
 logger = logging.getLogger(__name__)
-
-
-def run_worker(kuyruk, args):
-    worker_class = importer.import_class_str(kuyruk.config.WORKER_CLASS)
-    w = worker_class(kuyruk, args.queue)
-    w.run()
 
 
 def main():
@@ -45,11 +39,15 @@ def main():
 
     # Parse arguments
     args = parser.parse_args()
-    config = create_config(args)
-    kuyruk = Kuyruk(config)
 
     # Run the sub-command function
-    args.func(kuyruk, args)
+    args.func(create_config(args), args)
+
+
+def run_worker(config, args):
+    worker_class = importer.import_class_str(config.WORKER_CLASS)
+    w = worker_class(config, args.queue)
+    w.run()
 
 
 def add_config_options(parser):
