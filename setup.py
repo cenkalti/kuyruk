@@ -1,4 +1,4 @@
-# coding=utf-8
+# coding=utf8
 import os
 import re
 from setuptools import setup, find_packages
@@ -32,7 +32,7 @@ setup(
         'blinker>=1.2',
         'argparse>=1.2.1',
     ],
-    description='A distributed task runner',
+    description='Simple task queue',
     long_description=read('README.rst'),
     zip_safe=True,
     entry_points={

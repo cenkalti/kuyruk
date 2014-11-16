@@ -1,5 +1,5 @@
-Kuyruk: A distributed task runner
-=================================
+Kuyruk: Simple task queue
+=========================
 
 Welcome to Kuyruk’s documentation.
 This documentation covers the usage of the library
