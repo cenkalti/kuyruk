@@ -1,11 +1,12 @@
 import os
 import sys
+import json
 import unittest
 
 from what import What
 
 from kuyruk import Kuyruk
-from kuyruk.queue import Queue
+from kuyruk.helpers.json_datetime import JSONDecoder
 from kuyruk.test.integration.util import delete_queue
 
 
@@ -49,5 +50,11 @@ def run_python(args, cwd):
 
 
 def get_name():
-    desc = Queue('kuyruk', Kuyruk().channel()).receive()[1]
-    return '.'.join([desc['module'], desc['function']])
+    k = Kuyruk()
+    try:
+        with k.channel() as ch:
+            message = ch.basic_get("kuyruk")
+            desc = json.loads(message.body, cls=JSONDecoder)
+            return '.'.join([desc['module'], desc['function']])
+    finally:
+        k.close()

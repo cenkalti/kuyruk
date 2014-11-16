@@ -2,7 +2,8 @@ from __future__ import absolute_import
 import json
 import logging
 
-from kuyruk.queue import Queue
+import amqp
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +21,11 @@ class Requeuer(object):
 
     def run(self):
         tasks = self.redis.hvals('failed_tasks')
-        channel = self.kuyruk.channel()
-        for task in tasks:
-            task = json.loads(task)
-            print "Requeueing task: %r" % task
-            Requeuer.requeue(task, channel, self.redis)
+        with self.kuyruk.channel() as channel:
+            for task in tasks:
+                task = json.loads(task)
+                print "Requeueing task: %r" % task
+                Requeuer.requeue(task, channel, self.redis)
 
         print "%i failed tasks have been requeued." % len(tasks)
 
@@ -34,6 +35,8 @@ class Requeuer(object):
         del task_description['queue']
         count = task_description.get('requeue_count', 0)
         task_description['requeue_count'] = count + 1
-        task_queue = Queue(queue_name, channel)
-        task_queue.send(task_description)
+        body = json.dumps(task_description)
+        msg = amqp.Message(body=body)
+        channel.queue_declare(queue_name, durable=True, auto_delete=False)
+        channel.basic_publish(msg, exchange="", routing_key=queue_name)
         redis.hdel('failed_tasks', task_description['id'])

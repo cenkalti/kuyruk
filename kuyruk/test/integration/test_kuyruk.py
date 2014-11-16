@@ -7,10 +7,7 @@ from kuyruk import Task
 from kuyruk.task import BoundTask
 from kuyruk.test import tasks
 from kuyruk.test.integration.util import *
-from kuyruk.connection import Channel
 
-
-Channel.SKIP_REDECLARE_QUEUE = False
 
 logger = logging.getLogger(__name__)
 
@@ -98,15 +95,12 @@ class KuyrukTestCase(unittest.TestCase):
             master.expect('Start consuming')
             master.expect('Start consuming')
             pids_old = get_worker_pids()
-            for pid in pids_old:
-                os.kill(pid, signal.SIGKILL)
+            os.kill(pids_old[0], signal.SIGKILL)
             master.expect('Respawning worker')
-            master.expect('Waiting for new message')
-            master.expect('Waiting for new message')
+            master.expect('Start consuming')
             pids_new = get_worker_pids()
 
-        assert pids_new[0] > pids_old[0]  # kuyruk
-        assert pids_new[1] > pids_old[1]  # kuyruk.localhost
+        assert pids_new[0] > pids_old[0]
 
     def test_save_failed(self):
         """Failed tasks are saved to Redis"""

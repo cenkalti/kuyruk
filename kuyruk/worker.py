@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import os
 import sys
+import json
 import socket
 import signal
 import logging
@@ -11,17 +12,17 @@ from datetime import datetime
 from functools import wraps
 from contextlib import contextmanager
 
+import amqp
 import rpyc
 from setproctitle import setproctitle
 
 import kuyruk
 from kuyruk import importer
-from kuyruk.queue import Queue
+from kuyruk.task import get_queue_name
 from kuyruk.process import KuyrukProcess
 from kuyruk.helpers import start_daemon_thread
-from kuyruk.consumer import Consumer
 from kuyruk.exceptions import Reject, ObjectNotFound, Timeout, InvalidTask
-from kuyruk.helpers.json_datetime import JSONEncoder
+from kuyruk.helpers.json_datetime import JSONEncoder, JSONDecoder
 
 logger = logging.getLogger(__name__)
 
@@ -55,11 +56,12 @@ class Worker(KuyrukProcess):
             raise ValueError("empty queue name")
 
         super(Worker, self).__init__(kuyruk)
-        self.channel = self.kuyruk.channel()
         is_local = queue_name.startswith('@')
         queue_name = queue_name.lstrip('@')
-        self.queue = Queue(queue_name, self.channel, local=is_local)
-        self.consumer = Consumer(self.queue)
+        self.queue = get_queue_name(queue_name, local=is_local)
+        print self.queue
+        self.consumer_tag = '%s@%s' % (os.getpid(), socket.gethostname())
+        self._channel = None
         self.current_message = None
         self.current_task = None
         self.current_args = None
@@ -95,32 +97,46 @@ class Worker(KuyrukProcess):
 
         """
         super(Worker, self).run()
-        setproctitle("kuyruk: worker on %s" % self.queue.name)
-        self.queue.declare()
-        self.queue.basic_qos(prefetch_count=1)
-        self.import_modules()
-        self.start_daemon_threads()
-        self.maybe_start_manager_rpc_service()
-        self.consume_messages()
+        setproctitle("kuyruk: worker on %s" % self.queue)
+        with self.kuyruk.channel() as ch:
+            self._channel = ch
+            ch.queue_declare(queue=self.queue, durable=True, auto_delete=False)
+            ch.basic_qos(0, 1, False)
+            self.import_modules()
+            self.start_daemon_threads()
+            self.maybe_start_manager_rpc_service()
+            logger.debug('Start consuming')
+            ch.basic_consume(queue=self.queue,
+                             consumer_tag=self.consumer_tag,
+                             callback=self._message_callback)
+            while not self.shutdown_pending.is_set():
+                try:
+                    ch.connection.drain_events(timeout=0.1)
+                except socket.error as e:
+                    if isinstance(e, socket.timeout):
+                        pass
+                    elif e.errno == socket.EINTR:
+                        pass
+                    else:
+                        raise
+
         logger.debug("End run worker")
 
-    def rpc_service_class(this):
+    def rpc_service_class(self):
         class _Service(rpyc.Service):
-            exposed_get_stats = this.get_stats
-            exposed_warm_shutdown = this.warm_shutdown
-            exposed_cold_shutdown = this.cold_shutdown
-            exposed_quit_task = this.quit_task
+            exposed_get_stats = self.get_stats
+            exposed_warm_shutdown = self.warm_shutdown
+            exposed_cold_shutdown = self.cold_shutdown
+            exposed_quit_task = self.quit_task
         return _Service
 
-    def consume_messages(self):
+    def _message_callback(self, message):
         """Consumes messages from the queue and run tasks until
         consumer is cancelled via a signal or another thread.
 
         """
-        with self.consumer.consume() as messages:
-            for message in messages:
-                with self._set_current_message(message):
-                    self.process_message(message)
+        with self._set_current_message(message):
+            self.process_message(message)
 
     @contextmanager
     def _set_current_message(self, message):
@@ -148,10 +164,10 @@ class Worker(KuyrukProcess):
     def process_message(self, message):
         """Processes the message received from the queue."""
         try:
-            task_description = message.get_object()
+            task_description = json.loads(message.body, cls=JSONDecoder)
             logger.info("Processing task: %r", task_description)
         except Exception:
-            message.ack()
+            self._channel.basic_ack(message.delivery_tag)
             logger.error("Canot decode message. Dropped!")
             return
 
@@ -163,7 +179,7 @@ class Worker(KuyrukProcess):
         except Reject:
             logger.warning('Task is rejected')
             sleep(1)  # Prevent cpu burning
-            message.reject()
+            self._channel.basic_reject(message.delivery_tag, True)
         except ObjectNotFound:
             self.handle_not_found(message, task_description)
         except Timeout:
@@ -174,8 +190,8 @@ class Worker(KuyrukProcess):
             self.handle_exception(message, task_description)
         else:
             logger.info('Task is successful')
-            delattr(task, 'message')
-            message.ack()
+            logger.debug("type: %s, message: %s", type(message), message)
+            self._channel.basic_ack(message.delivery_tag)
         finally:
             logger.debug("Task is processed")
 
@@ -186,13 +202,16 @@ class Worker(KuyrukProcess):
         retry_count = task_description.get('retry', 0)
         if retry_count:
             logger.debug('Retry count: %s', retry_count)
-            message.discard()
             task_description['retry'] = retry_count - 1
-            self.queue.send(task_description)
+            body = json.dumps(task_description, cls=JSONEncoder)
+            msg = amqp.Message(body=body)
+            self._channel.basic_reject(message.delivery_tag, False)
+            self._channel.basic_publish(msg, exchange="",
+                                        routing_key=task_description['queue'])
         else:
             logger.debug('No retry left')
             self.capture_exception(task_description)
-            message.discard()
+            self._channel.basic_reject(message.delivery_tag, False)
             if self.config.SAVE_FAILED_TASKS:
                 self.save_failed_task(task_description)
 
@@ -207,7 +226,7 @@ class Worker(KuyrukProcess):
             task_description['module'],
             task_description['class'],
             task_description['args'][0])
-        message.ack()
+        self._channel.basic_ack(message.delivery_tag)
 
     def handle_timeout(self, message, task_description):
         """Called when the task is timed out while running the wrapped
@@ -221,7 +240,7 @@ class Worker(KuyrukProcess):
         """Called when the message from queue is invalid."""
         logger.error("Invalid message.")
         self.capture_exception(task_description)
-        message.discard()
+        self._channel.basic_reject(message.delivery_tag, False)
 
     def save_failed_task(self, task_description):
         """Saves the task to ``kuyruk_failed`` queue. Failed tasks can be
@@ -229,7 +248,7 @@ class Worker(KuyrukProcess):
 
         """
         logger.info('Saving failed task')
-        task_description['queue'] = self.queue.name
+        task_description['queue'] = self.queue
         task_description['worker_hostname'] = socket.gethostname()
         task_description['worker_pid'] = os.getpid()
         task_description['worker_cmd'] = ' '.join(sys.argv)
@@ -330,7 +349,7 @@ class Worker(KuyrukProcess):
         if self.current_message:
             try:
                 logger.warning("Acking current task...")
-                self.current_message.ack()
+                self._channel.basic_ack(self.current_message.delivery_tag)
             except Exception:
                 logger.critical("Cannot send ACK for the current task.")
                 traceback.print_exc()
@@ -343,7 +362,6 @@ class Worker(KuyrukProcess):
     def warm_shutdown(self):
         """Exit after the last task is finished."""
         logger.warning("Warm shutdown")
-        self.consumer.stop()
         self.shutdown_pending.set()
 
     def cold_shutdown(self):
@@ -353,7 +371,9 @@ class Worker(KuyrukProcess):
 
     def get_stats(self):
         """Generate stats to be sent to manager."""
-        method = self.queue.declare(force=True).method
+        name, message_count, consumer_count = self._channel.queue_declare(
+            queue=self.queue, durable=True, auto_delete=False)
+
         try:
             current_task = self.current_task.name
         except AttributeError:
@@ -369,10 +389,10 @@ class Worker(KuyrukProcess):
             'current_task': current_task,
             'current_args': self.current_args,
             'current_kwargs': self.current_kwargs,
-            'consuming': self.consumer.consuming,
+            # 'consuming': self.consumer.consuming,
             'queue': {
-                'name': method.queue,
-                'messages_ready': method.message_count,
-                'consumers': method.consumer_count,
+                'name': name,
+                'messages_ready': message_count,
+                'consumers': consumer_count,
             }
         }
