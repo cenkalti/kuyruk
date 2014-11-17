@@ -49,7 +49,13 @@ class Kuyruk(EventMixin):
         if config:
             self.config.from_object(config)
 
-        atexit.register(_close, self)
+        # Close open RabbitMQ connection at exit.
+        def _close():
+            try:
+                self.close()
+            except Exception:
+                pass
+        atexit.register(_close)
 
     def task(self, queue='kuyruk', retry=0, task_class=None,
              max_run_time=None, local=False, arg_class=None):
@@ -135,10 +141,3 @@ class Kuyruk(EventMixin):
             virtual_host=self.config.RABBIT_VIRTUAL_HOST)
         logger.info('Connected to RabbitMQ')
         return conn
-
-
-def _close(kuyruk):
-    try:
-        kuyruk.close()
-    except Exception:
-        pass
