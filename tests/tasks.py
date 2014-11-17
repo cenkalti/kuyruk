@@ -86,7 +86,7 @@ def task_with_event_handlers(message):
 
 
 @kuyruk2.on_presend
-def function0(sender, task, args, kwargs):
+def function0(sender, task, args, kwargs, task_description):
     must_be_called()
 
 

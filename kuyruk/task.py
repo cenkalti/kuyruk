@@ -91,17 +91,6 @@ def id_to_object(f):
     return inner
 
 
-def send_presend_postsend_signals(f):
-    """Sends the presend and postsend signals."""
-    @wraps(f)
-    def inner(self, *args, **kwargs):
-        self._send_signal(events.task_presend, args, kwargs, reverse=True)
-        rv = f(self, *args, **kwargs)
-        self._send_signal(events.task_postsend, args, kwargs)
-        return rv
-    return inner
-
-
 class Task(EventMixin):
 
     def __init__(self, f, kuyruk, queue='kuyruk', local=False,
@@ -125,7 +114,6 @@ class Task(EventMixin):
     def __repr__(self):
         return "<Task of %r>" % self.name
 
-    @send_presend_postsend_signals
     @object_to_id
     def __call__(self, *args, **kwargs):
         """When a fucntion is wrapped with a task decorator it will be
@@ -190,12 +178,16 @@ class Task(EventMixin):
         """
         logger.debug("Task.send_to_queueue args=%r, kwargs=%r", args, kwargs)
         queue = get_queue_name(self.queue, host=host, local=local or self.local)
-        desc = self._get_task_description(args, kwargs, queue)
-        body = json.dumps(desc)
+        task_description = self._get_task_description(args, kwargs, queue)
+        self._send_signal(events.task_presend, args, kwargs, reverse=True,
+                          task_description=task_description)
+        body = json.dumps(task_description)
         msg = amqp.Message(body=body)
         with self.kuyruk.channel() as ch:
             ch.queue_declare(queue=queue, durable=True, auto_delete=False)
             ch.basic_publish(msg, exchange="", routing_key=queue)
+        self._send_signal(events.task_postsend, args, kwargs,
+                          task_description=task_description)
 
     def _get_task_description(self, args, kwargs, queue):
         """Return the dictionary to be sent to the queue."""
