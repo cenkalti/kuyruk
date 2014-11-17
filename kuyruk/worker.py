@@ -295,8 +295,7 @@ class Worker(object):
         logger.warning("Warm shutdown")
         self.shutdown_pending.set()
 
-    @staticmethod
-    def cold_shutdown():
+    def cold_shutdown(self):
         """Exit immediately."""
         logger.warning("Cold shutdown")
         _exit(0)

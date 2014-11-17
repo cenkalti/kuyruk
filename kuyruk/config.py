@@ -90,7 +90,8 @@ class Config(object):
         logger.info("Config is loaded from file: %s", filename)
 
     def from_env_vars(self):
-        """Load values from environment variables."""
+        """Load values from environment variables.
+        Keys must start with `KUYRUK_`."""
         for key, value in os.environ.iteritems():
             if key.startswith('KUYRUK_'):
                 key = key.lstrip('KUYRUK_')
