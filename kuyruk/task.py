@@ -207,7 +207,6 @@ class Task(EventMixin):
             'module': self._module_name,
             'function': self.f.__name__,
             'class': self._class_name,
-            'retry': self.retry,
             'sender_hostname': socket.gethostname(),
             'sender_pid': os.getpid(),
             'sender_cmd': ' '.join(sys.argv),
@@ -229,13 +228,15 @@ class Task(EventMixin):
 
     @object_to_id
     def apply(self, *args, **kwargs):
+        """Run the wrapped function and event handlers as if it is run by
+        a worker."""
         logger.debug("Task.apply args=%r, kwargs=%r", args, kwargs)
         return self._run(*args, **kwargs)
 
+    # This function is called by worker to run the task.
     @profile
     @id_to_object
     def _run(self, *args, **kwargs):
-        """Run the wrapped function and event handlers."""
         def send_signal(sig, reverse=False, **extra):
             self._send_signal(sig, args, kwargs, reverse, **extra)
 
