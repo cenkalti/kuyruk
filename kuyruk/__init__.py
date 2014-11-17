@@ -87,8 +87,10 @@ class Kuyruk(EventMixin):
             return inner
 
         if callable(queue):
+            # task without args
             return decorator()(queue)
         else:
+            # task with args
             return decorator()
 
     @contextmanager
