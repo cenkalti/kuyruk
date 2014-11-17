@@ -13,6 +13,9 @@ class Config(object):
     class attributes.
 
     """
+    EAGER = False
+    """Run tasks in the process without sending to queue. Useful in tests."""
+
     # Connection Options
     ####################
 
@@ -37,9 +40,6 @@ class Config(object):
     WORKER_CLASS = 'kuyruk.worker.Worker'
     """Worker implementation class. It can be replaced with a subclass of
     :class:`~kuyruk.worker.Worker` to change specific behavior."""
-
-    EAGER = False
-    """Run tasks in the process without sending to queue. Useful in tests."""
 
     MAX_LOAD = None
     """Pause consuming queue when the load goes above this level."""
