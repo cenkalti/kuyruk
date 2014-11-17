@@ -1,7 +1,7 @@
 # coding=utf8
 import os
 import re
-from setuptools import setup, find_packages
+from setuptools import setup
 
 
 def read(*fname):
@@ -24,7 +24,7 @@ setup(
     author_email='cenkalti@gmail.com',
     keywords='rabbitmq distributed task queue',
     url='https://github.com/cenkalti/kuyruk',
-    packages=find_packages(),
+    packages=['kuyruk'],
     include_package_data=True,
     install_requires=[
         'amqp>=1.4.6',
