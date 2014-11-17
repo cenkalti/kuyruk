@@ -8,7 +8,7 @@ import string
 import random
 from time import sleep
 
-from kuyruk import Kuyruk, Task
+from kuyruk import Kuyruk, Task, Config
 from kuyruk.events import task_prerun, task_postrun
 
 
@@ -57,7 +57,10 @@ def loop_forever():
         sleep(1)
 
 
-@kuyruk.task(eager=True)
+config_eager = Config()
+config_eager.EAGER = True
+kuyruk_eager = Kuyruk(config_eager)
+@kuyruk_eager.task()
 def eager_task():
     must_be_called()
 
@@ -136,11 +139,6 @@ class Cat(object):
         print "Felix says:", message
         must_be_called()
 
-    @kuyruk.task(eager=True)
-    def meow_eager(self, message):
-        print "Felix says:", message
-        must_be_called()
-
     @kuyruk.task
     def raise_exception(self):
         raise Exception
@@ -148,12 +146,6 @@ class Cat(object):
 
 @kuyruk.task(arg_class=Cat)
 def jump(cat):
-    print "%s jumps high!" % cat.name
-    must_be_called(cat.name)
-
-
-@kuyruk.task(arg_class=Cat, eager=True)
-def jump_eager(cat):
     print "%s jumps high!" % cat.name
     must_be_called(cat.name)
 

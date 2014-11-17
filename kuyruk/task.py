@@ -104,13 +104,12 @@ def send_presend_postsend_signals(f):
 
 class Task(EventMixin):
 
-    def __init__(self, f, kuyruk, queue='kuyruk', local=False, eager=False,
+    def __init__(self, f, kuyruk, queue='kuyruk', local=False,
                  retry=0, max_run_time=None, arg_class=None):
         self.f = f
         self.kuyruk = kuyruk
         self.queue = queue
         self.local = local
-        self.eager = eager
         self.retry = retry
         self.max_run_time = max_run_time
         self._cls = None
@@ -141,7 +140,7 @@ class Task(EventMixin):
         host = kwargs.pop('kuyruk_host', None)
         local = kwargs.pop('kuyruk_local', False)
 
-        if self.eager or self.kuyruk.config.EAGER:
+        if self.kuyruk.config.EAGER:
             # Run the task in current process
             self._run(*args, **kwargs)
         else:

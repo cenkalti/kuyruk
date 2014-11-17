@@ -51,7 +51,7 @@ class Kuyruk(EventMixin):
 
         atexit.register(_close, self)
 
-    def task(self, queue='kuyruk', eager=False, retry=0, task_class=None,
+    def task(self, queue='kuyruk', retry=0, task_class=None,
              max_run_time=None, local=False, arg_class=None):
         """
         Wrap functions with this decorator to convert them to *tasks*.
@@ -59,7 +59,6 @@ class Kuyruk(EventMixin):
         a queue instead of running the function.
 
         :param queue: Queue name for the tasks.
-        :param eager: Run task in process, do not use RabbitMQ.
         :param retry: Retry this times before give up.
             The failed task will be retried in the same worker.
         :param task_class: Custom task class.
@@ -83,8 +82,7 @@ class Kuyruk(EventMixin):
 
                 task_class_ = task_class or self.task_class
                 return task_class_(
-                    f, self,
-                    queue=queue_, eager=eager, local=local, retry=retry,
+                    f, self, queue=queue_, local=local, retry=retry,
                     max_run_time=max_run_time, arg_class=arg_class)
             return inner
 

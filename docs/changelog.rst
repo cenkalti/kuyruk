@@ -17,6 +17,7 @@ Version 2.0.0
 - Failed tasks are retried in the same worker.
 - Unknown keys in config are now errors.
 - Removed return_value argument from Kuyruk.on_success event.
+- Removed eager argument from task decorator.
 
 Version 1.2.1
 -------------

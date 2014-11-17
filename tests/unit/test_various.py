@@ -32,22 +32,10 @@ class KuyrukTestCase(unittest.TestCase):
         mock_func.assert_called_once_with()
 
     @patch('tests.tasks.must_be_called')
-    def test_class_task_eager(self, mock_func):
-        cat = tasks.Cat(1, 'Felix')
-        cat.meow_eager('Oh my god')
-        mock_func.assert_called_once_with()
-
-    @patch('tests.tasks.must_be_called')
     def test_class_task_apply(self, mock_func):
         cat = tasks.Cat(1, 'Felix')
         cat.meow.apply('Oh my god')
         mock_func.assert_called_once_with()
-
-    @patch('tests.tasks.must_be_called')
-    def test_arg_class_eager(self, mock_func):
-        cat = tasks.Cat(1, 'Felix')
-        tasks.jump_eager(cat)
-        mock_func.assert_called_once_with('Felix')
 
     @patch('tests.tasks.must_be_called')
     def test_arg_class_apply(self, mock_func):
