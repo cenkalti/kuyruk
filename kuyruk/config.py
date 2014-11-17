@@ -3,6 +3,7 @@ import ast
 import types
 import logging
 import importer
+import pkg_resources
 
 logger = logging.getLogger(__name__)
 
@@ -118,3 +119,9 @@ class Config(object):
         if not hasattr(self.__class__, key):
             raise ValueError("Unknown config key: %s" % key)
         setattr(self, key, value)
+
+
+# Add additional config keys from extensions.
+for entry_point in pkg_resources.iter_entry_points("kuyruk.config"):
+    for key in entry_point.load():
+        setattr(Config, key, None)
