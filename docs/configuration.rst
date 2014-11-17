@@ -16,7 +16,7 @@ Example:
     RABBIT_PORT = 5672
     RABBIT_USER = 'guest'
     RABBIT_PASSWORD = 'guest'
-    MAX_TASK_RUN_TIME = 3600
+    MAX_WORKER_RUN_TIME = 300
     MAX_LOAD = 8
 
 

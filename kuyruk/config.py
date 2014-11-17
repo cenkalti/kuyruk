@@ -47,9 +47,6 @@ class Config(object):
     MAX_WORKER_RUN_TIME = None
     """Gracefully shutdown worker after running this seconds."""
 
-    MAX_TASK_RUN_TIME = None
-    """Fail the task if it takes more than this seconds."""
-
     LOGGING_LEVEL = 'INFO'
     """Logging level of root logger."""
 

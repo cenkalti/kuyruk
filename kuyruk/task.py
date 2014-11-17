@@ -5,6 +5,7 @@ import json
 import signal
 import socket
 import logging
+import traceback
 from time import time
 from uuid import uuid1
 from functools import wraps
@@ -90,7 +91,7 @@ def id_to_object(f):
     return inner
 
 
-def send_client_signals(f):
+def send_presend_postsend_signals(f):
     """Sends the presend and postsend signals."""
     @wraps(f)
     def inner(self, *args, **kwargs):
@@ -125,7 +126,7 @@ class Task(EventMixin):
     def __repr__(self):
         return "<Task of %r>" % self.name
 
-    @send_client_signals
+    @send_presend_postsend_signals
     @object_to_id
     def __call__(self, *args, **kwargs):
         """When a fucntion is wrapped with a task decorator it will be
@@ -239,16 +240,23 @@ class Task(EventMixin):
         def send_signal(sig, reverse=False, **extra):
             self._send_signal(sig, args, kwargs, reverse, **extra)
 
-        logger.debug("Task._apply args=%r, kwargs=%r", args, kwargs)
-
-        limit = (self.max_run_time or
-                 self.kuyruk.config.MAX_TASK_RUN_TIME or 0)
-
         logger.debug("Applying %r, args=%r, kwargs=%r", self, args, kwargs)
+
+        send_signal(events.task_prerun, reverse=True)
         try:
-            send_signal(events.task_prerun, reverse=True)
-            with time_limit(limit):
-                self.run(*args, **kwargs)
+            tries = 1 + self.retry
+            while 1:
+                tries -= 1
+                try:
+                    with time_limit(self.max_run_time or 0):
+                        self.run(*args, **kwargs)
+                except Exception:
+                    traceback.print_exc()
+                    send_signal(events.task_error, exc_info=sys.exc_info())
+                    if tries <= 0:
+                        raise
+                else:
+                    break
         except Exception:
             send_signal(events.task_failure, exc_info=sys.exc_info())
             raise

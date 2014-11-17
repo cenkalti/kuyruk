@@ -10,6 +10,7 @@ _signals = Namespace()
 task_prerun = _signals.signal('task-prerun')
 task_postrun = _signals.signal('task-postrun')
 task_success = _signals.signal('task-success')
+task_error = _signals.signal('task-error')
 task_failure = _signals.signal('task-failure')
 task_presend = _signals.signal('task-presend')
 task_postsend = _signals.signal('task-postsend')
@@ -51,9 +52,19 @@ class EventMixin(object):
         self.connect_signal(task_success, f)
         return f
 
-    def on_failure(self, f):
+    def on_error(self, f):
         """
         Registers a function to run if task raises an exception.
+        The function will be called for each retry attempt.
+
+        """
+        self.connect_signal(task_failure, f)
+        return f
+
+    def on_failure(self, f):
+        """
+        Registers a function to run if task is not successful after all
+        retry attempts.
 
         """
         self.connect_signal(task_failure, f)

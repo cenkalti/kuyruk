@@ -17,8 +17,7 @@ from setproctitle import setproctitle
 import kuyruk
 from kuyruk import importer, Config
 from kuyruk.task import get_queue_name
-from kuyruk.exceptions import Reject, Discard, ObjectNotFound, Timeout, \
-    InvalidTask
+from kuyruk.exceptions import Reject, Discard, ObjectNotFound, InvalidTask
 
 logger = logging.getLogger(__name__)
 
@@ -228,7 +227,7 @@ class Worker(object):
             self._handle_invalid(message, task_description)
         except Exception:
             logger.error('Task raised an exception')
-            self._handle_exception(message, task_description)
+            self._handle_exception(sys.exc_info(), message)
         else:
             logger.info('Task is successful')
             self._channel.basic_ack(message.delivery_tag)
@@ -239,18 +238,10 @@ class Worker(object):
         """Runs the wrapped function in task."""
         task._run(*args, **kwargs)
 
-    def _handle_exception(self, message, task_description):
+    def _handle_exception(self, exc_info, message):
         """Handles the exception while processing the message."""
-        logger.error(traceback.format_exc())
-        retry_count = task_description.get('retry', 0)
-        if retry_count > 0:
-            logger.info('Retrying task')
-            logger.debug('Retry count: %s', retry_count)
-            task_description['retry'] = retry_count - 1
-            self._process_task_description(message, task_description)
-        else:
-            logger.debug('No retry left')
-            self._channel.basic_reject(message.delivery_tag, requeue=False)
+        logger.error(traceback.format_exception(*exc_info))
+        self._channel.basic_reject(message.delivery_tag, requeue=False)
 
     def _handle_not_found(self, message, task_description):
         """Called if the task is class task but the object with the given id
