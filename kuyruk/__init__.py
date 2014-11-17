@@ -73,6 +73,8 @@ class Kuyruk(EventMixin):
             will be used.
         :param max_run_time: Maximum allowed time in seconds for task to
             complete.
+        :param local: Append hostname to the queue name. Worker needs to be
+            started on the local queue to receive this task.
         :param arg_class: Class of the first argument. If it is present,
             the first argument will be converted to it's ``id`` when sending
             the task to the queue and it will be reloaded on worker when
