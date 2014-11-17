@@ -43,6 +43,8 @@ class Worker(object):
         self._consumer_tag = '%s@%s' % (os.getpid(), socket.gethostname())
         self._channel = None
         self.shutdown_pending = threading.Event()
+        self._pause = False
+        self._consuming = False
         self._current_message = None
         self._current_task = None
         self._current_args = None
@@ -79,11 +81,18 @@ class Worker(object):
             # Set prefetch count to 1. If we don't set this, RabbitMQ keeps
             # sending messages while we are already working on a message.
             ch.basic_qos(0, 1, False)
-            logger.debug('Start consuming')
-            ch.basic_consume(queue=self.queue,
-                             consumer_tag=self._consumer_tag,
-                             callback=self._message_callback)
             while not self.shutdown_pending.is_set():
+                if self._pause and self._consuming:
+                    ch.basic_cancel(self._consumer_tag)
+                    logger.info('Consumer cancelled')
+                    self._consuming = False
+                elif not self._pause and not self._consuming:
+                    ch.basic_consume(queue=self.queue,
+                                     consumer_tag=self._consumer_tag,
+                                     callback=self._message_callback)
+                    logger.info('Consumer started')
+                    self._consuming = True
+
                 try:
                     ch.connection.drain_events(timeout=0.1)
                 except socket.error as e:
@@ -275,7 +284,7 @@ class Worker(object):
         while not self.shutdown_pending.is_set():
             load = os.getloadavg()[0]
             if load > self.config.MAX_LOAD:
-                logger.warning('Load is high (%s), pausing consume', load)
+                logger.warning('Load is high (%s), pausing consumer', load)
                 self._pause = True
             else:
                 self._pause = False
