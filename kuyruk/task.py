@@ -276,7 +276,7 @@ class Task(EventMixin):
     @property
     def name(self):
         """Full path to the task.
-        Workers import tasks by this path.
+        Workers find and import tasks by this path.
 
         """
         if self._class_name:
