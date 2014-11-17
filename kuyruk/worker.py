@@ -186,15 +186,24 @@ class Worker(object):
             logger.error("Canot decode message. Dropped the message!")
         else:
             logger.info("Processing task: %r", task_description)
-            self._process_task(message, task_description)
+            self._process_task_description(message, task_description)
 
-    def _process_task(self, message, task_description):
+    def _process_task_description(self, message, task_description):
         try:
             task = importer.import_task(task_description['module'],
                                         task_description['class'],
                                         task_description['function'])
-            self.apply_task(
-                task, task_description['args'], task_description['kwargs'])
+        except Exception:
+            logger.error('Cannot import task')
+            self._channel.basic_reject(message.delivery_tag, requeue=False)
+        else:
+            self._process_task(message, task_description, task)
+
+    def _process_task(self, message, task_description, task):
+        try:
+            args, kwargs = task_description['args'], task_description['kwargs']
+            with self._set_current_task(task, args, kwargs):
+                self.apply_task(task, args, kwargs)
         except Reject:
             logger.warning('Task is rejected')
             if os.environ['KUYRUK_TESTING'] != 'True':
@@ -221,6 +230,10 @@ class Worker(object):
         finally:
             logger.debug("Task is processed")
 
+    def apply_task(self, task, args, kwargs):
+        """Runs the wrapped function in task."""
+        task._run(*args, **kwargs)
+
     def _handle_exception(self, message, task_description):
         """Handles the exception while processing the message."""
         logger.error(traceback.format_exc())
@@ -229,7 +242,7 @@ class Worker(object):
             logger.info('Retrying task')
             logger.debug('Retry count: %s', retry_count)
             task_description['retry'] = retry_count - 1
-            self._process_task(message, task_description)
+            self._process_task_description(message, task_description)
         else:
             logger.debug('No retry left')
             self._channel.basic_reject(message.delivery_tag, requeue=False)
@@ -257,11 +270,6 @@ class Worker(object):
     def _handle_invalid(self, message, task_description):
         """Called when the task is invalid."""
         self._channel.basic_reject(message.delivery_tag, requeue=False)
-
-    def apply_task(self, task, args, kwargs):
-        """Runs the wrapped function in task."""
-        with self._set_current_task(task, args, kwargs):
-            task._run(*args, **kwargs)
 
     def _watch_load(self):
         """Pause consuming messages if lood goes above the allowed limit."""
