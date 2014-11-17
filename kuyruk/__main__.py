@@ -5,6 +5,7 @@ It implements the command line parsing for subcommands and configuration.
 """
 from __future__ import absolute_import
 import os
+import sys
 import logging
 import argparse
 
@@ -68,15 +69,17 @@ def create_config(args):
     """Creates Config object and overrides it's values from args."""
     config = Config()
 
+    env_config = os.environ.get('KUYRUK_CONFIG')
+
     if args.module:
         config.from_pymodule(args.module)
     elif args.config:
         config.from_pyfile(args.config)
+    elif env_config:
+        assert os.path.isabs(env_config)
+        config.from_pyfile(env_config)
     else:
-        env_config = os.environ.get('KUYRUK_CONFIG')
-        if env_config:
-            assert os.path.isabs(env_config)
-            config.from_pyfile(env_config)
+        sys.stderr.write("------- No config given, using default config.\n")
 
     config.from_env_vars()
     config.from_cmd_args(args)
