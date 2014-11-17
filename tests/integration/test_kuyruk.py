@@ -122,7 +122,7 @@ class KuyrukTestCase(unittest.TestCase):
         run_time = tasks.sleeping_task.max_run_time + 0.1
         tasks.sleeping_task(run_time)
         with run_kuyruk() as worker:
-            worker.expect('Task timeout')
+            worker.expect('Timeout')
 
     def test_worker_sigquit(self):
         """Ack current message and exit"""

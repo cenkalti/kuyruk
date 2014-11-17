@@ -223,9 +223,6 @@ class Worker(object):
         except ObjectNotFound:
             logger.warning('Object not found')
             self._handle_not_found(message, task_description)
-        except Timeout:
-            logger.error('Task timeout')
-            self._handle_timeout(message, task_description)
         except InvalidTask:
             logger.error('Invalid task')
             self._handle_invalid(message, task_description)
@@ -266,13 +263,6 @@ class Worker(object):
             task_description['module'],
             task_description['class'],
             task_description['args'][0])
-        self._channel.basic_reject(message.delivery_tag, requeue=False)
-
-    def _handle_timeout(self, message, task_description):
-        """Called when the task is timed out while running the wrapped
-        function.
-
-        """
         self._channel.basic_reject(message.delivery_tag, requeue=False)
 
     def _handle_invalid(self, message, task_description):
