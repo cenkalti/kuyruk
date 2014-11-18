@@ -211,8 +211,7 @@ class Worker(object):
                 self.apply_task(task, args, kwargs)
         except Reject:
             logger.warning('Task is rejected')
-            if os.environ['KUYRUK_TESTING'] != 'True':
-                sleep(1)  # Prevent cpu burning
+            sleep(1)  # Prevent cpu burning
             self._channel.basic_reject(message.delivery_tag, requeue=True)
         except Discard:
             logger.warning('Task is discarded')

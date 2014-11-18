@@ -60,7 +60,6 @@ def run_kuyruk(queue='kuyruk', terminate=True, config_filename=None):
 
     environ = os.environ.copy()
     environ['COVERAGE_PROCESS_START'] = '.coveragerc'
-    environ['KUYRUK_TESTING'] = 'True'
 
     popen = What(*args, preexec_fn=os.setsid, env=environ)
     popen.timeout = TIMEOUT
