@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class Worker(object):
     """Consumes tasks from a queue and runs them.
 
-    :param config: An instance of :class:`~kuyruk.config.Config`
+    :param config: An instance of :class:`~kuyruk.Config`
     :param args: Command line arguments
 
     """
