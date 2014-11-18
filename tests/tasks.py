@@ -86,7 +86,7 @@ def task_with_signal_handlers(message):
 
 
 @signals.task_presend.connect_via(kuyruk2)
-def function0(sender, task, args, kwargs, task_description):
+def function0(sender, task, args, kwargs, description):
     must_be_called()
 
 

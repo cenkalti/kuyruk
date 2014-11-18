@@ -172,18 +172,18 @@ class Task(object):
         """
         logger.debug("Task.send_to_queueue args=%r, kwargs=%r", args, kwargs)
         queue = get_queue_name(self.queue, host=host, local=local or self.local)
-        task_description = self._get_task_description(args, kwargs, queue)
+        description = self._get_description(args, kwargs, queue)
         self._send_signal(signals.task_presend, args, kwargs, reverse=True,
-                          task_description=task_description)
-        body = json.dumps(task_description)
+                          description=description)
+        body = json.dumps(description)
         msg = amqp.Message(body=body)
         with self.kuyruk.channel() as ch:
             ch.queue_declare(queue=queue, durable=True, auto_delete=False)
             ch.basic_publish(msg, exchange="", routing_key=queue)
         self._send_signal(signals.task_postsend, args, kwargs,
-                          task_description=task_description)
+                          description=description)
 
-    def _get_task_description(self, args, kwargs, queue):
+    def _get_description(self, args, kwargs, queue):
         """Return the dictionary to be sent to the queue."""
         return {
             'id': uuid1().hex,

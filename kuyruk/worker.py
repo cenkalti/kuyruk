@@ -184,28 +184,28 @@ class Worker(object):
     def _process_message(self, message):
         """Processes the message received from the queue."""
         try:
-            task_description = json.loads(message.body)
+            description = json.loads(message.body)
         except Exception:
             self._channel.basic_reject(message.delivery_tag, requeue=False)
             logger.error("Canot decode message. Dropped the message!")
         else:
-            logger.info("Processing task: %r", task_description)
-            self._process_task_description(message, task_description)
+            logger.info("Processing task: %r", description)
+            self._process_description(message, description)
 
-    def _process_task_description(self, message, task_description):
+    def _process_description(self, message, description):
         try:
-            task = importer.import_task(task_description['module'],
-                                        task_description['class'],
-                                        task_description['function'])
+            task = importer.import_task(description['module'],
+                                        description['class'],
+                                        description['function'])
         except Exception:
             logger.error('Cannot import task')
             self._channel.basic_reject(message.delivery_tag, requeue=False)
         else:
-            self._process_task(message, task_description, task)
+            self._process_task(message, description, task)
 
-    def _process_task(self, message, task_description, task):
+    def _process_task(self, message, description, task):
         try:
-            args, kwargs = task_description['args'], task_description['kwargs']
+            args, kwargs = description['args'], description['kwargs']
             with self._set_current_task(task, args, kwargs):
                 self.apply_task(task, args, kwargs)
         except Reject:
@@ -218,10 +218,10 @@ class Worker(object):
             self._channel.basic_reject(message.delivery_tag, requeue=False)
         except ObjectNotFound:
             logger.warning('Object not found')
-            self._handle_not_found(message, task_description)
+            self._handle_not_found(message, description)
         except InvalidTask:
             logger.error('Invalid task')
-            self._handle_invalid(message, task_description)
+            self._handle_invalid(message, description)
         except Exception:
             logger.error('Task raised an exception')
             self._handle_exception(sys.exc_info(), message)
@@ -240,7 +240,7 @@ class Worker(object):
         logger.error(traceback.format_exception(*exc_info))
         self._channel.basic_reject(message.delivery_tag, requeue=False)
 
-    def _handle_not_found(self, message, task_description):
+    def _handle_not_found(self, message, description):
         """Called if the task is class task but the object with the given id
         is not found. The default action is logging the error and dropping
         the message.
@@ -248,12 +248,12 @@ class Worker(object):
         """
         logger.warning(
             "<%s.%s id=%r> is not found",
-            task_description['module'],
-            task_description['class'],
-            task_description['args'][0])
+            description['module'],
+            description['class'],
+            description['args'][0])
         self._channel.basic_reject(message.delivery_tag, requeue=False)
 
-    def _handle_invalid(self, message, task_description):
+    def _handle_invalid(self, message, description):
         """Called when the task is invalid."""
         self._channel.basic_reject(message.delivery_tag, requeue=False)
 
