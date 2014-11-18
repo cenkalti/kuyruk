@@ -15,7 +15,6 @@ from contextlib import contextmanager
 import amqp
 
 from kuyruk import events, importer
-from kuyruk.events import EventMixin
 from kuyruk.exceptions import Timeout, InvalidTask, ObjectNotFound
 
 logger = logging.getLogger(__name__)
@@ -91,7 +90,7 @@ def id_to_object(f):
     return inner
 
 
-class Task(EventMixin):
+class Task(object):
 
     def __init__(self, f, kuyruk, queue='kuyruk', local=False,
                  retry=0, max_run_time=None, arg_class=None):

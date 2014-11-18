@@ -9,7 +9,7 @@ import random
 from time import sleep
 
 from kuyruk import Kuyruk, Task, Config
-from kuyruk.events import task_prerun, task_postrun
+from kuyruk import events
 
 
 kuyruk = Kuyruk()
@@ -85,12 +85,12 @@ def task_with_event_handlers(message):
     return 42
 
 
-@kuyruk2.on_presend
+@events.task_presend.connect_via(kuyruk2)
 def function0(sender, task, args, kwargs, task_description):
     must_be_called()
 
 
-@kuyruk2.on_prerun
+@events.task_prerun.connect_via(kuyruk2)
 def function1(sender, task, args, kwargs):
     print 'function1'
     print sender, task, args, kwargs
@@ -100,22 +100,22 @@ def function1(sender, task, args, kwargs):
     assert kwargs == {}
 
 
-@task_with_event_handlers.on_prerun
+@events.task_prerun.connect_via(task_with_event_handlers)
 def function2(sender, task, args, kwargs):
     print 'function2'
 
 
-@task_with_event_handlers.on_success
+@events.task_success.connect_via(task_with_event_handlers)
 def function3(sender, task, args, kwargs):
     print 'function3'
 
 
-@task_with_event_handlers.on_postrun
+@events.task_postrun.connect_via(task_with_event_handlers)
 def function4(sender, task, args, kwargs):
     print 'function4'
 
 
-@kuyruk2.on_postrun
+@events.task_postrun.connect_via(kuyruk2)
 def function5(sender, task, args, kwargs):
     print 'function5'
 
@@ -167,8 +167,8 @@ def must_be_called(arg=None):
 class DatabaseTask(Task):
 
     def setup(self):
-        self.connect_signal(task_prerun, self.open_session)
-        self.connect_signal(task_postrun, self.close_session)
+        events.task_prerun.connect(self.open_session, sender=self, weak=False)
+        events.task_postrun.connect(self.close_session, sender=self, weak=False)
 
     def open_session(self, sender, task, args, kwargs):
         print 'Opening session'
