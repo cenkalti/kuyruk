@@ -66,6 +66,16 @@ class Worker(object):
 
         logger.debug("End run worker")
 
+    def _setup_logging(self):
+        if self.config.LOGGING_CONFIG:
+            logging.config.fileConfig(self.config.LOGGING_CONFIG)
+        else:
+            logging.getLogger('rabbitpy').level = logging.WARNING
+            level = getattr(logging, self.config.LOGGING_LEVEL.upper())
+            fmt = "%(levelname).1s %(process)d " \
+                  "%(name)s.%(funcName)s:%(lineno)d - %(message)s"
+            logging.basicConfig(level=level, format=fmt)
+
     def _consume_messages(self):
         with kuyruk.Kuyruk(self.config) as k:
             with k.channel() as ch:
@@ -101,48 +111,6 @@ class Worker(object):
                         else:
                             raise
         logger.debug("End run worker")
-
-    def _setup_logging(self):
-        if self.config.LOGGING_CONFIG:
-            logging.config.fileConfig(self.config.LOGGING_CONFIG)
-        else:
-            logging.getLogger('rabbitpy').level = logging.WARNING
-            level = getattr(logging, self.config.LOGGING_LEVEL.upper())
-            fmt = "%(levelname).1s %(process)d " \
-                  "%(name)s.%(funcName)s:%(lineno)d - %(message)s"
-            logging.basicConfig(level=level, format=fmt)
-
-    def _handle_sigint(self, signum, frame):
-        """If running from terminal pressing Ctrl-C will initiate a warm
-        shutdown. The second interrupt will do a cold shutdown.
-
-        """
-        logger.warning("Handling SIGINT")
-        if sys.stdin.isatty() and not self.shutdown_pending.is_set():
-            self.warm_shutdown()
-        else:
-            self.cold_shutdown()
-        logger.debug("Handled SIGINT")
-
-    def _handle_sigterm(self, signum, frame):
-        """Initiates a warm shutdown."""
-        logger.warning("Catched SIGTERM")
-        self.warm_shutdown()
-
-    def _handle_sigquit(self, signum, frame):
-        """Drop the current task and exit."""
-        logger.warning("Catched SIGQUIT")
-        if self._current_message:
-            try:
-                logger.warning("Dropping current task...")
-                self._channel.basic_reject(self._current_message.delivery_tag,
-                                          requeue=False)
-                self._channel.close()
-            except Exception:
-                logger.critical("Cannot send ACK for the current task.")
-                traceback.print_exc()
-        logger.warning("Exiting...")
-        _exit(0)
 
     def _message_callback(self, message):
         # Save current message being processed so
@@ -272,6 +240,38 @@ class Worker(object):
     def cold_shutdown(self):
         """Exits immediately."""
         logger.warning("Cold shutdown")
+        _exit(0)
+
+    def _handle_sigint(self, signum, frame):
+        """If running from terminal pressing Ctrl-C will initiate a warm
+        shutdown. The second interrupt will do a cold shutdown.
+
+        """
+        logger.warning("Handling SIGINT")
+        if sys.stdin.isatty() and not self.shutdown_pending.is_set():
+            self.warm_shutdown()
+        else:
+            self.cold_shutdown()
+        logger.debug("Handled SIGINT")
+
+    def _handle_sigterm(self, signum, frame):
+        """Initiates a warm shutdown."""
+        logger.warning("Catched SIGTERM")
+        self.warm_shutdown()
+
+    def _handle_sigquit(self, signum, frame):
+        """Drop the current task and exit."""
+        logger.warning("Catched SIGQUIT")
+        if self._current_message:
+            try:
+                logger.warning("Dropping current task...")
+                self._channel.basic_reject(self._current_message.delivery_tag,
+                                          requeue=False)
+                self._channel.close()
+            except Exception:
+                logger.critical("Cannot send ACK for the current task.")
+                traceback.print_exc()
+        logger.warning("Exiting...")
         _exit(0)
 
 
