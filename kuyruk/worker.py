@@ -25,20 +25,18 @@ logger = logging.getLogger(__name__)
 class Worker(object):
     """Consumes tasks from a queue and runs them.
 
-    :param config: A :class:`~kuyruk.config.Config` instance
-    :param queue: The queue name to work on
+    :param config: An instance of :class:`~kuyruk.config.Config`
+    :param args: Command line arguments
 
     """
-    def __init__(self, config, queue):
+    def __init__(self, config, args):
         assert isinstance(config, Config)
         self.config = config
 
-        is_local = queue.startswith('@')
-        queue = queue.lstrip('@')
-        if not queue:
+        if not args.queue:
             raise ValueError("empty queue name")
+        self.queue = get_queue_name(args.queue, local=args.local)
 
-        self.queue = get_queue_name(queue, local=is_local)
         self._consumer_tag = '%s@%s' % (os.getpid(), socket.gethostname())
         self._channel = None
         self.shutdown_pending = threading.Event()

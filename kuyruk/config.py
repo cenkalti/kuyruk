@@ -48,9 +48,9 @@ class Config(object):
     # Worker Options
     ################
 
-    WORKER_CLASS = 'kuyruk.Worker'
+    WORKER_CLASS = 'kuyruk.worker.Worker'
     """Worker implementation class. It can be replaced with a subclass of
-    :class:`kuyruk.Worker` to customize the behavior."""
+    :class:`kuyruk.worker.Worker` to customize the behavior."""
 
     MAX_LOAD = None
     """Pause consuming queue when the load goes above this level."""

@@ -37,6 +37,9 @@ def main():
     parser_worker.set_defaults(func=run_worker)
     parser_worker.add_argument(
         '-q', '--queue', default='kuyruk', help='consume tasks from')
+    parser_worker.add_argument(
+        '-l', '--local', action="store_true",
+        help='append hostname to the queue name')
 
     # Parse arguments
     args = parser.parse_args()
@@ -47,7 +50,7 @@ def main():
 
 def run_worker(config, args):
     worker_class = importer.import_class_str(config.WORKER_CLASS)
-    w = worker_class(config, args.queue)
+    w = worker_class(config, args)
     w.run()
 
 
