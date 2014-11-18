@@ -73,11 +73,14 @@ class Worker(object):
         with kuyruk.Kuyruk(self.config) as k:
             with k.channel() as ch:
                 self._channel = ch
-                ch.queue_declare(queue=self.queue, durable=True, auto_delete=False)
+                ch.queue_declare(queue=self.queue, durable=True,
+                                 auto_delete=False)
                 # Set prefetch count to 1. If we don't set this, RabbitMQ keeps
                 # sending messages while we are already working on a message.
                 ch.basic_qos(0, 1, False)
+
                 while not self.shutdown_pending.is_set():
+                    # Consume or pause
                     if self._pause and self._consuming:
                         ch.basic_cancel(self._consumer_tag)
                         logger.info('Consumer cancelled')
@@ -260,10 +263,17 @@ class Worker(object):
         while not self.shutdown_pending.is_set():
             load = os.getloadavg()[0]
             if load > self.config.MAX_LOAD:
-                logger.warning('Load is high (%s), pausing consumer', load)
-                self._pause = True
+                if self._pause is False:
+                    logger.warning(
+                        'Load is above the treshold (%.2f/%s), '
+                        'pausing consumer', load, self.config.MAX_LOAD)
+                    self._pause = True
             else:
-                self._pause = False
+                if self._pause is True:
+                    logger.warning(
+                        'Load is below the treshold (%.2f/%s), '
+                        'resuming consumer', load, self.config.MAX_LOAD)
+                    self._pause = False
             sleep(1)
 
     def _shutdown_timer(self):
