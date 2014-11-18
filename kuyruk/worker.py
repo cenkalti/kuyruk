@@ -159,7 +159,7 @@ class Worker(object):
             description = json.loads(message.body)
         except Exception:
             self._channel.basic_reject(message.delivery_tag, requeue=False)
-            logger.error("Canot decode message. Dropped the message!")
+            logger.error("Cannot decode message. Dropping.")
         else:
             logger.info("Processing task: %r", description)
             self._process_description(message, description)
@@ -202,7 +202,7 @@ class Worker(object):
             logger.debug("Task is processed")
 
     def apply_task(self, task, args, kwargs):
-        """Runs the wrapped function in task."""
+        """Runs the task."""
         task._run(*args, **kwargs)
 
     def _handle_exception(self, exc_info, message):
