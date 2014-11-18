@@ -5,6 +5,8 @@ import logging
 import importer
 import pkg_resources
 
+import kuyruk  # required for references in docs
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,9 +39,9 @@ class Config(object):
     # Worker Options
     ################
 
-    WORKER_CLASS = 'kuyruk.worker.Worker'
+    WORKER_CLASS = 'kuyruk.Worker'
     """Worker implementation class. It can be replaced with a subclass of
-    :class:`~kuyruk.worker.Worker` to change specific behavior."""
+    :class:`kuyruk.Worker` to customize the behavior."""
 
     MAX_LOAD = None
     """Pause consuming queue when the load goes above this level."""
