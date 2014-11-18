@@ -10,7 +10,6 @@ import threading
 import traceback
 import multiprocessing
 from time import time, sleep
-from contextlib import contextmanager
 
 from setproctitle import setproctitle
 
@@ -43,10 +42,6 @@ class Worker(object):
         self._pause = False
         self._consuming = False
         self._current_message = None
-        self._daemon_threads = [
-            self._watch_load,
-            self._shutdown_timer,
-        ]
         if self.config.MAX_LOAD is None:
             self.config.MAX_LOAD = multiprocessing.cpu_count()
 
@@ -56,22 +51,29 @@ class Worker(object):
 
         """
         setproctitle("kuyruk: worker on %s" % self.queue)
+
         self._setup_logging()
+
         signal.signal(signal.SIGINT, self._handle_sigint)
         signal.signal(signal.SIGTERM, self._handle_sigterm)
         signal.signal(signal.SIGQUIT, self._handle_sigquit)
         signal.signal(signal.SIGUSR1, print_stack)  # for debugging
 
-        self._start_daemon_threads()
+        for f in (self._watch_load, self._shutdown_timer):
+            start_daemon_thread(f)
+
         self._consume_messages()
+
         logger.debug("End run worker")
 
     def _consume_messages(self):
         with kuyruk.Kuyruk(self.config) as k:
             with k.channel() as ch:
-                self._channel = ch
-                ch.queue_declare(queue=self.queue, durable=True,
-                                 auto_delete=False)
+                self._channel = ch  # Need a channel when we receive SIGQUIT.
+
+                ch.queue_declare(
+                    queue=self.queue, durable=True, auto_delete=False)
+
                 # Set prefetch count to 1. If we don't set this, RabbitMQ keeps
                 # sending messages while we are already working on a message.
                 ch.basic_qos(0, 1, False)
@@ -95,7 +97,7 @@ class Worker(object):
                         if isinstance(e, socket.timeout):
                             pass
                         elif e.errno == socket.EINTR:
-                            pass
+                            pass  # happens when the process receives a signal
                         else:
                             raise
         logger.debug("End run worker")
@@ -150,11 +152,6 @@ class Worker(object):
             self._process_message(message)
         finally:
             self._current_message = None
-
-    def _start_daemon_threads(self):
-        """Start the function as threads listed in self.daemon_thread."""
-        for f in self._daemon_threads:
-            start_daemon_thread(f)
 
     def _process_message(self, message):
         """Processes the message received from the queue."""
