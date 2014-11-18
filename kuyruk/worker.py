@@ -143,20 +143,11 @@ class Worker(object):
         _exit(0)
 
     def _message_callback(self, message):
-        """Consumes messages from the queue and run tasks until
-        consumer is cancelled via a signal or another thread.
-
-        """
-        with self._set_current_message(message):
-            self._process_message(message)
-
-    @contextmanager
-    def _set_current_message(self, message):
-        """Save current message being processed so we can send ack
-        before exiting when SIGQUIT is received."""
+        # Save current message being processed so
+        # we will be able to send ACK when we receive SIGQUIT."""
         self._current_message = message
         try:
-            yield
+            self._process_message(message)
         finally:
             self._current_message = None
 
