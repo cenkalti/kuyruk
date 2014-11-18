@@ -105,13 +105,7 @@ class Task(object):
         self.max_run_time = max_run_time
         self.arg_class = arg_class
         self._cls = None
-        self.setup()
-
-    def setup(self):
-        """This function is called only once when the task is created.
-        You may override this function to make additional initialization
-        for the task. By default it does nothing."""
-        pass
+        self._send_signal(signals.task_init)
 
     def __repr__(self):
         return "<Task of %r>" % self.name

@@ -166,22 +166,25 @@ def must_be_called(arg=None):
 
 class DatabaseTask(Task):
 
-    def setup(self):
-        signals.task_prerun.connect(self.open_session, sender=self, weak=False)
-        signals.task_postrun.connect(self.close_session, sender=self, weak=False)
+    def run(self, *args, **kwargs):
+        self.open_session()
+        try:
+            super(DatabaseTask, self).run(*args, **kwargs)
+        finally:
+            self.close_session()
 
-    def open_session(self, sender, task, args, kwargs):
+    def open_session(self):
         print 'Opening session'
         self.session = object()
 
-    def close_session(self, sender, task, args, kwargs):
+    def close_session(self):
         print 'Closing session'
         self.session = None
 
 
 @kuyruk.task(task_class=DatabaseTask)
 def use_session():
-    print use_session.session
+    assert use_session.session is not None
 
 
 @kuyruk.task
