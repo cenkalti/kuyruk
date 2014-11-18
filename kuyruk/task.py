@@ -14,7 +14,7 @@ from contextlib import contextmanager
 
 import amqp
 
-from kuyruk import events, importer
+from kuyruk import signals, importer
 from kuyruk.exceptions import Timeout, InvalidTask, ObjectNotFound
 
 logger = logging.getLogger(__name__)
@@ -173,14 +173,14 @@ class Task(object):
         logger.debug("Task.send_to_queueue args=%r, kwargs=%r", args, kwargs)
         queue = get_queue_name(self.queue, host=host, local=local or self.local)
         task_description = self._get_task_description(args, kwargs, queue)
-        self._send_signal(events.task_presend, args, kwargs, reverse=True,
+        self._send_signal(signals.task_presend, args, kwargs, reverse=True,
                           task_description=task_description)
         body = json.dumps(task_description)
         msg = amqp.Message(body=body)
         with self.kuyruk.channel() as ch:
             ch.queue_declare(queue=queue, durable=True, auto_delete=False)
             ch.basic_publish(msg, exchange="", routing_key=queue)
-        self._send_signal(events.task_postsend, args, kwargs,
+        self._send_signal(signals.task_postsend, args, kwargs,
                           task_description=task_description)
 
     def _get_task_description(self, args, kwargs, queue):
@@ -228,7 +228,7 @@ class Task(object):
 
         logger.debug("Applying %r, args=%r, kwargs=%r", self, args, kwargs)
 
-        send_signal(events.task_prerun, reverse=True)
+        send_signal(signals.task_prerun, reverse=True)
         try:
             tries = 1 + self.retry
             while 1:
@@ -238,18 +238,18 @@ class Task(object):
                         self.run(*args, **kwargs)
                 except Exception:
                     traceback.print_exc()
-                    send_signal(events.task_error, exc_info=sys.exc_info())
+                    send_signal(signals.task_error, exc_info=sys.exc_info())
                     if tries <= 0:
                         raise
                 else:
                     break
         except Exception:
-            send_signal(events.task_failure, exc_info=sys.exc_info())
+            send_signal(signals.task_failure, exc_info=sys.exc_info())
             raise
         else:
-            send_signal(events.task_success)
+            send_signal(signals.task_success)
         finally:
-            send_signal(events.task_postrun)
+            send_signal(signals.task_postrun)
 
     def run(self, *args, **kwargs):
         """

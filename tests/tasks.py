@@ -9,7 +9,7 @@ import random
 from time import sleep
 
 from kuyruk import Kuyruk, Task, Config
-from kuyruk import events
+from kuyruk import signals
 
 
 kuyruk = Kuyruk()
@@ -80,17 +80,17 @@ kuyruk2 = Kuyruk()
 
 
 @kuyruk2.task
-def task_with_event_handlers(message):
+def task_with_signal_handlers(message):
     print message
     return 42
 
 
-@events.task_presend.connect_via(kuyruk2)
+@signals.task_presend.connect_via(kuyruk2)
 def function0(sender, task, args, kwargs, task_description):
     must_be_called()
 
 
-@events.task_prerun.connect_via(kuyruk2)
+@signals.task_prerun.connect_via(kuyruk2)
 def function1(sender, task, args, kwargs):
     print 'function1'
     print sender, task, args, kwargs
@@ -100,22 +100,22 @@ def function1(sender, task, args, kwargs):
     assert kwargs == {}
 
 
-@events.task_prerun.connect_via(task_with_event_handlers)
+@signals.task_prerun.connect_via(task_with_signal_handlers)
 def function2(sender, task, args, kwargs):
     print 'function2'
 
 
-@events.task_success.connect_via(task_with_event_handlers)
+@signals.task_success.connect_via(task_with_signal_handlers)
 def function3(sender, task, args, kwargs):
     print 'function3'
 
 
-@events.task_postrun.connect_via(task_with_event_handlers)
+@signals.task_postrun.connect_via(task_with_signal_handlers)
 def function4(sender, task, args, kwargs):
     print 'function4'
 
 
-@events.task_postrun.connect_via(kuyruk2)
+@signals.task_postrun.connect_via(kuyruk2)
 def function5(sender, task, args, kwargs):
     print 'function5'
 
@@ -167,8 +167,8 @@ def must_be_called(arg=None):
 class DatabaseTask(Task):
 
     def setup(self):
-        events.task_prerun.connect(self.open_session, sender=self, weak=False)
-        events.task_postrun.connect(self.close_session, sender=self, weak=False)
+        signals.task_prerun.connect(self.open_session, sender=self, weak=False)
+        signals.task_postrun.connect(self.close_session, sender=self, weak=False)
 
     def open_session(self, sender, task, args, kwargs):
         print 'Opening session'

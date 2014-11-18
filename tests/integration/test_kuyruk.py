@@ -84,7 +84,7 @@ class KuyrukTestCase(unittest.TestCase):
     @patch('tests.tasks.must_be_called')
     def test_before_after(self, mock_func):
         """Before and after task functions are run"""
-        tasks.task_with_event_handlers('hello world')
+        tasks.task_with_signal_handlers('hello world')
         mock_func.assert_called_once_with()
         with run_kuyruk() as worker:
             worker.expect('function1')
