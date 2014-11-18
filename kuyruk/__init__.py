@@ -25,10 +25,17 @@ logger.addHandler(null_handler)
 
 class Kuyruk(object):
     """
-    Main class for Kuyruk distributed task queue. It holds the configuration
-    values and provides a task decorator for user application
+    Provides a :func:`~kuyruk.Kuyruk.task` decorator to convert a function
+    into a :class:`~kuyruk.Task`.
+    Maintains a single connection to RabbitMQ server.
+    Provides :func:`~kuyruk.Kuyruk.channel` context manager for opening a
+    new channel on the connection.
+    Connection is opened when the first channel is created.
+    If you use the :class:`~kuyruk.Kuyruk` object as a context manager,
+    the connection will be closed when exiting.
 
     :param config: A module that contains configuration options.
+                   Must be an instance of :class:`~kuyruk.Config`.
                    See :ref:`configuration-options` for default values.
 
     """
@@ -48,10 +55,21 @@ class Kuyruk(object):
         # Close open RabbitMQ connection at exit.
         def _close():
             try:
-                self.close()
+                self._close_connection()
             except Exception:
                 pass
         atexit.register(_close)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._close_connection()
+
+    def _close_connection(self):
+        with self._lock:
+            if self._connection is not None:
+                self._connection.close()
 
     def task(self, queue='kuyruk', retry=0, task_class=None,
              max_run_time=None, local=False, arg_class=None):
@@ -124,12 +142,6 @@ class Kuyruk(object):
 
             with closing(channel):
                 yield channel
-
-    def close(self):
-        """Close the connection."""
-        with self._lock:
-            if self._connection is not None:
-                self._connection.close()
 
     def _connect(self):
         """Returns a new connection."""

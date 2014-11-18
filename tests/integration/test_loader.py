@@ -33,8 +33,7 @@ class LoaderTestCase(unittest.TestCase):
                 'apppackage.tasks.print_message'
             ),
         ]
-        k = Kuyruk()
-        try:
+        with Kuyruk() as k:
             with k.channel() as ch:
                 for args, cwd, name in cases:
                     print cwd, args, name
@@ -47,8 +46,6 @@ class LoaderTestCase(unittest.TestCase):
                     # Can we load the task by name?
                     got = get_name()
                     assert got == name, got
-        finally:
-            k.close()
 
 
 def run_python(args, cwd):
@@ -58,11 +55,8 @@ def run_python(args, cwd):
 
 
 def get_name():
-    k = Kuyruk()
-    try:
+    with Kuyruk() as k:
         with k.channel() as ch:
             message = ch.basic_get("kuyruk")
             desc = json.loads(message.body)
             return '.'.join([desc['module'], desc['function']])
-    finally:
-        k.close()

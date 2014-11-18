@@ -72,36 +72,34 @@ class Worker(object):
         logger.debug("End run worker")
 
     def _consume_messages(self):
-        k = kuyruk.Kuyruk(self.config)
-        with k.channel() as ch:
-            self._channel = ch
-            ch.queue_declare(queue=self.queue, durable=True, auto_delete=False)
-            # Set prefetch count to 1. If we don't set this, RabbitMQ keeps
-            # sending messages while we are already working on a message.
-            ch.basic_qos(0, 1, False)
-            while not self.shutdown_pending.is_set():
-                if self._pause and self._consuming:
-                    ch.basic_cancel(self._consumer_tag)
-                    logger.info('Consumer cancelled')
-                    self._consuming = False
-                elif not self._pause and not self._consuming:
-                    ch.basic_consume(queue=self.queue,
-                                     consumer_tag=self._consumer_tag,
-                                     callback=self._message_callback)
-                    logger.info('Consumer started')
-                    self._consuming = True
+        with kuyruk.Kuyruk(self.config) as k:
+            with k.channel() as ch:
+                self._channel = ch
+                ch.queue_declare(queue=self.queue, durable=True, auto_delete=False)
+                # Set prefetch count to 1. If we don't set this, RabbitMQ keeps
+                # sending messages while we are already working on a message.
+                ch.basic_qos(0, 1, False)
+                while not self.shutdown_pending.is_set():
+                    if self._pause and self._consuming:
+                        ch.basic_cancel(self._consumer_tag)
+                        logger.info('Consumer cancelled')
+                        self._consuming = False
+                    elif not self._pause and not self._consuming:
+                        ch.basic_consume(queue=self.queue,
+                                         consumer_tag=self._consumer_tag,
+                                         callback=self._message_callback)
+                        logger.info('Consumer started')
+                        self._consuming = True
 
-                try:
-                    ch.connection.drain_events(timeout=0.1)
-                except socket.error as e:
-                    if isinstance(e, socket.timeout):
-                        pass
-                    elif e.errno == socket.EINTR:
-                        pass
-                    else:
-                        raise
-
-        k.close()
+                    try:
+                        ch.connection.drain_events(timeout=0.1)
+                    except socket.error as e:
+                        if isinstance(e, socket.timeout):
+                            pass
+                        elif e.errno == socket.EINTR:
+                            pass
+                        else:
+                            raise
         logger.debug("End run worker")
 
     def _setup_logging(self):
