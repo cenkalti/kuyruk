@@ -91,7 +91,10 @@ def id_to_object(f):
 
 
 class Task(object):
+    """Calling a :class:`~kuyruk.Task` object serializes the task to JSON
+    and sends it to the queue.
 
+    """
     def __init__(self, f, kuyruk, queue='kuyruk', local=False,
                  retry=0, max_run_time=None, arg_class=None):
         self.f = f
@@ -214,8 +217,13 @@ class Task(object):
 
     @object_to_id
     def apply(self, *args, **kwargs):
-        """Run the wrapped function and event handlers as if it is run by
-        a worker."""
+        """Runs the wrapped function and signal handlers as if it is run by
+        a worker.
+        If task has a `retry` property it will be retried on failure.
+        If task has a `max_run_time` property the task will not be allowed to
+        run more than that.
+        Calls :func:`~kuyruk.Task.run` to run the wrapped function.
+        """
         logger.debug("Task.apply args=%r, kwargs=%r", args, kwargs)
         return self._run(*args, **kwargs)
 
@@ -253,8 +261,9 @@ class Task(object):
 
     def run(self, *args, **kwargs):
         """
-        Runs the wrapped function with args and kwargs.
-        You may override this method from a subclass to change the behavior.
+        Calls the wrapped function.
+        :func:`~kuyruk.Task.apply` calls this method internally so
+        you may override this method from a subclass to change the behavior.
 
         """
         self.f(*args, **kwargs)
