@@ -135,7 +135,7 @@ class Task(object):
 
     def delay(self, *args, **kwargs):
         """Compatibility function for migrating existing Celery projects
-        to Kuyruk."""
+        to Kuyruk. Sends the task to the queue."""
         self.__call__(*args, **kwargs)
 
     def __get__(self, obj, objtype):
@@ -266,7 +266,7 @@ class Task(object):
 
     @property
     def name(self):
-        """Full path to the task.
+        """Full path to the task. Consists of module, class and function name.
         Workers find and import tasks by this path.
 
         """

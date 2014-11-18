@@ -56,9 +56,8 @@ class Worker(object):
             self.config.MAX_LOAD = multiprocessing.cpu_count()
 
     def run(self):
-        """Runs the worker and opens a connection to RabbitMQ.
-        After connection is opened, starts consuming messages.
-        Consuming is cancelled if an external signal is received.
+        """Runs the worker and consumes messages from RabbitMQ.
+        Method only returns after `warm_shutdown()` is called.
 
         """
         setproctitle("kuyruk: worker on %s" % self.queue)
@@ -291,12 +290,12 @@ class Worker(object):
                 break
 
     def warm_shutdown(self):
-        """Exit after the last task is finished."""
+        """Exits after the current task is finished."""
         logger.warning("Warm shutdown")
         self.shutdown_pending.set()
 
     def cold_shutdown(self):
-        """Exit immediately."""
+        """Exits immediately."""
         logger.warning("Cold shutdown")
         _exit(0)
 
