@@ -103,8 +103,8 @@ class Task(object):
         self.local = local
         self.retry = retry
         self.max_run_time = max_run_time
-        self._cls = None
         self.arg_class = arg_class
+        self._cls = None
         self.setup()
 
     def setup(self):
@@ -176,14 +176,14 @@ class Task(object):
         logger.debug("Task.send_to_queueue args=%r, kwargs=%r", args, kwargs)
         queue = get_queue_name(self.queue, host=host, local=local or self.local)
         description = self._get_description(args, kwargs, queue)
-        self._send_signal(signals.task_presend, args, kwargs, reverse=True,
+        self._send_signal(signals.task_presend, args=args, kwargs=kwargs,
                           description=description)
         body = json.dumps(description)
         msg = amqp.Message(body=body)
         with self.kuyruk.channel() as ch:
             ch.queue_declare(queue=queue, durable=True, auto_delete=False)
             ch.basic_publish(msg, exchange="", routing_key=queue)
-        self._send_signal(signals.task_postsend, args, kwargs,
+        self._send_signal(signals.task_postsend, args=args, kwargs=kwargs,
                           description=description)
 
     def _get_description(self, args, kwargs, queue):
@@ -202,18 +202,14 @@ class Task(object):
             'sender_timestamp': datetime.utcnow().isoformat()[:19],
         }
 
-    def _send_signal(self, sig, args, kwargs, reverse=False, **extra):
+    def _send_signal(self, sig, **data):
         """
         Sends a signal for each sender.
         This allows the user to register for a specific sender.
 
         """
-        senders = (self, self.__class__, self.kuyruk)
-        if reverse:
-            senders = reversed(senders)
-
-        for sender in senders:
-            sig.send(sender, task=self, args=args, kwargs=kwargs, **extra)
+        for sender in (self, self.kuyruk):
+            sig.send(sender, task=self, **data)
 
     @object_to_id
     def apply(self, *args, **kwargs):
@@ -231,12 +227,12 @@ class Task(object):
     @profile
     @id_to_object
     def _run(self, *args, **kwargs):
-        def send_signal(sig, reverse=False, **extra):
-            self._send_signal(sig, args, kwargs, reverse, **extra)
+        def send_signal(sig, **extra):
+            self._send_signal(sig, args=args, kwargs=kwargs, **extra)
 
         logger.debug("Applying %r, args=%r, kwargs=%r", self, args, kwargs)
 
-        send_signal(signals.task_prerun, reverse=True)
+        send_signal(signals.task_prerun)
         try:
             tries = 1 + self.retry
             while 1:

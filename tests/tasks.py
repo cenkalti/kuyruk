@@ -90,19 +90,19 @@ def function0(sender, task, args, kwargs, description):
     must_be_called()
 
 
-@signals.task_prerun.connect_via(kuyruk2)
+@signals.task_prerun.connect_via(task_with_signal_handlers)
 def function1(sender, task, args, kwargs):
     print 'function1'
+
+
+@signals.task_prerun.connect_via(kuyruk2)
+def function2(sender, task, args, kwargs):
+    print 'function2'
     print sender, task, args, kwargs
     assert sender is kuyruk2
     assert isinstance(task, Task)
     assert list(args) == ['hello world']
     assert kwargs == {}
-
-
-@signals.task_prerun.connect_via(task_with_signal_handlers)
-def function2(sender, task, args, kwargs):
-    print 'function2'
 
 
 @signals.task_success.connect_via(task_with_signal_handlers)
