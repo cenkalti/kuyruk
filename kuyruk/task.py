@@ -133,11 +133,6 @@ class Task(object):
         else:
             self._send_to_queue(args, kwargs, host=host, local=local)
 
-    def delay(self, *args, **kwargs):
-        """Compatibility function for migrating existing Celery projects
-        to Kuyruk. Sends the task to the queue."""
-        self.__call__(*args, **kwargs)
-
     def __get__(self, obj, objtype):
         """If the task is accessed from an instance via attribute syntax
         returns a bound task object that wraps the task itself, otherwise
