@@ -3,6 +3,5 @@ RABBIT_PORT = 5672
 RABBIT_USER = 'guest'
 RABBIT_PASSWORD = 'guest'
 EAGER = False
-QUEUES = {
-    'host.example.com': 'kuyruk, 2*another, @local'
-}
+MAX_LOAD = 20
+MAX_WORKER_RUN_TIME = None

@@ -8,7 +8,7 @@ import string
 import random
 from time import sleep
 
-from kuyruk import Kuyruk, Task
+from kuyruk import Kuyruk, Task, Config
 from kuyruk.events import task_prerun, task_postrun
 
 
@@ -18,13 +18,13 @@ kuyruk = Kuyruk()
 
 
 @kuyruk.task
-def print_task(message):
+def echo(message):
     print message
     must_be_called()
 
 
 @kuyruk.task(queue='another_queue')
-def print_task2(message):
+def echo_another(message):
     print message
 
 
@@ -57,7 +57,10 @@ def loop_forever():
         sleep(1)
 
 
-@kuyruk.task(eager=True)
+config_eager = Config()
+config_eager.EAGER = True
+kuyruk_eager = Kuyruk(config_eager)
+@kuyruk_eager.task()
 def eager_task():
     must_be_called()
 
@@ -77,13 +80,13 @@ kuyruk2 = Kuyruk()
 
 
 @kuyruk2.task
-def task_with_functions(message):
+def task_with_event_handlers(message):
     print message
     return 42
 
 
 @kuyruk2.on_presend
-def function0(sender, task, args, kwargs):
+def function0(sender, task, args, kwargs, task_description):
     must_be_called()
 
 
@@ -97,18 +100,17 @@ def function1(sender, task, args, kwargs):
     assert kwargs == {}
 
 
-@task_with_functions.on_prerun
+@task_with_event_handlers.on_prerun
 def function2(sender, task, args, kwargs):
     print 'function2'
 
 
-@task_with_functions.on_success
-def function3(sender, task, args, kwargs, return_value):
+@task_with_event_handlers.on_success
+def function3(sender, task, args, kwargs):
     print 'function3'
-    assert return_value == 42
 
 
-@task_with_functions.on_postrun
+@task_with_event_handlers.on_postrun
 def function4(sender, task, args, kwargs):
     print 'function4'
 
@@ -137,11 +139,6 @@ class Cat(object):
         print "Felix says:", message
         must_be_called()
 
-    @kuyruk.task(eager=True)
-    def meow_eager(self, message):
-        print "Felix says:", message
-        must_be_called()
-
     @kuyruk.task
     def raise_exception(self):
         raise Exception
@@ -153,14 +150,8 @@ def jump(cat):
     must_be_called(cat.name)
 
 
-@kuyruk.task(arg_class=Cat, eager=True)
-def jump_eager(cat):
-    print "%s jumps high!" % cat.name
-    must_be_called(cat.name)
-
-
 @kuyruk.task(arg_class=Cat)
-def jump_fail(cat):
+def jump_error(cat):
     1/0
 
 
@@ -197,8 +188,3 @@ def use_session():
 def spawn_process(args=['sleep', '60']):
     import subprocess
     subprocess.check_call(args)
-
-
-@kuyruk.task(queue='scheduled')
-def scheduled(message):
-    print message

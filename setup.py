@@ -1,7 +1,7 @@
-# coding=utf-8
+# coding=utf8
 import os
 import re
-from setuptools import setup, find_packages
+from setuptools import setup
 
 
 def read(*fname):
@@ -24,17 +24,15 @@ setup(
     author_email='cenkalti@gmail.com',
     keywords='rabbitmq distributed task queue',
     url='https://github.com/cenkalti/kuyruk',
-    packages=find_packages(),
+    packages=['kuyruk'],
     include_package_data=True,
     install_requires=[
-        'Flask>=0.9',
-        'pika>=0.9.14',
+        'amqp>=1.4.6',
         'setproctitle>=1.1.7',
         'blinker>=1.2',
         'argparse>=1.2.1',
-        'rpyc>=3.3.0',
     ],
-    description='A distributed task runner',
+    description='Simple task queue',
     long_description=read('README.rst'),
     zip_safe=True,
     entry_points={

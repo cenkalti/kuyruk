@@ -1,12 +1,11 @@
 import os
 import sys
+import json
 import unittest
 
 from what import What
 
 from kuyruk import Kuyruk
-from kuyruk.queue import Queue
-from kuyruk.test.integration.util import delete_queue
 
 
 class LoaderTestCase(unittest.TestCase):
@@ -34,12 +33,22 @@ class LoaderTestCase(unittest.TestCase):
                 'apppackage.tasks.print_message'
             ),
         ]
-        for args, cwd, name in cases:
-            print cwd, args, name
-            delete_queue('kuyruk')
-            run_python(args, cwd=cwd)  # Every call sends a task to the queue
-            name_from_queue = get_name()
-            assert name_from_queue == name  # Can we load the task by name?
+        k = Kuyruk()
+        try:
+            with k.channel() as ch:
+                for args, cwd, name in cases:
+                    print cwd, args, name
+
+                    ch.queue_delete("kuyruk")
+
+                    # Every call sends a task to the queue
+                    run_python(args, cwd=cwd)
+
+                    # Can we load the task by name?
+                    got = get_name()
+                    assert got == name, got
+        finally:
+            k.close()
 
 
 def run_python(args, cwd):
@@ -49,5 +58,11 @@ def run_python(args, cwd):
 
 
 def get_name():
-    desc = Queue('kuyruk', Kuyruk().channel()).receive()[1]
-    return '.'.join([desc['module'], desc['function']])
+    k = Kuyruk()
+    try:
+        with k.channel() as ch:
+            message = ch.basic_get("kuyruk")
+            desc = json.loads(message.body)
+            return '.'.join([desc['module'], desc['function']])
+    finally:
+        k.close()

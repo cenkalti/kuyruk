@@ -1,28 +1,44 @@
-Kuyruk Changelog
-================
+Changelog
+=========
 
 Here you can see the full list of changes between each Kuyruk release.
+
+Version 2.0.0
+-------------
+
+- Replaced pika with amqp.
+- Fixed multi-threading issues.
+- Removed master subcommand.
+- Removed scheduler subcommand.
+- Removed requeue subcommand.
+- Removed manager subcommand.
+- Exceptions are not sent to Sentry.
+- Failed tasks are not saved to redis anymore.
+- Failed tasks are retried in the same worker.
+- Unknown keys in config are now errors.
+- Removed return_value argument from Kuyruk.on_success event.
+- Removed eager argument from task decorator.
 
 Version 1.2.1
 -------------
 
 Released on 25-08-2014.
 
-Fixed a worker startup bug happens when running workers as another user.
+- Fixed a worker startup bug happens when running workers as another user.
 
 Version 1.2.0
 -------------
 
 Released on 09-06-2014.
 
-Added periodic task scheduler feature.
+- Added periodic task scheduler feature.
 
 Version 1.1.0
 -------------
 
 Released on 07-06-2014.
 
-Added Task.delay() function alias for easy migration from Celery.
+- Added Task.delay() function alias for easy migration from Celery.
 
 Version 1.0.0
 -------------
@@ -113,4 +129,4 @@ Version 0.20.2
 
 Released on 03-08-2013.
 
-First public preview release.
+First public release.

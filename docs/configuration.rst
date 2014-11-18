@@ -16,8 +16,8 @@ Example:
     RABBIT_PORT = 5672
     RABBIT_USER = 'guest'
     RABBIT_PASSWORD = 'guest'
-    SAVE_FAILED_TASKS = True
-    MAX_LOAD = 20
+    MAX_WORKER_RUN_TIME = 300
+    MAX_LOAD = 8
 
 
 .. code-block:: python

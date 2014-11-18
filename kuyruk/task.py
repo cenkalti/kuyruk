@@ -1,17 +1,20 @@
 from __future__ import absolute_import
 import os
 import sys
+import json
 import signal
 import socket
 import logging
+import traceback
 from time import time
 from uuid import uuid1
-from datetime import datetime
 from functools import wraps
+from datetime import datetime
 from contextlib import contextmanager
 
+import amqp
+
 from kuyruk import events, importer
-from kuyruk.queue import Queue
 from kuyruk.events import EventMixin
 from kuyruk.exceptions import Timeout, InvalidTask, ObjectNotFound
 
@@ -37,7 +40,7 @@ def object_to_id(f):
     """
     @wraps(f)
     def inner(self, *args, **kwargs):
-        cls = self.cls or self.arg_class
+        cls = self._cls or self.arg_class
         if cls:
             try:
                 obj = args[0]
@@ -64,7 +67,7 @@ def id_to_object(f):
     """
     @wraps(f)
     def inner(self, *args, **kwargs):
-        cls = self.arg_class or self.cls
+        cls = self.arg_class or self._cls
         if cls:
             if not args:
                 raise InvalidTask
@@ -88,41 +91,29 @@ def id_to_object(f):
     return inner
 
 
-def send_client_signals(f):
-    """Sends the presend and postsend signals."""
-    @wraps(f)
-    def inner(self, *args, **kwargs):
-        self.send_signal(events.task_presend, args, kwargs, reverse=True)
-        rv = f(self, *args, **kwargs)
-        self.send_signal(events.task_postsend, args, kwargs)
-        return rv
-    return inner
-
-
 class Task(EventMixin):
 
-    def __init__(self, f, kuyruk, queue='kuyruk', local=False, eager=False,
+    def __init__(self, f, kuyruk, queue='kuyruk', local=False,
                  retry=0, max_run_time=None, arg_class=None):
         self.f = f
         self.kuyruk = kuyruk
-        self.queue_name = queue
+        self.queue = queue
         self.local = local
-        self.eager = eager
         self.retry = retry
         self.max_run_time = max_run_time
-        self.cls = None
+        self._cls = None
         self.arg_class = arg_class
         self.setup()
 
     def setup(self):
-        """Convenience function for extending classes
-        that run after __init__."""
+        """This function is called only once when the task is created.
+        You may override this function to make additional initialization
+        for the task. By default it does nothing."""
         pass
 
     def __repr__(self):
         return "<Task of %r>" % self.name
 
-    @send_client_signals
     @object_to_id
     def __call__(self, *args, **kwargs):
         """When a fucntion is wrapped with a task decorator it will be
@@ -133,27 +124,19 @@ class Task(EventMixin):
         """
         logger.debug("Task.__call__ args=%r, kwargs=%r", args, kwargs)
 
-        # These keyword argument allow the sender to override
-        # the destination of the message.
+        # Allow the sender to override the destination of the message.
         host = kwargs.pop('kuyruk_host', None)
-        local = kwargs.pop('kuyruk_local', None)
-        expiration = kwargs.pop('kuyruk_expiration', None)
+        local = kwargs.pop('kuyruk_local', False)
 
-        if self.eager or self.kuyruk.config.EAGER:
-            # Run the task in process
-            task_result = self._run(*args, **kwargs)
+        if self.kuyruk.config.EAGER:
+            # Run the task in current process
+            self._run(*args, **kwargs)
         else:
-            # Send it to the queue
-            task_result = TaskResult(self)
-            task_result.id = self.send_to_queue(args, kwargs,
-                                                host=host, local=local,
-                                                expiration=expiration)
-
-        return task_result
+            self._send_to_queue(args, kwargs, host=host, local=local)
 
     def delay(self, *args, **kwargs):
-        """Compatibility function for migrating existing Celery project to
-        Kuyruk."""
+        """Compatibility function for migrating existing Celery projects
+        to Kuyruk."""
         self.__call__(*args, **kwargs)
 
     def __get__(self, obj, objtype):
@@ -165,11 +148,11 @@ class Task(EventMixin):
         modifying the client code. When a function decorated inside a class
         there is no way of accessing that class at that time because methods
         are bounded at run time when they are accessed. The trick here is that
-        we set self.cls when the Task is accessed first time via attribute
+        we set self._cls when the Task is accessed first time via attribute
         syntax.
 
         """
-        self.cls = objtype
+        self._cls = objtype
         if obj:
             # Class tasks needs to know what the object is so they can
             # inject that object in front of args.
@@ -179,8 +162,7 @@ class Task(EventMixin):
             return BoundTask(self, obj)
         return self
 
-    def send_to_queue(self, args, kwargs, host=None, local=None,
-                      expiration=None):
+    def _send_to_queue(self, args, kwargs, host=None, local=False):
         """
         Sends this task to queue.
 
@@ -189,55 +171,41 @@ class Task(EventMixin):
             on execution.
         :param host: Send this task to specific host. ``host`` will be
             appended to the queue name.
-        :param local: Send this task to this host. Hostname of this host will
-            be appended to the queue name.
-        :param expiration: Expire message after expiration milliseconds.
+        :param local: Send this task to this host. Hostname of current host
+            will be appended to the queue name.
         :return: :const:`None`
 
         """
         logger.debug("Task.send_to_queueue args=%r, kwargs=%r", args, kwargs)
+        queue = get_queue_name(self.queue, host=host, local=local or self.local)
+        task_description = self._get_task_description(args, kwargs, queue)
+        self._send_signal(events.task_presend, args, kwargs, reverse=True,
+                          task_description=task_description)
+        body = json.dumps(task_description)
+        msg = amqp.Message(body=body)
+        with self.kuyruk.channel() as ch:
+            ch.queue_declare(queue=queue, durable=True, auto_delete=False)
+            ch.basic_publish(msg, exchange="", routing_key=queue)
+        self._send_signal(events.task_postsend, args, kwargs,
+                          task_description=task_description)
 
-        with self.queue(host=host, local=local) as queue:
-            desc = self.get_task_description(args, kwargs, queue.name)
-            queue.send(desc, expiration=expiration)
-
-        # We are returning the unique identifier of the task sent to queue
-        # so we can query the result backend for completion.
-        # TODO no result backend is available yet
-        return desc['id']
-
-    @contextmanager
-    def queue(self, host=None, local=None):
-        queue_ = self.queue_name
-        local_ = self.local
-
-        if local is not None:
-            local_ = local
-
-        if host:
-            queue_ = "%s.%s" % (self.queue_name, host)
-            local_ = False
-
-        yield Queue(queue_, self.kuyruk.channel(), local_)
-
-    def get_task_description(self, args, kwargs, queue):
+    def _get_task_description(self, args, kwargs, queue):
         """Return the dictionary to be sent to the queue."""
         return {
             'id': uuid1().hex,
             'queue': queue,
             'args': args,
             'kwargs': kwargs,
-            'module': self.module_name,
+            'module': self._module_name,
             'function': self.f.__name__,
-            'class': self.class_name,
-            'retry': self.retry,
-            'sender_timestamp': datetime.utcnow(),
+            'class': self._class_name,
             'sender_hostname': socket.gethostname(),
             'sender_pid': os.getpid(),
             'sender_cmd': ' '.join(sys.argv),
+            'sender_timestamp': datetime.utcnow().isoformat()[:19],
         }
 
-    def send_signal(self, sig, args, kwargs, reverse=False, **extra):
+    def _send_signal(self, sig, args, kwargs, reverse=False, **extra):
         """
         Sends a signal for each sender.
         This allows the user to register for a specific sender.
@@ -250,67 +218,67 @@ class Task(EventMixin):
         for sender in senders:
             sig.send(sender, task=self, args=args, kwargs=kwargs, **extra)
 
-    @send_client_signals
     @object_to_id
     def apply(self, *args, **kwargs):
+        """Run the wrapped function and event handlers as if it is run by
+        a worker."""
         logger.debug("Task.apply args=%r, kwargs=%r", args, kwargs)
         return self._run(*args, **kwargs)
 
+    # This function is called by worker to run the task.
     @profile
     @id_to_object
     def _run(self, *args, **kwargs):
-        """Run the wrapped function and event handlers."""
         def send_signal(sig, reverse=False, **extra):
-            self.send_signal(sig, args, kwargs, reverse, **extra)
-
-        logger.debug("Task._apply args=%r, kwargs=%r", args, kwargs)
-
-        result = TaskResult(self)
-
-        limit = (self.max_run_time or
-                 self.kuyruk.config.MAX_TASK_RUN_TIME or 0)
+            self._send_signal(sig, args, kwargs, reverse, **extra)
 
         logger.debug("Applying %r, args=%r, kwargs=%r", self, args, kwargs)
+
+        send_signal(events.task_prerun, reverse=True)
         try:
-            send_signal(events.task_prerun, reverse=True)
-            with time_limit(limit):
-                return_value = self.run(*args, **kwargs)
+            tries = 1 + self.retry
+            while 1:
+                tries -= 1
+                try:
+                    with time_limit(self.max_run_time or 0):
+                        self.run(*args, **kwargs)
+                except Exception:
+                    traceback.print_exc()
+                    send_signal(events.task_error, exc_info=sys.exc_info())
+                    if tries <= 0:
+                        raise
+                else:
+                    break
         except Exception:
             send_signal(events.task_failure, exc_info=sys.exc_info())
             raise
         else:
-            send_signal(events.task_success, return_value=return_value)
-            result.result = return_value
+            send_signal(events.task_success)
         finally:
             send_signal(events.task_postrun)
 
-        # We are returning a TaskResult here because __call__ returns a
-        # TaskResult object too. Return value must be consistent whether
-        # task is sent to queue or executed in process with apply().
-        return result
-
     def run(self, *args, **kwargs):
         """
-        Runs the wrapped function.
-        This method is intended to be overriden from subclasses.
+        Runs the wrapped function with args and kwargs.
+        You may override this method from a subclass to change the behavior.
 
         """
-        return self.f(*args, **kwargs)
+        self.f(*args, **kwargs)
 
     @property
     def name(self):
-        """Location for the wrapped function.
-        This value is by the worker to find the task.
+        """Full path to the task.
+        Workers find and import tasks by this path.
 
         """
-        if self.class_name:
-            return "%s:%s.%s" % (
-                self.module_name, self.class_name, self.f.__name__)
+        if self._class_name:
+            return "%s:%s.%s" % \
+                   (self._module_name, self._class_name, self.f.__name__)
         else:
-            return "%s:%s" % (self.module_name, self.f.__name__)
+            return "%s:%s" % (self._module_name, self.f.__name__)
 
     @property
-    def module_name(self):
+    def _module_name(self):
         """Module name of the function wrapped."""
         name = self.f.__module__
         if name == '__main__':
@@ -318,11 +286,11 @@ class Task(EventMixin):
         return name
 
     @property
-    def class_name(self):
+    def _class_name(self):
         """Name of the class if this is a class task,
         otherwise :const:`None`."""
-        if self.cls:
-            return self.cls.__name__
+        if self._cls:
+            return self._cls.__name__
 
 
 class BoundTask(Task):
@@ -355,33 +323,6 @@ class BoundTask(Task):
         return super(BoundTask, self).apply(*args, **kwargs)
 
 
-class TaskResult(object):
-    """Insance of this class is returned after the task is sent to queue.
-    Since Kuyruk does not support a result backend yet it will raise
-    exception on any attribute or item access.
-
-    """
-    def __init__(self, task):
-        self.task = task
-
-    def __getattr__(self, name):
-        raise NotImplementedError(name)
-
-    def __setattr__(self, name, value):
-        if name not in ('task', 'id', 'result'):
-            raise NotImplementedError(name)
-        super(TaskResult, self).__setattr__(name, value)
-
-    def __getitem__(self, key):
-        raise NotImplementedError(key)
-
-    def __setitem__(self, key, value):
-        raise NotImplementedError(key)
-
-    def __repr__(self):
-        return "<TaskResult of %r>" % self.task.name
-
-
 @contextmanager
 def time_limit(seconds):
     def signal_handler(signum, frame):
@@ -392,3 +333,11 @@ def time_limit(seconds):
         yield
     finally:
         signal.alarm(0)
+
+
+def get_queue_name(name, host=None, local=False):
+    if local:
+        host = socket.gethostname()
+    if host:
+        name = "%s.%s" % (name, host)
+    return name

@@ -1,8 +1,9 @@
-Kuyruk: A distributed task runner
-=================================
+Kuyruk: Simple task queue
+=========================
 
-Welcome to Kuyruk’s documentation. This documentation covers the usage of the
-library and gives information about running workers.
+Welcome to Kuyruk’s documentation.
+This documentation covers the usage of the library
+and describes how to run workers.
 
 
 About Kuyruk
@@ -11,7 +12,7 @@ About Kuyruk
 Kuyruk is a simple and easy way of distributing tasks to run on servers.
 
 It uses `RabbitMQ <http://www.rabbitmq.com>`_ as message broker and depends on
-`Pika <http://pika.readthedocs.org/en/latest/>`_
+`amqp <http://amqp.readthedocs.org/>`_
 which is a pure-Python RabbitMQ client library.
 
 User's Guide
@@ -20,7 +21,7 @@ User's Guide
 .. toctree::
    :maxdepth: 1
 
-   features
+   philosophy
    gettingstarted
    configuration
    commands
@@ -28,7 +29,7 @@ User's Guide
    events
    classtasks
    extending
-   scheduler
+   changelog
 
 
 API Reference

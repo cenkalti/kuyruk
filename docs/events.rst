@@ -56,7 +56,6 @@ instances.
     * task: :class:`Task` instance
     * args: Positional arguments of the task
     * kwargs: Keyword arguments of the task
-    * return_value: Return value of the task
 
 .. automethod:: kuyruk.Kuyruk.on_failure
     :noindex:

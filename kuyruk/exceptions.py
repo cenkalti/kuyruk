@@ -1,12 +1,21 @@
 class KuyrukError(Exception):
-    """Base class for Kuyruk related exceptions."""
+    """Base class for Kuyruk exceptions."""
     pass
 
 
 class Reject(KuyrukError):
     """
-    The task should raise this if it does not want to process the message.
+    The task may raise this if it does not want to process the message.
     In this case message will be requeued and delivered to another worker.
+
+    """
+    pass
+
+
+class Discard(KuyrukError):
+    """
+    The task may raise this if it does not want to process the message.
+    In this case message will be dropped silently.
 
     """
     pass
@@ -24,5 +33,5 @@ class Timeout(KuyrukError):
 
 
 class InvalidTask(KuyrukError):
-    """Raised when the message from queue is not valid."""
+    """Raised when the received task is not valid."""
     pass
