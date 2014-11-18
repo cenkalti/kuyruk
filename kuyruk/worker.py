@@ -134,15 +134,15 @@ class Worker(object):
             task = importer.import_task(description['module'],
                                         description['class'],
                                         description['function'])
+            args, kwargs = description['args'], description['kwargs']
         except Exception:
             logger.error('Cannot import task')
             message.channel.basic_reject(message.delivery_tag, requeue=False)
         else:
-            self._process_task(message, description, task)
+            self._process_task(message, description, task, args, kwargs)
 
-    def _process_task(self, message, description, task):
+    def _process_task(self, message, description, task, args, kwargs):
         try:
-            args, kwargs = description['args'], description['kwargs']
             self.apply_task(task, args, kwargs)
         except Reject:
             logger.warning('Task is rejected')
