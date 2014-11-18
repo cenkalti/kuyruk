@@ -43,9 +43,6 @@ class Worker(object):
         self._pause = False
         self._consuming = False
         self._current_message = None
-        self._current_task = None
-        self._current_args = None
-        self._current_kwargs = None
         self._daemon_threads = [
             self._watch_load,
             self._shutdown_timer,
@@ -163,20 +160,6 @@ class Worker(object):
         finally:
             self._current_message = None
 
-    @contextmanager
-    def _set_current_task(self, task, args, kwargs):
-        """Save current message being processed so we can send ack
-        before exiting when SIGQUIT is received."""
-        self._current_task = task
-        self._current_args = args
-        self._current_kwargs = kwargs
-        try:
-            yield
-        finally:
-            self._current_task = None
-            self._current_args = None
-            self._current_kwargs = None
-
     def _start_daemon_threads(self):
         """Start the function as threads listed in self.daemon_thread."""
         for f in self._daemon_threads:
@@ -207,8 +190,7 @@ class Worker(object):
     def _process_task(self, message, description, task):
         try:
             args, kwargs = description['args'], description['kwargs']
-            with self._set_current_task(task, args, kwargs):
-                self.apply_task(task, args, kwargs)
+            self.apply_task(task, args, kwargs)
         except Reject:
             logger.warning('Task is rejected')
             sleep(1)  # Prevent cpu burning
