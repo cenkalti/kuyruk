@@ -15,9 +15,6 @@ class Config(object):
     class attributes.
 
     """
-    EAGER = False
-    """Run tasks in the process without sending to queue. Useful in tests."""
-
     # Connection Options
     ####################
 
@@ -35,6 +32,18 @@ class Config(object):
 
     RABBIT_PASSWORD = 'guest'
     """RabbitMQ password."""
+
+    # Instance Options
+    ##################
+
+    TASK_CLASS = 'kuyruk.Task'
+    """Implementation of all tasks unless overriden while defining tasks.
+    It can be replaced with a subclass of :class:`kuyruk.Task` to customize
+    the behavior.
+    """
+
+    EAGER = False
+    """Run tasks in the process without sending to queue. Useful in tests."""
 
     # Worker Options
     ################

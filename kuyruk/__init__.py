@@ -6,7 +6,7 @@ from contextlib import contextmanager, closing
 
 import amqp
 
-from kuyruk import exceptions
+from kuyruk import exceptions, importer
 from kuyruk.task import Task
 from kuyruk.config import Config
 from kuyruk.worker import Worker
@@ -36,17 +36,14 @@ class Kuyruk(object):
     Reject = exceptions.Reject
     Discard = exceptions.Discard
 
-    def __init__(self, config=None, task_class=Task):
+    def __init__(self, config=None):
         if config is None:
             config = Config()
         if not isinstance(config, Config):
             raise TypeError
         self.config = config
-        self.task_class = task_class
         self._connection = None
         self._lock = RLock()  # protects self._connection
-        if config:
-            self.config.from_object(config)
 
         # Close open RabbitMQ connection at exit.
         def _close():
@@ -87,7 +84,8 @@ class Kuyruk(object):
                 # Function may be wrapped with no-arg decorator
                 queue_ = 'kuyruk' if callable(queue) else queue
 
-                task_class_ = task_class or self.task_class
+                task_class_ = task_class or \
+                    importer.import_class_str(self.config.TASK_CLASS)
                 return task_class_(
                     f, self, queue=queue_, local=local, retry=retry,
                     max_run_time=max_run_time, arg_class=arg_class)
