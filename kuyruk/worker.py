@@ -36,7 +36,6 @@ class Worker(object):
             raise ValueError("empty queue name")
         self.queue = get_queue_name(args.queue, local=args.local)
 
-        self._consumer_tag = '%s@%s' % (os.getpid(), socket.gethostname())
         self.shutdown_pending = threading.Event()
         self._pause = False
         self._consuming = False
@@ -85,15 +84,16 @@ class Worker(object):
                 # sending messages while we are already working on a message.
                 ch.basic_qos(0, 1, False)
 
+                consumer_tag = '%s@%s' % (os.getpid(), socket.gethostname())
                 while not self.shutdown_pending.is_set():
                     # Consume or pause
                     if self._pause and self._consuming:
-                        ch.basic_cancel(self._consumer_tag)
+                        ch.basic_cancel(consumer_tag)
                         logger.info('Consumer cancelled')
                         self._consuming = False
                     elif not self._pause and not self._consuming:
                         ch.basic_consume(queue=self.queue,
-                                         consumer_tag=self._consumer_tag,
+                                         consumer_tag=consumer_tag,
                                          callback=self._message_callback)
                         logger.info('Consumer started')
                         self._consuming = True
