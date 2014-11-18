@@ -11,6 +11,7 @@ import argparse
 
 from kuyruk import __version__, importer
 from kuyruk.config import Config
+from kuyruk.worker import Worker
 
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,7 @@ def main():
 
 def run_worker(config, args):
     worker_class = importer.import_class_str(config.WORKER_CLASS)
+    assert issubclass(worker_class, Worker)
     w = worker_class(config, args)
     w.run()
 

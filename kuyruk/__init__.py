@@ -104,6 +104,8 @@ class Kuyruk(object):
 
                 task_class_ = task_class or \
                     importer.import_class_str(self.config.TASK_CLASS)
+                assert issubclass(task_class_, Task)
+
                 return task_class_(
                     f, self, queue=queue_, local=local, retry=retry,
                     max_run_time=max_run_time, arg_class=arg_class)
