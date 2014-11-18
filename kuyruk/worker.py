@@ -37,7 +37,6 @@ class Worker(object):
         self.queue = get_queue_name(args.queue, local=args.local)
 
         self._consumer_tag = '%s@%s' % (os.getpid(), socket.gethostname())
-        self._channel = None
         self.shutdown_pending = threading.Event()
         self._pause = False
         self._consuming = False
@@ -79,8 +78,6 @@ class Worker(object):
     def _consume_messages(self):
         with kuyruk.Kuyruk(self.config) as k:
             with k.channel() as ch:
-                self._channel = ch  # Need a channel when we receive SIGQUIT.
-
                 ch.queue_declare(
                     queue=self.queue, durable=True, auto_delete=False)
 
@@ -126,7 +123,7 @@ class Worker(object):
         try:
             description = json.loads(message.body)
         except Exception:
-            self._channel.basic_reject(message.delivery_tag, requeue=False)
+            message.channel.basic_reject(message.delivery_tag, requeue=False)
             logger.error("Cannot decode message. Dropping.")
         else:
             logger.info("Processing task: %r", description)
@@ -139,7 +136,7 @@ class Worker(object):
                                         description['function'])
         except Exception:
             logger.error('Cannot import task')
-            self._channel.basic_reject(message.delivery_tag, requeue=False)
+            message.channel.basic_reject(message.delivery_tag, requeue=False)
         else:
             self._process_task(message, description, task)
 
@@ -150,10 +147,10 @@ class Worker(object):
         except Reject:
             logger.warning('Task is rejected')
             sleep(1)  # Prevent cpu burning
-            self._channel.basic_reject(message.delivery_tag, requeue=True)
+            message.channel.basic_reject(message.delivery_tag, requeue=True)
         except Discard:
             logger.warning('Task is discarded')
-            self._channel.basic_reject(message.delivery_tag, requeue=False)
+            message.channel.basic_reject(message.delivery_tag, requeue=False)
         except ObjectNotFound:
             logger.warning('Object not found')
             self._handle_not_found(message, description)
@@ -165,7 +162,7 @@ class Worker(object):
             self._handle_exception(sys.exc_info(), message)
         else:
             logger.info('Task is successful')
-            self._channel.basic_ack(message.delivery_tag)
+            message.channel.basic_ack(message.delivery_tag)
         finally:
             logger.debug("Task is processed")
 
@@ -176,7 +173,7 @@ class Worker(object):
     def _handle_exception(self, exc_info, message):
         """Handles the exception while processing the message."""
         logger.error(traceback.format_exception(*exc_info))
-        self._channel.basic_reject(message.delivery_tag, requeue=False)
+        message.channel.basic_reject(message.delivery_tag, requeue=False)
 
     def _handle_not_found(self, message, description):
         """Called if the task is class task but the object with the given id
@@ -189,11 +186,11 @@ class Worker(object):
             description['module'],
             description['class'],
             description['args'][0])
-        self._channel.basic_reject(message.delivery_tag, requeue=False)
+        message.channel.basic_reject(message.delivery_tag, requeue=False)
 
     def _handle_invalid(self, message, description):
         """Called when the task is invalid."""
-        self._channel.basic_reject(message.delivery_tag, requeue=False)
+        message.channel.basic_reject(message.delivery_tag, requeue=False)
 
     def _watch_load(self):
         """Pause consuming messages if lood goes above the allowed limit."""
@@ -265,9 +262,9 @@ class Worker(object):
         if self._current_message:
             try:
                 logger.warning("Dropping current task...")
-                self._channel.basic_reject(self._current_message.delivery_tag,
-                                          requeue=False)
-                self._channel.close()
+                self._current_message.channel.basic_reject(
+                    self._current_message.delivery_tag, requeue=False)
+                self._current_message.channel.close()
             except Exception:
                 logger.critical("Cannot send ACK for the current task.")
                 traceback.print_exc()
