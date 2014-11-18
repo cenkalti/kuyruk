@@ -15,7 +15,7 @@ from kuyruk import Kuyruk
 if os.environ.get('TRAVIS', '') == 'true':
     TIMEOUT = 30
 else:
-    TIMEOUT = 5
+    TIMEOUT = 3
 
 logger = logging.getLogger(__name__)
 
