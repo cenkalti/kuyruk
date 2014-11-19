@@ -28,8 +28,8 @@ setup(
     include_package_data=True,
     install_requires=[
         'amqp>=1.4.6',
-        'setproctitle>=1.1.7',
-        'blinker>=1.2',
+        'setproctitle>=1.1.8',
+        'blinker>=1.3',
         'argparse>=1.2.1',
     ],
     description='Simple task queue',
