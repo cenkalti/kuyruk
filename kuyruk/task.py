@@ -197,11 +197,6 @@ class Task(object):
         }
 
     def _send_signal(self, sig, **data):
-        """
-        Sends a signal for each sender.
-        This allows the user to register for a specific sender.
-
-        """
         for sender in (self, self.kuyruk):
             sig.send(sender, task=self, **data)
 

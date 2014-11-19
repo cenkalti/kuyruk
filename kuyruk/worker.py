@@ -14,7 +14,7 @@ from time import time, sleep
 from setproctitle import setproctitle
 
 import kuyruk
-from kuyruk import importer, Config
+from kuyruk import importer, signals, Config
 from kuyruk.task import get_queue_name
 from kuyruk.exceptions import Reject, Discard, ObjectNotFound, InvalidTask
 
@@ -159,6 +159,11 @@ class Worker(object):
             self._handle_invalid(message, description)
         except Exception:
             logger.error('Task raised an exception')
+            exc_info = sys.exc_info()
+            for sender in (self, task.kuyruk):
+                signals.worker_failure.send(sender, description=description,
+                                            task=task, args=args, kwargs=kwargs,
+                                            exc_info=exc_info, worker=self)
             self._handle_exception(sys.exc_info(), message)
         else:
             logger.info('Task is successful')
