@@ -16,7 +16,7 @@ from setproctitle import setproctitle
 import kuyruk
 from kuyruk import importer, signals, Config
 from kuyruk.task import get_queue_name
-from kuyruk.exceptions import Reject, Discard, ObjectNotFound, InvalidTask
+from kuyruk.exceptions import Reject, Discard
 
 logger = logging.getLogger(__name__)
 
@@ -151,12 +151,6 @@ class Worker(object):
         except Discard:
             logger.warning('Task is discarded')
             message.channel.basic_reject(message.delivery_tag, requeue=False)
-        except ObjectNotFound:
-            logger.warning('Object not found')
-            self._handle_not_found(message, description)
-        except InvalidTask:
-            logger.error('Invalid task')
-            self._handle_invalid(message, description)
         except Exception:
             logger.error('Task raised an exception')
             exc_info = sys.exc_info()

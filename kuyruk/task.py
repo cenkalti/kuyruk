@@ -15,7 +15,7 @@ from contextlib import contextmanager
 import amqp
 
 from kuyruk import signals, importer
-from kuyruk.exceptions import Timeout, InvalidTask, ObjectNotFound
+from kuyruk.exceptions import Timeout
 
 logger = logging.getLogger(__name__)
 
