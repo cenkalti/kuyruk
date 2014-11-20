@@ -132,7 +132,7 @@ class Worker(object):
     def _process_description(self, message, description):
         try:
             task = importer.import_task(description['module'],
-                                        description['class'],
+                                        None,
                                         description['function'])
             args, kwargs = description['args'], description['kwargs']
         except Exception:

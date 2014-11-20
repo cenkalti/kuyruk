@@ -106,7 +106,6 @@ class Task(object):
             'kwargs': kwargs,
             'module': self._module_name,
             'function': self.f.__name__,
-            'class': self._class_name,
             'sender_hostname': socket.gethostname(),
             'sender_pid': os.getpid(),
             'sender_cmd': ' '.join(sys.argv),
