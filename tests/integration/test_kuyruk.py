@@ -5,9 +5,6 @@ import unittest
 
 from mock import patch
 
-from kuyruk import Task
-from kuyruk.task import BoundTask
-
 from tests import tasks
 from util import run_kuyruk, wait_until, \
     not_running, get_pid, TIMEOUT, delete_queue, len_queue
@@ -100,22 +97,6 @@ class KuyrukTestCase(unittest.TestCase):
         with run_kuyruk() as worker:
             worker.expect('Opening session')
             worker.expect('Closing session')
-
-    def test_class_task(self):
-        cat = tasks.Cat(1, 'Felix')
-        self.assertTrue(isinstance(tasks.Cat.meow, Task))
-        self.assertTrue(isinstance(cat.meow, BoundTask))
-
-        cat.meow('Oh my god')
-        with run_kuyruk() as worker:
-            worker.expect('Oh my god')
-
-    def test_arg_class(self):
-        cat = tasks.Cat(1, 'Felix')
-        tasks.jump(cat)
-        with run_kuyruk() as worker:
-            worker.expect('Felix jumps high!')
-            worker.expect('Called with Felix')
 
     def test_max_run_time(self):
         """Timeout long running task"""

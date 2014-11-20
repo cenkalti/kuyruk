@@ -119,42 +119,6 @@ def function4(sender, task, args, kwargs):
 def function5(sender, task, args, kwargs):
     print 'function5'
 
-
-class Cat(object):
-
-    def __init__(self, id, name):
-        self.id = id
-        self.name = name
-
-    def __repr__(self):
-        return "Cat(%r, %r)" % (self.id, self.name)
-
-    @classmethod
-    def get(cls, id):
-        if id == 1:
-            return cls(1, 'Felix')
-
-    @kuyruk.task
-    def meow(self, message):
-        print "Felix says:", message
-        must_be_called()
-
-    @kuyruk.task
-    def raise_exception(self):
-        raise Exception
-
-
-@kuyruk.task(arg_class=Cat)
-def jump(cat):
-    print "%s jumps high!" % cat.name
-    must_be_called(cat.name)
-
-
-@kuyruk.task(arg_class=Cat)
-def jump_error(cat):
-    1/0
-
-
 def must_be_called(arg=None):
     """
     This function is patched in tests to see the caller is doing it's job.

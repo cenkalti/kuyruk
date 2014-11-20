@@ -32,64 +32,6 @@ def profile(f):
     return inner
 
 
-def object_to_id(f):
-    """
-    If the Task is a class task, converts the first parameter to the id.
-
-    """
-    @wraps(f)
-    def inner(self, *args, **kwargs):
-        cls = self._cls or self.arg_class
-        if cls:
-            try:
-                obj = args[0]
-            except IndexError:
-                msg = "You must give an instance of %s as first argument." % cls
-                raise TypeError(msg)
-
-            if not isinstance(obj, cls):
-                msg = "First argument must be an instance of %s." % cls
-                raise TypeError(msg)
-
-            args = list(args)
-            args[0] = args[0].id
-            assert isinstance(args[0], (int, long, basestring))
-        return f(self, *args, **kwargs)
-    return inner
-
-
-def id_to_object(f):
-    """
-    If the Task is a class task, converts the first argument to an object
-    by calling the get function of the class with the id.
-
-    """
-    @wraps(f)
-    def inner(self, *args, **kwargs):
-        cls = self.arg_class or self._cls
-        if cls:
-            if not args:
-                raise InvalidTask
-
-            obj_id = args[0]
-            if not isinstance(obj_id, (int, long, basestring)):
-                raise InvalidTask
-
-            obj = cls.get(obj_id)
-            if obj is None:
-                raise ObjectNotFound
-
-            if not isinstance(obj, cls):
-                msg = "%s is not an instance of %s." % (obj, cls)
-                raise ObjectNotFound(msg)
-
-            args = list(args)
-            args[0] = obj
-
-        return f(self, *args, **kwargs)
-    return inner
-
-
 class Task(object):
     """Calling a :class:`~kuyruk.Task` object serializes the task to JSON
     and sends it to the queue.
@@ -110,7 +52,6 @@ class Task(object):
     def __repr__(self):
         return "<Task of %r>" % self.name
 
-    @object_to_id
     def __call__(self, *args, **kwargs):
         """When a fucntion is wrapped with a task decorator it will be
         converted to a Task object. By overriding __call__ method we are
@@ -129,29 +70,6 @@ class Task(object):
             self._run(*args, **kwargs)
         else:
             self._send_to_queue(args, kwargs, host=host, local=local)
-
-    def __get__(self, obj, objtype):
-        """If the task is accessed from an instance via attribute syntax
-        returns a bound task object that wraps the task itself, otherwise
-        returns the task itself.
-
-        This is done for allowing a method to be converted to task without
-        modifying the client code. When a function decorated inside a class
-        there is no way of accessing that class at that time because methods
-        are bounded at run time when they are accessed. The trick here is that
-        we set self._cls when the Task is accessed first time via attribute
-        syntax.
-
-        """
-        self._cls = objtype
-        if obj:
-            # Class tasks needs to know what the object is so they can
-            # inject that object in front of args.
-            # We are returning a BoundTask instance here wrapping this task
-            # that will do the injection.
-            logger.debug("Creating bound task with obj=%r", obj)
-            return BoundTask(self, obj)
-        return self
 
     def _send_to_queue(self, args, kwargs, host=None, local=False):
         """
@@ -200,7 +118,6 @@ class Task(object):
         for sender in (self, self.kuyruk):
             sig.send(sender, task=self, **data)
 
-    @object_to_id
     def apply(self, *args, **kwargs):
         """Runs the wrapped function and signal handlers as if it is run by
         a worker.
@@ -214,7 +131,6 @@ class Task(object):
 
     # This function is called by worker to run the task.
     @profile
-    @id_to_object
     def _run(self, *args, **kwargs):
         def send_signal(sig, **extra):
             self._send_signal(sig, args=args, kwargs=kwargs, **extra)
