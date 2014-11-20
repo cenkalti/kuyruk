@@ -197,36 +197,6 @@ class Task(object):
             return self._cls.__name__
 
 
-class BoundTask(Task):
-    """
-    This class wraps the Task and inject the bound object in front of args
-    when it is called.
-
-    """
-    def __init__(self, task, obj):
-        self.task = task
-        self.obj = obj
-
-    def __getattr__(self, item):
-        """Delegates all attributes to real Task."""
-        return getattr(self.task, item)
-
-    @wraps(Task.__call__)
-    def __call__(self, *args, **kwargs):
-        logger.debug("BoundTask.__call__ args=%r, kwargs=%r", args, kwargs)
-        # Insert the bound object as a first argument to __call__
-        args = list(args)
-        args.insert(0, self.obj)
-        return super(BoundTask, self).__call__(*args, **kwargs)
-
-    @wraps(Task.apply)
-    def apply(self, *args, **kwargs):
-        logger.debug("BoundTask.apply args=%r, kwargs=%r", args, kwargs)
-        args = list(args)
-        args.insert(0, self.obj)
-        return super(BoundTask, self).apply(*args, **kwargs)
-
-
 @contextmanager
 def time_limit(seconds):
     def signal_handler(signum, frame):
