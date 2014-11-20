@@ -143,7 +143,7 @@ class Worker(object):
 
     def _process_task(self, message, description, task, args, kwargs):
         try:
-            self.apply_task(task, args, kwargs)
+            self.process_task(description, task, args, kwargs)
         except Reject:
             logger.warning('Task is rejected')
             sleep(1)  # Prevent cpu burning
@@ -166,7 +166,7 @@ class Worker(object):
         finally:
             logger.debug("Task is processed")
 
-    def apply_task(self, task, args, kwargs):
+    def process_task(self, description, task, args, kwargs):
         """Applies arguments to the task.
 
         Equivalent to ``task.apply(*args, **kwargs)``.
