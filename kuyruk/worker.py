@@ -152,13 +152,14 @@ class Worker(object):
             logger.warning('Task is discarded')
             message.channel.basic_reject(message.delivery_tag, requeue=False)
         except Exception:
-            logger.error('Task raised an exception')
             exc_info = sys.exc_info()
+            logger.error('Task raised an exception')
+            logger.error(traceback.format_exception(*exc_info))
             for sender in (self, task.kuyruk):
                 signals.worker_failure.send(sender, description=description,
                                             task=task, args=args, kwargs=kwargs,
                                             exc_info=exc_info, worker=self)
-            self._handle_exception(sys.exc_info(), message)
+            message.channel.basic_reject(message.delivery_tag, requeue=False)
         else:
             logger.info('Task is successful')
             message.channel.basic_ack(message.delivery_tag)
@@ -172,28 +173,6 @@ class Worker(object):
 
         You may override this function to customize the behavior."""
         task.apply(*args, **kwargs)
-
-    def _handle_exception(self, exc_info, message):
-        """Handles the exception while processing the message."""
-        logger.error(traceback.format_exception(*exc_info))
-        message.channel.basic_reject(message.delivery_tag, requeue=False)
-
-    def _handle_not_found(self, message, description):
-        """Called if the task is class task but the object with the given id
-        is not found. The default action is logging the error and dropping
-        the message.
-
-        """
-        logger.warning(
-            "<%s.%s id=%r> is not found",
-            description['module'],
-            description['class'],
-            description['args'][0])
-        message.channel.basic_reject(message.delivery_tag, requeue=False)
-
-    def _handle_invalid(self, message, description):
-        """Called when the task is invalid."""
-        message.channel.basic_reject(message.delivery_tag, requeue=False)
 
     def _watch_load(self):
         """Pause consuming messages if lood goes above the allowed limit."""
