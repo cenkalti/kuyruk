@@ -6,7 +6,7 @@ class KuyrukError(Exception):
 class Reject(KuyrukError):
     """
     The task may raise this if it does not want to process the message.
-    In this case message will be requeued and delivered to another worker.
+    The message will be requeued and delivered to another worker.
 
     """
     pass
@@ -15,7 +15,7 @@ class Reject(KuyrukError):
 class Discard(KuyrukError):
     """
     The task may raise this if it does not want to process the message.
-    In this case message will be dropped silently.
+    The message will be dropped.
 
     """
     pass
