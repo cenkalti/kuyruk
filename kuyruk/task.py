@@ -38,14 +38,13 @@ class Task(object):
 
     """
     def __init__(self, f, kuyruk, queue='kuyruk', local=False,
-                 retry=0, max_run_time=None, arg_class=None):
+                 retry=0, max_run_time=None):
         self.f = f
         self.kuyruk = kuyruk
         self.queue = queue
         self.local = local
         self.retry = retry
         self.max_run_time = max_run_time
-        self.arg_class = arg_class
         self._cls = None
         self._send_signal(signals.task_init)
 

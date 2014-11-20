@@ -72,7 +72,7 @@ class Kuyruk(object):
                 self._connection.close()
 
     def task(self, queue='kuyruk', retry=0, task_class=None,
-             max_run_time=None, local=False, arg_class=None):
+             max_run_time=None, local=False):
         """
         Wrap functions with this decorator to convert them to *tasks*.
         After wrapping, calling the function will send a message to
@@ -89,10 +89,6 @@ class Kuyruk(object):
             complete.
         :param local: Append hostname to the queue name. Worker needs to be
             started on the local queue to receive this task.
-        :param arg_class: Class of the first argument. If it is present,
-            the first argument will be converted to it's ``id`` when sending
-            the task to the queue and it will be reloaded on worker when
-            running the task.
         :return: Callable :class:`~kuyruk.Task` object wrapping the original
             function.
 
@@ -108,7 +104,7 @@ class Kuyruk(object):
 
                 return task_class_(
                     f, self, queue=queue_, local=local, retry=retry,
-                    max_run_time=max_run_time, arg_class=arg_class)
+                    max_run_time=max_run_time)
             return inner
 
         if callable(queue):
