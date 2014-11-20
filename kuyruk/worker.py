@@ -167,7 +167,7 @@ class Worker(object):
 
     def apply_task(self, task, args, kwargs):
         """Runs the task."""
-        task._run(*args, **kwargs)
+        task.apply(*args, **kwargs)
 
     def _handle_exception(self, exc_info, message):
         """Handles the exception while processing the message."""

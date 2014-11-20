@@ -32,4 +32,4 @@ class KuyrukTestCase(unittest.TestCase):
         mock_func.assert_called_once_with()
 
     def test_task_name(self):
-        self.assertEqual(tasks.echo.name, 'tests.tasks:echo')
+        self.assertEqual(tasks.echo._name, 'tests.tasks:echo')

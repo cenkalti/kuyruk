@@ -27,7 +27,7 @@ def profile(f):
         start = time()
         result = f(self, *args, **kwargs)
         end = time()
-        logger.info("%s finished in %i seconds." % (self.name, end - start))
+        logger.info("%s finished in %i seconds." % (self._name, end - start))
         return result
     return inner
 
@@ -45,11 +45,10 @@ class Task(object):
         self.local = local
         self.retry = retry
         self.max_run_time = max_run_time
-        self._cls = None
         self._send_signal(signals.task_init)
 
     def __repr__(self):
-        return "<Task of %r>" % self.name
+        return "<Task of %r>" % self._name
 
     def __call__(self, *args, **kwargs):
         """When a fucntion is wrapped with a task decorator it will be
@@ -66,7 +65,7 @@ class Task(object):
 
         if self.kuyruk.config.EAGER:
             # Run the task in current process
-            self._run(*args, **kwargs)
+            self.apply(*args, **kwargs)
         else:
             self._send_to_queue(args, kwargs, host=host, local=local)
 
@@ -116,20 +115,16 @@ class Task(object):
         for sender in (self, self.kuyruk):
             sig.send(sender, task=self, **data)
 
+    @profile
     def apply(self, *args, **kwargs):
         """Runs the wrapped function and signal handlers as if it is run by
         a worker.
         If task has a `retry` property it will be retried on failure.
         If task has a `max_run_time` property the task will not be allowed to
         run more than that.
-        Calls :func:`~kuyruk.Task.run` to run the wrapped function.
+        This function is called by worker to run the task.
+        Calls :func:`~kuyruk.Task.run` internally to run the wrapped function.
         """
-        logger.debug("Task.apply args=%r, kwargs=%r", args, kwargs)
-        return self._run(*args, **kwargs)
-
-    # This function is called by worker to run the task.
-    @profile
-    def _run(self, *args, **kwargs):
         def send_signal(sig, **extra):
             self._send_signal(sig, args=args, kwargs=kwargs, **extra)
 
@@ -160,7 +155,7 @@ class Task(object):
 
     def run(self, *args, **kwargs):
         """
-        Calls the wrapped function.
+        Calls the wrapped function. Equivalent to ``task.f(*args, **kwargs)``.
         :func:`~kuyruk.Task.apply` calls this method internally so
         you may override this method from a subclass to change the behavior.
 
@@ -168,31 +163,20 @@ class Task(object):
         self.f(*args, **kwargs)
 
     @property
-    def name(self):
-        """Full path to the task. Consists of module, class and function name.
+    def _name(self):
+        """Full path to the task in the form of `<module>.<function>`.
         Workers find and import tasks by this path.
 
         """
-        if self._class_name:
-            return "%s:%s.%s" % \
-                   (self._module_name, self._class_name, self.f.__name__)
-        else:
-            return "%s:%s" % (self._module_name, self.f.__name__)
+        return "%s:%s" % (self._module_name, self.f.__name__)
 
     @property
     def _module_name(self):
-        """Module name of the function wrapped."""
+        """Module name of the wrapped function."""
         name = self.f.__module__
         if name == '__main__':
             name = importer.get_main_module().name
         return name
-
-    @property
-    def _class_name(self):
-        """Name of the class if this is a class task,
-        otherwise :const:`None`."""
-        if self._cls:
-            return self._cls.__name__
 
 
 @contextmanager
