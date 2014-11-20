@@ -119,11 +119,16 @@ class Task(object):
     def apply(self, *args, **kwargs):
         """Runs the wrapped function and signal handlers as if it is run by
         a worker.
+
         If task has a `retry` property it will be retried on failure.
+
         If task has a `max_run_time` property the task will not be allowed to
         run more than that.
+
         This function is called by worker to run the task.
-        Calls :func:`~kuyruk.Task.run` internally to run the wrapped function.
+
+        This method calls :func:`kuyruk.Task.run` internally to
+        run the wrapped function.
         """
         def send_signal(sig, **extra):
             self._send_signal(sig, args=args, kwargs=kwargs, **extra)
@@ -156,7 +161,7 @@ class Task(object):
     def run(self, *args, **kwargs):
         """
         Calls the wrapped function. Equivalent to ``task.f(*args, **kwargs)``.
-        :func:`~kuyruk.Task.apply` calls this method internally so
+        :func:`kuyruk.Task.apply` calls this method internally so
         you may override this method from a subclass to change the behavior.
 
         """

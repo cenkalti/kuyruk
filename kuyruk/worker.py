@@ -45,7 +45,7 @@ class Worker(object):
 
     def run(self):
         """Runs the worker and consumes messages from RabbitMQ.
-        Method only returns after `warm_shutdown()` is called.
+        Returns only after `warm_shutdown()` is called.
 
         """
         setproctitle("kuyruk: worker on %s" % self.queue)
@@ -166,7 +166,11 @@ class Worker(object):
             logger.debug("Task is processed")
 
     def apply_task(self, task, args, kwargs):
-        """Runs the task."""
+        """Applies arguments to the task.
+
+        Equivalent to ``task.apply(*args, **kwargs)``.
+
+        You may override this function to customize the behavior."""
         task.apply(*args, **kwargs)
 
     def _handle_exception(self, exc_info, message):

@@ -25,12 +25,13 @@ logger.addHandler(null_handler)
 
 class Kuyruk(object):
     """
-    Provides a :func:`~kuyruk.Kuyruk.task` decorator to convert a function
+    Provides :func:`~kuyruk.Kuyruk.task` decorator to convert a function
     into a :class:`~kuyruk.Task`.
-    Maintains a single connection to RabbitMQ server.
+
     Provides :func:`~kuyruk.Kuyruk.channel` context manager for opening a
     new channel on the connection.
     Connection is opened when the first channel is created.
+    Maintains a single connection to RabbitMQ server.
     If you use the :class:`~kuyruk.Kuyruk` object as a context manager,
     the connection will be closed when exiting.
 
