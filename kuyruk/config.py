@@ -132,5 +132,5 @@ class Config(object):
 
 # Add additional config keys from extensions.
 for entry_point in pkg_resources.iter_entry_points("kuyruk.config"):
-    for key in entry_point.load():
-        setattr(Config, key, None)
+    for key, value in entry_point.load().items():
+        setattr(Config, key, value)
