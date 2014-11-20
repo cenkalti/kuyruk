@@ -33,7 +33,7 @@ class KuyrukTestCase(unittest.TestCase):
             worker.expect('Task is processed')
 
     def test_another_queue(self):
-        """Run a task on different queue"""
+        """Run a task on another queue"""
         tasks.echo_another('hello another')
         with run_kuyruk(queue='another_queue') as worker:
             worker.expect('Consumer started')
@@ -49,7 +49,7 @@ class KuyrukTestCase(unittest.TestCase):
         assert len_queue("kuyruk") == 0
 
     def test_retry(self):
-        """Errored tasks must be retried"""
+        """Errored task is retried"""
         tasks.retry_task()
         with run_kuyruk() as worker:
             worker.expect('ZeroDivisionError')
@@ -57,8 +57,7 @@ class KuyrukTestCase(unittest.TestCase):
         assert len_queue("kuyruk") == 0
 
     def test_cold_shutdown(self):
-        """If the worker is stuck on the task it can be stopped by
-        invoking cold shutdown"""
+        """Cold shutdown stops stuck worker"""
         tasks.loop_forever()
         with run_kuyruk(terminate=False) as worker:
             worker.expect('looping forever')
@@ -71,7 +70,7 @@ class KuyrukTestCase(unittest.TestCase):
             wait_until(not_running, timeout=TIMEOUT)
 
     def test_reject(self):
-        """Rejected tasks must be requeued again"""
+        """Rejected task is requeued"""
         tasks.rejecting_task()
         with run_kuyruk() as worker:
             worker.expect('Task is rejected')
@@ -80,7 +79,7 @@ class KuyrukTestCase(unittest.TestCase):
 
     @patch('tests.tasks.must_be_called')
     def test_before_after(self, mock_func):
-        """Before and after task functions are run"""
+        """Run signal hanlers"""
         tasks.task_with_signal_handlers('hello world')
         mock_func.assert_called_once_with()
         with run_kuyruk() as worker:
@@ -92,7 +91,7 @@ class KuyrukTestCase(unittest.TestCase):
             worker.expect('function5')
 
     def test_extend(self):
-        """Extend task class"""
+        """Task class is extended"""
         tasks.use_session()
         with run_kuyruk() as worker:
             worker.expect('Opening session')
