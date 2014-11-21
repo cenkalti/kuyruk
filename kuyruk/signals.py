@@ -1,6 +1,8 @@
 from blinker import Signal
 
 task_init = Signal()
+task_preapply = Signal()
+task_postapply = Signal()
 task_prerun = Signal()
 task_postrun = Signal()
 task_success = Signal()

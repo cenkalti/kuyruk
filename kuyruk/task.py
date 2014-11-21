@@ -135,11 +135,12 @@ class Task(object):
 
         logger.debug("Applying %r, args=%r, kwargs=%r", self, args, kwargs)
 
-        send_signal(signals.task_prerun)
+        send_signal(signals.task_preapply)
         try:
             tries = 1 + self.retry
             while 1:
                 tries -= 1
+                send_signal(signals.task_prerun)
                 try:
                     with time_limit(self.max_run_time or 0):
                         self.run(*args, **kwargs)
@@ -150,13 +151,15 @@ class Task(object):
                         raise
                 else:
                     break
+                finally:
+                    send_signal(signals.task_postrun)
         except Exception:
             send_signal(signals.task_failure, exc_info=sys.exc_info())
             raise
         else:
             send_signal(signals.task_success)
         finally:
-            send_signal(signals.task_postrun)
+            send_signal(signals.task_postapply)
 
     def run(self, *args, **kwargs):
         """

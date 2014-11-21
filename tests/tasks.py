@@ -110,12 +110,12 @@ def function3(sender, task, args, kwargs):
     print 'function3'
 
 
-@signals.task_postrun.connect_via(task_with_signal_handlers)
+@signals.task_postapply.connect_via(task_with_signal_handlers)
 def function4(sender, task, args, kwargs):
     print 'function4'
 
 
-@signals.task_postrun.connect_via(kuyruk2)
+@signals.task_postapply.connect_via(kuyruk2)
 def function5(sender, task, args, kwargs):
     print 'function5'
 
