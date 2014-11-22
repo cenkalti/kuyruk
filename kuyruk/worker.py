@@ -154,7 +154,7 @@ class Worker(object):
         except Exception:
             exc_info = sys.exc_info()
             logger.error('Task raised an exception')
-            logger.error(traceback.format_exception(*exc_info))
+            logger.error(''.join(traceback.format_exception(*exc_info)))
             for sender in (self, task.kuyruk):
                 signals.worker_failure.send(sender, description=description,
                                             task=task, args=args, kwargs=kwargs,
