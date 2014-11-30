@@ -90,7 +90,13 @@ class Consumer(object):
 
     def _process_data_events(self):
         while not self._stop_processing_data_events.is_set():
-            self.queue.channel.connection.process_data_events()
+            from pika.exceptions import ConnectionClosed
+            try:
+                self.queue.channel.connection.process_data_events()
+            except ConnectionClosed:
+                import os, signal
+                logging.exception("socket disconnected, too scared shooting myself in the head - %s" % os.getpid())
+                os.kill(os.getpid(), signal.SIGTERM)
 
 
 class MessageIterator(object):
