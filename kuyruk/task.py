@@ -117,18 +117,14 @@ class Task(object):
 
     @profile
     def apply(self, *args, **kwargs):
-        """Runs the wrapped function and signal handlers as if it is run by
-        a worker.
+        """Called by workers to run the wrapped function.
+        You may call it yourself if you want to run the task in current process
+        without sending to the queue.
 
         If task has a `retry` property it will be retried on failure.
 
         If task has a `max_run_time` property the task will not be allowed to
         run more than that.
-
-        This function is called by worker to run the task.
-
-        This method calls :func:`kuyruk.Task.run` internally to
-        run the wrapped function.
         """
         def send_signal(sig, **extra):
             self._send_signal(sig, args=args, kwargs=kwargs, **extra)
@@ -143,7 +139,7 @@ class Task(object):
                 send_signal(signals.task_prerun)
                 try:
                     with time_limit(self.max_run_time or 0):
-                        self.run(*args, **kwargs)
+                        self.f(*args, **kwargs)
                 except Exception:
                     traceback.print_exc()
                     send_signal(signals.task_error, exc_info=sys.exc_info())
@@ -160,15 +156,6 @@ class Task(object):
             send_signal(signals.task_success)
         finally:
             send_signal(signals.task_postapply)
-
-    def run(self, *args, **kwargs):
-        """
-        Calls the wrapped function. Equivalent to ``task.f(*args, **kwargs)``.
-        :func:`kuyruk.Task.apply` calls this method internally so
-        you may override this method from a subclass to change the behavior.
-
-        """
-        self.f(*args, **kwargs)
 
     @property
     def _name(self):
