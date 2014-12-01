@@ -90,13 +90,6 @@ class KuyrukTestCase(unittest.TestCase):
             worker.expect('function4')
             worker.expect('function5')
 
-    def test_extend(self):
-        """Task class is extended"""
-        tasks.use_session()
-        with run_kuyruk() as worker:
-            worker.expect('Opening session')
-            worker.expect('Closing session')
-
     def test_max_run_time(self):
         """Timeout long running task"""
         run_time = tasks.sleeping_task.max_run_time + 0.1

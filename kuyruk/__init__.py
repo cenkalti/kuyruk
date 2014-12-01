@@ -73,8 +73,7 @@ class Kuyruk(object):
             if self._connection is not None:
                 self._connection.close()
 
-    def task(self, queue='kuyruk', retry=0, task_class=None,
-             max_run_time=None, local=False):
+    def task(self, queue='kuyruk', local=False, retry=0, max_run_time=None):
         """
         Wrap functions with this decorator to convert them to *tasks*.
         After wrapping, calling the function will send a message to
@@ -83,10 +82,6 @@ class Kuyruk(object):
         :param queue: Queue name for the tasks.
         :param retry: Retry this times before give up.
             The failed task will be retried in the same worker.
-        :param task_class: Custom task class.
-            Must be a subclass of :class:`~kuyruk.Task`.
-            If this is :const:`None` then :attr:`kuyruk.Task.task_class`
-            will be used.
         :param max_run_time: Maximum allowed time in seconds for task to
             complete.
         :param local: Append hostname to the queue name. Worker needs to be
@@ -100,13 +95,9 @@ class Kuyruk(object):
                 # Function may be wrapped with no-arg decorator
                 queue_ = 'kuyruk' if callable(queue) else queue
 
-                task_class_ = task_class or \
-                    importer.import_class_str(self.config.TASK_CLASS)
-                assert issubclass(task_class_, Task)
-
-                return task_class_(
-                    f, self, queue=queue_, local=local, retry=retry,
-                    max_run_time=max_run_time)
+                return Task(
+                    f, self, queue=queue_, local=local,
+                    retry=retry, max_run_time=max_run_time)
             return inner
 
         if callable(queue):

@@ -36,21 +36,11 @@ class Config(object):
     # Instance Options
     ##################
 
-    TASK_CLASS = 'kuyruk.Task'
-    """Implementation of all tasks unless overriden while defining tasks.
-    It can be replaced with a subclass of :class:`kuyruk.Task` to customize
-    the behavior.
-    """
-
     EAGER = False
     """Run tasks in the process without sending to queue. Useful in tests."""
 
     # Worker Options
     ################
-
-    WORKER_CLASS = 'kuyruk.worker.Worker'
-    """Worker implementation class. It can be replaced with a subclass of
-    :class:`kuyruk.worker.Worker` to customize the behavior."""
 
     MAX_LOAD = None
     """Pause consuming queue when the load goes above this level."""

@@ -119,6 +119,7 @@ def function4(sender, task, args, kwargs):
 def function5(sender, task, args, kwargs):
     print 'function5'
 
+
 def must_be_called(arg=None):
     """
     This function is patched in tests to see the caller is doing it's job.
@@ -126,32 +127,3 @@ def must_be_called(arg=None):
     """
     print 'Yes, it is called.'
     print 'Called with %s' % arg
-
-
-class DatabaseTask(Task):
-
-    def run(self, *args, **kwargs):
-        self.open_session()
-        try:
-            super(DatabaseTask, self).run(*args, **kwargs)
-        finally:
-            self.close_session()
-
-    def open_session(self):
-        print 'Opening session'
-        self.session = object()
-
-    def close_session(self):
-        print 'Closing session'
-        self.session = None
-
-
-@kuyruk.task(task_class=DatabaseTask)
-def use_session():
-    assert use_session.session is not None
-
-
-@kuyruk.task
-def spawn_process(args=['sleep', '60']):
-    import subprocess
-    subprocess.check_call(args)
