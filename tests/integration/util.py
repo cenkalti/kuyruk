@@ -42,21 +42,14 @@ def is_empty(queue):
 
 
 @contextmanager
-def run_kuyruk(queue='kuyruk', terminate=True, config_filename=None):
+def run_kuyruk(queue='kuyruk', terminate=True):
     assert not_running()
     args = [
         sys.executable, '-u',
         '-m', 'kuyruk.__main__',  # run main module
-        '--max-load=999',  # do not pause because of load
-        '--logging-level=DEBUG',
+        "--app", "tests.tasks.kuyruk",
+        "worker", '--queue', queue,
     ]
-
-    if config_filename:
-        args.extend(["--config", config_filename])
-
-    args.append("worker")
-
-    args.extend(['--queue', queue])
 
     environ = os.environ.copy()
     environ['COVERAGE_PROCESS_START'] = '.coveragerc'

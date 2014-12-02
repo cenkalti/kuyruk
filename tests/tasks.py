@@ -8,8 +8,14 @@ import string
 import random
 from time import sleep
 
-from kuyruk import Kuyruk, Task, Config
+from kuyruk import Kuyruk, Task
 from kuyruk import signals
+from kuyruk.config import Config
+
+
+# Override defaults for testing
+Config.LOGGING_LEVEL = "debug"
+Config.MAX_LOAD = 999
 
 
 kuyruk = Kuyruk()

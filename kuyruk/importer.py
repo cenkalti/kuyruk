@@ -7,29 +7,28 @@ from collections import namedtuple
 logger = logging.getLogger(__name__)
 
 
-def import_task(module_name, class_name, function_name):
-    """Find and return the function for given function name."""
-    namespace = import_module(module_name)
-    if class_name:
-        namespace = getattr(namespace, class_name)
-    return getattr(namespace, function_name)
-
-
 def import_module(module_name):
-    """Import module by searching main module, current working directory and
-    Python path.
+    """Import module by it's name from following places in order:
+      - main module
+      - current working directory
+      - Python path
 
     """
+    logger.debug("Importing module: %s", module_name)
     module, main_module_name = get_main_module()
     if module_name == main_module_name:
         return module
     return importlib.import_module(module_name)
 
 
-def import_class_str(s):
-    module, cls = s.rsplit('.', 1)
-    module = import_module(module)
-    return getattr(module, cls)
+def import_object(module_name, object_name):
+    module = import_module(module_name)
+    return getattr(module, object_name)
+
+
+def import_object_str(s):
+    module, obj = s.rsplit('.', 1)
+    return import_object(module, obj)
 
 
 def get_main_module():

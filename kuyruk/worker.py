@@ -14,7 +14,7 @@ from time import time, sleep
 from setproctitle import setproctitle
 
 import kuyruk
-from kuyruk import importer, signals, Config
+from kuyruk import importer, signals
 from kuyruk.task import get_queue_name
 from kuyruk.exceptions import Reject, Discard
 
@@ -24,13 +24,13 @@ logger = logging.getLogger(__name__)
 class Worker(object):
     """Consumes tasks from a queue and runs them.
 
-    :param config: An instance of :class:`~kuyruk.Config`
+    :param app: An instance of :class:`~kuyruk.Kuyruk`
     :param args: Command line arguments
 
     """
-    def __init__(self, config, args):
-        assert isinstance(config, Config)
-        self.config = config
+    def __init__(self, app, args):
+        assert isinstance(app, kuyruk.Kuyruk)
+        self.kuyruk = app
 
         if not args.queue:
             raise ValueError("empty queue name")
@@ -42,6 +42,10 @@ class Worker(object):
         self._current_message = None
         if self.config.MAX_LOAD is None:
             self.config.MAX_LOAD = multiprocessing.cpu_count()
+
+    @property
+    def config(self):
+        return self.kuyruk.config
 
     def run(self):
         """Runs the worker and consumes messages from RabbitMQ.
@@ -75,7 +79,7 @@ class Worker(object):
             logging.basicConfig(level=level, format=fmt)
 
     def _consume_messages(self):
-        with kuyruk.Kuyruk(self.config) as k:
+        with self.kuyruk as k:
             with k.channel() as ch:
                 ch.queue_declare(
                     queue=self.queue, durable=True, auto_delete=False)
@@ -131,9 +135,8 @@ class Worker(object):
 
     def _process_description(self, message, description):
         try:
-            task = importer.import_task(description['module'],
-                                        None,
-                                        description['function'])
+            task = importer.import_object(description['module'],
+                                          description['function'])
             args, kwargs = description['args'], description['kwargs']
         except Exception:
             logger.error('Cannot import task')
