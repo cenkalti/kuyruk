@@ -62,7 +62,9 @@ class Worker(object):
         signal.signal(signal.SIGUSR1, print_stack)  # for debugging
 
         for f in (self._watch_load, self._shutdown_timer):
-            start_daemon_thread(f)
+            t = threading.Thread(target=f)
+            t.daemon = True
+            t.start()
 
         self._consume_messages()
 
@@ -140,13 +142,17 @@ class Worker(object):
             args, kwargs = description['args'], description['kwargs']
         except Exception:
             logger.error('Cannot import task')
+            exc_info = sys.exc_info()
+            for sender in (self, self.kuyruk):
+                signals.worker_failure.send(sender, description=description,
+                                            exc_info=exc_info, worker=self)
             message.channel.basic_reject(message.delivery_tag, requeue=False)
         else:
             self._process_task(message, description, task, args, kwargs)
 
     def _process_task(self, message, description, task, args, kwargs):
         try:
-            self.apply_task(description, task, args, kwargs)
+            task.apply(*args, **kwargs)
         except Reject:
             logger.warning('Task is rejected')
             sleep(1)  # Prevent cpu burning
@@ -155,10 +161,10 @@ class Worker(object):
             logger.warning('Task is discarded')
             message.channel.basic_reject(message.delivery_tag, requeue=False)
         except Exception:
-            exc_info = sys.exc_info()
             logger.error('Task raised an exception')
+            exc_info = sys.exc_info()
             logger.error(''.join(traceback.format_exception(*exc_info)))
-            for sender in (self, task.kuyruk):
+            for sender in (self, self.kuyruk):
                 signals.worker_failure.send(sender, description=description,
                                             task=task, args=args, kwargs=kwargs,
                                             exc_info=exc_info, worker=self)
@@ -168,14 +174,6 @@ class Worker(object):
             message.channel.basic_ack(message.delivery_tag)
         finally:
             logger.debug("Task is processed")
-
-    def apply_task(self, description, task, args, kwargs):
-        """Applies arguments to the task.
-
-        Equivalent to ``task.apply(*args, **kwargs)``.
-
-        You may override this function to customize the behavior."""
-        task.apply(*args, **kwargs)
 
     def _watch_load(self):
         """Pause consuming messages if lood goes above the allowed limit."""
@@ -261,13 +259,6 @@ def _exit(code):
     sys.stdout.flush()
     sys.stderr.flush()
     os._exit(code)
-
-
-def start_daemon_thread(target, args=()):
-    t = threading.Thread(target=target, args=args)
-    t.daemon = True
-    t.start()
-    return t
 
 
 def print_stack(sig, frame):
