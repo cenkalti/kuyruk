@@ -78,10 +78,10 @@ class KuyrukTestCase(unittest.TestCase):
         assert len_queue("kuyruk") == 1
 
     @patch('tests.tasks.must_be_called')
-    def test_before_after(self, mock_func):
+    def test_before_after(self, presend_mock):
         """Run signal handlers"""
         tasks.task_with_signal_handlers('hello world')
-        mock_func.assert_called_once_with()
+        presend_mock.assert_called_once()
         with run_kuyruk() as worker:
             worker.expect('function1')
             worker.expect('function2')

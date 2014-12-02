@@ -126,10 +126,7 @@ def function5(sender, task, args, kwargs):
     print 'function5'
 
 
-def must_be_called(arg=None):
+def must_be_called():
+    """This function is patched in tests to see the caller is doing it's job.
     """
-    This function is patched in tests to see the caller is doing it's job.
-
-    """
-    print 'Yes, it is called.'
-    print 'Called with %s' % arg
+    pass
