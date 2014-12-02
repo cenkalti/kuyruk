@@ -14,14 +14,6 @@ Task Class
    :inherited-members:
 
 
-Worker Class
-------------
-
-.. autoclass:: kuyruk.Worker
-   :members:
-   :inherited-members:
-
-
 Config Class
 ------------
 

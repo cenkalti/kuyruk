@@ -12,7 +12,7 @@ from kuyruk.config import Config
 from kuyruk.worker import Worker
 
 __version__ = '2.0.0'
-__all__ = ['Kuyruk', 'Config', 'Task', 'Worker']
+__all__ = ['Kuyruk', 'Config', 'Task']
 
 
 logger = logging.getLogger(__name__)
