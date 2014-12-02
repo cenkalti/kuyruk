@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class Config(object):
     """Kuyruk configuration object. Default values are defined as
-    class attributes.
+    class attributes. Additional attributes may be added by extensions.
 
     """
     # Connection Options
