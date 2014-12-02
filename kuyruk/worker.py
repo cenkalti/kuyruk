@@ -43,6 +43,8 @@ class Worker(object):
         if self.config.MAX_LOAD is None:
             self.config.MAX_LOAD = multiprocessing.cpu_count()
 
+        signals.worker_init.send(self.kuyruk, worker=self)
+
     @property
     def config(self):
         return self.kuyruk.config
@@ -68,6 +70,7 @@ class Worker(object):
 
         self._consume_messages()
 
+        signals.worker_shutdown.send(self.kuyruk, worker=self)
         logger.debug("End run worker")
 
     def _setup_logging(self):
@@ -143,9 +146,8 @@ class Worker(object):
         except Exception:
             logger.error('Cannot import task')
             exc_info = sys.exc_info()
-            for sender in (self, self.kuyruk):
-                signals.worker_failure.send(sender, description=description,
-                                            exc_info=exc_info, worker=self)
+            signals.worker_failure.send(self.kuyruk, description=description,
+                                        exc_info=exc_info, worker=self)
             message.channel.basic_reject(message.delivery_tag, requeue=False)
         else:
             self._process_task(message, description, task, args, kwargs)
@@ -164,10 +166,9 @@ class Worker(object):
             logger.error('Task raised an exception')
             exc_info = sys.exc_info()
             logger.error(''.join(traceback.format_exception(*exc_info)))
-            for sender in (self, self.kuyruk):
-                signals.worker_failure.send(sender, description=description,
-                                            task=task, args=args, kwargs=kwargs,
-                                            exc_info=exc_info, worker=self)
+            signals.worker_failure.send(self.kuyruk, description=description,
+                                        task=task, args=args, kwargs=kwargs,
+                                        exc_info=exc_info, worker=self)
             message.channel.basic_reject(message.delivery_tag, requeue=False)
         else:
             logger.info('Task is successful')
