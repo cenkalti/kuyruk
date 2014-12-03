@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import sys
 import json
@@ -36,7 +37,7 @@ class LoaderTestCase(unittest.TestCase):
         with Kuyruk() as k:
             with k.channel() as ch:
                 for args, cwd, name in cases:
-                    print cwd, args, name
+                    print(cwd, args, name)
 
                     ch.queue_delete("kuyruk")
 

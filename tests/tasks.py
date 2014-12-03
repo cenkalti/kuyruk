@@ -2,7 +2,7 @@
 Contains sample tasks to be used in unit and integration tests.
 
 """
-
+from __future__ import print_function
 import sys
 import string
 import random
@@ -25,13 +25,13 @@ kuyruk = Kuyruk()
 
 @kuyruk.task
 def echo(message):
-    print message
+    print(message)
     must_be_called()
 
 
 @kuyruk.task(queue='another_queue')
 def echo_another(message):
-    print message
+    print(message)
 
 
 @kuyruk.task
@@ -59,7 +59,7 @@ def retry_task():
 @kuyruk.task
 def loop_forever():
     while 1:
-        print 'looping forever'
+        print('looping forever')
         sleep(1)
 
 
@@ -87,7 +87,7 @@ kuyruk2 = Kuyruk()
 
 @kuyruk2.task
 def task_with_signal_handlers(message):
-    print message
+    print(message)
     return 42
 
 
@@ -98,8 +98,8 @@ def function0(sender, task, args, kwargs, description):
 
 @signals.task_prerun.connect_via(kuyruk2)
 def function2(sender, task, args, kwargs):
-    print 'function2'
-    print sender, task, args, kwargs
+    print('function2')
+    print(sender, task, args, kwargs)
     assert sender is kuyruk2
     assert isinstance(task, Task)
     assert list(args) == ['hello world']
@@ -108,7 +108,7 @@ def function2(sender, task, args, kwargs):
 
 @signals.task_postapply.connect_via(kuyruk2)
 def function5(sender, task, args, kwargs):
-    print 'function5'
+    print('function5')
 
 
 def must_be_called():

@@ -1,3 +1,3 @@
-from tasks import print_message
+from .tasks import print_message
 
 print_message('asdf')

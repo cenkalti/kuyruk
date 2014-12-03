@@ -6,7 +6,7 @@ import unittest
 from mock import patch
 
 from tests import tasks
-from util import run_kuyruk, wait_until, \
+from tests.integration.util import run_kuyruk, wait_until, \
     not_running, get_pid, TIMEOUT, delete_queue, len_queue
 
 

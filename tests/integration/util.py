@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import sys
 import errno
@@ -83,7 +84,7 @@ def run_kuyruk(queue='kuyruk', terminate=True):
         try:
             wait_while(lambda: get_pids('kuyruk:'))
         except KeyboardInterrupt:
-            print popen.get_output()
+            print(popen.get_output())
             # Do not raise KeyboardInterrupt here because nose does not print
             # captured stdout and logging on KeyboardInterrupt
             raise Exception
@@ -104,6 +105,7 @@ def get_pids(pattern):
     out = p.communicate()[0]
     logger.debug("\n%s", out)
     lines = out.splitlines()
+    lines = [l.decode() for l in lines]
     lines = [l.split(" ", 1) for l in lines]
     lines = [(pid, cmd) for (pid, cmd) in lines if not cmd.startswith(("sh", "/bin/sh"))]
     pids = [int(pid) for (pid, cmd) in lines]

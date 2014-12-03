@@ -3,7 +3,7 @@ import sys
 import unittest
 
 from kuyruk.config import Config
-import config as user_config
+from . import config as user_config
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 

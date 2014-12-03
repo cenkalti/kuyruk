@@ -1,7 +1,8 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import os
 import sys
 import json
+import errno
 import socket
 import signal
 import logging
@@ -110,7 +111,7 @@ class Worker(object):
                     except socket.error as e:
                         if isinstance(e, socket.timeout):
                             pass
-                        elif e.errno == socket.EINTR:
+                        elif e.errno == errno.EINTR:
                             pass  # happens when the process receives a signal
                         else:
                             raise
@@ -261,6 +262,6 @@ def _exit(code):
 
 
 def print_stack(sig, frame):
-    print '=' * 70
-    print ''.join(traceback.format_stack())
-    print '-' * 70
+    print('=' * 70)
+    print(''.join(traceback.format_stack()))
+    print('-' * 70)

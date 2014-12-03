@@ -1,9 +1,11 @@
 import os
+import sys
 import ast
 import types
 import logging
-import importer
 import pkg_resources
+
+from kuyruk import importer
 
 import kuyruk  # required for references in docs
 
@@ -65,16 +67,16 @@ class Config(object):
 
     def from_dict(self, d):
         """Load values from a dict."""
-        for key, value in d.iteritems():
+        for key, value in d.items():
             if key.isupper():
                 self._setattr(key, value)
         logger.info("Config is loaded from dict: %r", d)
 
     def from_pymodule(self, module_name):
-        if not isinstance(module_name, basestring):
+        if not isinstance(module_name, str):
             raise TypeError
         module = importer.import_module(module_name)
-        for key, value in module.__dict__.iteritems():
+        for key, value in module.__dict__.items():
             if (key.isupper() and
                     not isinstance(value, types.ModuleType)):
                 self._setattr(key, value)
@@ -83,8 +85,14 @@ class Config(object):
     def from_pyfile(self, filename):
         """Load values from a Python file."""
         globals_, locals_ = {}, {}
-        execfile(filename, globals_, locals_)
-        for key, value in locals_.iteritems():
+        if sys.version_info[0] == 2:
+            execfile(filename, globals_, locals_)
+        elif sys.version_info[0] == 3:
+            with open(filename, "rb") as f:
+                exec(compile(f.read(), filename, 'exec'), globals_, locals_)
+        else:
+            raise RuntimeError
+        for key, value in locals_.items():
             if (key.isupper() and
                     not isinstance(value, types.ModuleType)):
                 self._setattr(key, value)
@@ -93,7 +101,7 @@ class Config(object):
     def from_env_vars(self):
         """Load values from environment variables.
         Keys must start with `KUYRUK_`."""
-        for key, value in os.environ.iteritems():
+        for key, value in os.environ.items():
             if key.startswith('KUYRUK_'):
                 key = key.lstrip('KUYRUK_')
                 self._eval_item(key, value)
@@ -101,7 +109,7 @@ class Config(object):
     def from_cmd_args(self, args):
         """Load values from command line arguments."""
         to_attr = lambda x: x.upper().replace('-', '_')
-        for key, value in vars(args).iteritems():
+        for key, value in vars(args).items():
             if value is not None:
                 key = to_attr(key)
                 self._eval_item(key, value)
