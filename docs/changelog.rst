@@ -6,6 +6,9 @@ Here you can see the full list of changes between each Kuyruk release.
 Version 2.0.0
 -------------
 
+This is major rewrite of Kuyruk and it is not backwards compatible.
+
+- Add Python 3 support.
 - Replaced pika with amqp.
 - Fixed multi-threading issues.
 - Removed master subcommand.
@@ -16,8 +19,8 @@ Version 2.0.0
 - Failed tasks are not saved to redis anymore.
 - Failed tasks are retried in the same worker.
 - Unknown keys in config are now errors.
-- Removed return_value argument from Kuyruk.on_success event.
-- Removed eager argument from task decorator.
+- Changed some config variable names.
+- Worker command takes Kuyruk instance instead of config file.
 
 Version 1.2.1
 -------------
