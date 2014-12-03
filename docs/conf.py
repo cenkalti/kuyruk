@@ -49,7 +49,7 @@ copyright = u'2013, Cenk Altı'
 # built documents.
 #
 # The short X.Y version.
-version = kuyruk.__version__
+version = '2.0.0'
 # The full version, including alpha/beta/rc tags.
 release = version
 
