@@ -6,6 +6,8 @@ Here you can see the full list of changes between each Kuyruk release.
 Version 2.0.0
 -------------
 
+Released on 03-12-2014.
+
 This is major rewrite of Kuyruk and it is not backwards compatible.
 
 - Add Python 3 support.
