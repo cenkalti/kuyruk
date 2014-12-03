@@ -1,9 +1,25 @@
 # coding=utf8
+import os
+import re
 from setuptools import setup
+
+
+def read(*fname):
+    with open(os.path.join(os.path.dirname(__file__), *fname)) as f:
+        return f.read()
+
+
+def get_version():
+    for line in read('kuyruk', '__init__.py').splitlines():
+        m = re.match(r"""__version__\s*=\s*['"](.*)['"]""", line)
+        if m:
+            return m.groups()[0].strip()
+    raise Exception('Cannot find version')
+
 
 setup(
     name='Kuyruk',
-    version='2.0.0',
+    version=get_version(),
     author=u'Cenk Altı',
     author_email='cenkalti@gmail.com',
     keywords='rabbitmq distributed task queue',
@@ -17,7 +33,7 @@ setup(
         'argparse>=1.2.1',
     ],
     description='Simple task queue',
-    long_description=open('README.rst').read(),
+    long_description=read('README.rst'),
     zip_safe=True,
     entry_points={
         'console_scripts': [
