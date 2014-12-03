@@ -13,7 +13,6 @@ from time import time, sleep
 
 from setproctitle import setproctitle
 
-import kuyruk
 from kuyruk import importer, signals
 from kuyruk.task import get_queue_name
 from kuyruk.exceptions import Reject, Discard
@@ -29,7 +28,6 @@ class Worker(object):
 
     """
     def __init__(self, app, args):
-        assert isinstance(app, kuyruk.Kuyruk)
         self.kuyruk = app
 
         if not args.queue:
@@ -79,7 +77,7 @@ class Worker(object):
         else:
             logging.getLogger('rabbitpy').level = logging.WARNING
             level = getattr(logging, self.config.LOGGING_LEVEL.upper())
-            fmt = "%(levelname).1s %(process)d " \
+            fmt = "%(levelname).1s " \
                   "%(name)s.%(funcName)s:%(lineno)d - %(message)s"
             logging.basicConfig(level=level, format=fmt)
 

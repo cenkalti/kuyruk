@@ -7,18 +7,18 @@ from collections import namedtuple
 logger = logging.getLogger(__name__)
 
 
-def import_module(module_name):
+def import_module(name):
     """Import module by it's name from following places in order:
       - main module
       - current working directory
       - Python path
 
     """
-    logger.debug("Importing module: %s", module_name)
+    logger.debug("Importing module: %s", name)
     module, main_module_name = get_main_module()
-    if module_name == main_module_name:
+    if name == main_module_name:
         return module
-    return importlib.import_module(module_name)
+    return importlib.import_module(name)
 
 
 def import_object(module_name, object_name):

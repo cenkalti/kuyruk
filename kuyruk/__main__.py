@@ -4,11 +4,12 @@ It implements the command line parsing for subcommands and configuration.
 
 """
 from __future__ import absolute_import
+import sys
 import logging
 import argparse
 import pkg_resources
 
-from kuyruk import __version__, importer
+from kuyruk import __version__, importer, Kuyruk
 from kuyruk.worker import Worker
 
 
@@ -47,7 +48,9 @@ def main():
     args = parser.parse_args()
 
     # Import Kuyruk app
+    sys.path.insert(0, '')
     app = importer.import_object_str(args.app)
+    assert isinstance(app, Kuyruk)
 
     # Run the sub-command function
     args.func(app, args)

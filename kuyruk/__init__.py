@@ -36,9 +36,9 @@ class Kuyruk(object):
     If you use the :class:`~kuyruk.Kuyruk` object as a context manager,
     the connection will be closed when exiting.
 
-    :param config: A module that contains configuration options.
-                   Must be an instance of :class:`~kuyruk.Config`.
-                   See :ref:`configuration-options` for default values.
+    :param config: Must be an instance of :class:`~kuyruk.Config`.
+                   If ``None``, default config is used.
+                   See :class:`~kuyruk.Config` for default values.
 
     """
     # Aliases for raising from tasks
