@@ -1,0 +1,7 @@
+RABBIT_HOST = 'localhost'
+RABBIT_PORT = 5672
+RABBIT_USER = 'guest'
+RABBIT_PASSWORD = 'guest'
+EAGER = False
+MAX_LOAD = 20
+MAX_WORKER_RUN_TIME = None

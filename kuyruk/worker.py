@@ -1,302 +1,198 @@
 from __future__ import absolute_import
 import os
 import sys
+import json
 import socket
 import signal
 import logging
+import logging.config
+import threading
 import traceback
 import multiprocessing
 from time import time, sleep
-from datetime import datetime
-from functools import wraps
-from contextlib import contextmanager
 
-import rpyc
 from setproctitle import setproctitle
 
-import kuyruk
-from kuyruk import importer
-from kuyruk.queue import Queue
-from kuyruk.process import KuyrukProcess
-from kuyruk.helpers import start_daemon_thread
-from kuyruk.consumer import Consumer
-from kuyruk.exceptions import Reject, ObjectNotFound, Timeout, InvalidTask
-from kuyruk.helpers.json_datetime import JSONEncoder
+from kuyruk import importer, signals
+from kuyruk.task import get_queue_name
+from kuyruk.exceptions import Reject, Discard
 
 logger = logging.getLogger(__name__)
 
 
-def set_current_task(f):
-    """Save current task and it's arguments in self so we can send them to
-    manager as stats."""
-    @wraps(f)
-    def inner(self, task, args, kwargs):
-        self.current_task = task
-        self.current_args = args
-        self.current_kwargs = kwargs
-        try:
-            return f(self, task, args, kwargs)
-        finally:
-            self.current_task = None
-            self.current_args = None
-            self.current_kwargs = None
-    return inner
+class Worker(object):
+    """Consumes tasks from a queue and runs them.
 
-
-class Worker(KuyrukProcess):
-    """Consumes messages from a queue and runs tasks.
-
-    :param kuyruk: A :class:`~kuyurk.kuyruk.Kuyruk` instance
-    :param queue_name: The queue name to work on
+    :param app: An instance of :class:`~kuyruk.Kuyruk`
+    :param args: Command line arguments
 
     """
-    def __init__(self, kuyruk, queue_name):
-        if not queue_name:
-            raise ValueError("empty queue name")
+    def __init__(self, app, args):
+        self.kuyruk = app
 
-        super(Worker, self).__init__(kuyruk)
-        self.channel = self.kuyruk.channel()
-        is_local = queue_name.startswith('@')
-        queue_name = queue_name.lstrip('@')
-        self.queue = Queue(queue_name, self.channel, local=is_local)
-        self.consumer = Consumer(self.queue)
-        self.current_message = None
-        self.current_task = None
-        self.current_args = None
-        self.current_kwargs = None
-        self.daemon_threads = [
-            self.watch_master,
-            self.watch_load,
-            self.shutdown_timer,
-        ]
+        if not args.queue:
+            raise ValueError("empty queue name")
+        self.queue = get_queue_name(args.queue, local=args.local)
+
+        self.shutdown_pending = threading.Event()
+        self._pause = False
+        self._consuming = False
+        self._current_message = None
         if self.config.MAX_LOAD is None:
             self.config.MAX_LOAD = multiprocessing.cpu_count()
 
-        if self.config.SENTRY_DSN:
-            import raven
-            self.sentry = raven.Client(self.config.SENTRY_DSN)
-        else:
-            self.sentry = None
+        signals.worker_init.send(self.kuyruk, worker=self)
 
-        if self.config.SAVE_FAILED_TASKS:
-            import redis
-            self.redis = redis.StrictRedis(
-                host=self.config.REDIS_HOST,
-                port=self.config.REDIS_PORT,
-                db=self.config.REDIS_DB,
-                password=self.config.REDIS_PASSWORD)
-        else:
-            self.redis = None
+    @property
+    def config(self):
+        return self.kuyruk.config
 
     def run(self):
-        """Runs the worker and opens a connection to RabbitMQ.
-        After connection is opened, starts consuming messages.
-        Consuming is cancelled if an external signal is received.
+        """Runs the worker and consumes messages from RabbitMQ.
+        Returns only after `warm_shutdown()` is called.
 
         """
-        super(Worker, self).run()
-        setproctitle("kuyruk: worker on %s" % self.queue.name)
-        self.queue.declare()
-        self.queue.basic_qos(prefetch_count=1)
-        self.import_modules()
-        self.start_daemon_threads()
-        self.maybe_start_manager_rpc_service()
-        self.consume_messages()
+        setproctitle("kuyruk: worker on %s" % self.queue)
+
+        self._setup_logging()
+
+        signal.signal(signal.SIGINT, self._handle_sigint)
+        signal.signal(signal.SIGTERM, self._handle_sigterm)
+        signal.signal(signal.SIGQUIT, self._handle_sigquit)
+        signal.signal(signal.SIGUSR1, print_stack)  # for debugging
+
+        for f in (self._watch_load, self._shutdown_timer):
+            t = threading.Thread(target=f)
+            t.daemon = True
+            t.start()
+
+        self._consume_messages()
+
+        signals.worker_shutdown.send(self.kuyruk, worker=self)
         logger.debug("End run worker")
 
-    def rpc_service_class(this):
-        class _Service(rpyc.Service):
-            exposed_get_stats = this.get_stats
-            exposed_warm_shutdown = this.warm_shutdown
-            exposed_cold_shutdown = this.cold_shutdown
-            exposed_quit_task = this.quit_task
-        return _Service
+    def _setup_logging(self):
+        if self.config.LOGGING_CONFIG:
+            logging.config.fileConfig(self.config.LOGGING_CONFIG)
+        else:
+            logging.getLogger('rabbitpy').level = logging.WARNING
+            level = getattr(logging, self.config.LOGGING_LEVEL.upper())
+            fmt = "%(levelname).1s " \
+                  "%(name)s.%(funcName)s:%(lineno)d - %(message)s"
+            logging.basicConfig(level=level, format=fmt)
 
-    def consume_messages(self):
-        """Consumes messages from the queue and run tasks until
-        consumer is cancelled via a signal or another thread.
+    def _consume_messages(self):
+        with self.kuyruk as k:
+            with k.channel() as ch:
+                ch.queue_declare(
+                    queue=self.queue, durable=True, auto_delete=False)
 
-        """
-        with self.consumer.consume() as messages:
-            for message in messages:
-                with self._set_current_message(message):
-                    self.process_message(message)
+                # Set prefetch count to 1. If we don't set this, RabbitMQ keeps
+                # sending messages while we are already working on a message.
+                ch.basic_qos(0, 1, False)
 
-    @contextmanager
-    def _set_current_message(self, message):
-        """Save current message being processed so we can send ack
-        before exiting when SIGQUIT is received."""
-        self.current_message = message
+                consumer_tag = '%s@%s' % (os.getpid(), socket.gethostname())
+                while not self.shutdown_pending.is_set():
+                    # Consume or pause
+                    if self._pause and self._consuming:
+                        ch.basic_cancel(consumer_tag)
+                        logger.info('Consumer cancelled')
+                        self._consuming = False
+                    elif not self._pause and not self._consuming:
+                        ch.basic_consume(queue=self.queue,
+                                         consumer_tag=consumer_tag,
+                                         callback=self._message_callback)
+                        logger.info('Consumer started')
+                        self._consuming = True
+
+                    try:
+                        ch.connection.drain_events(timeout=0.1)
+                    except socket.error as e:
+                        if isinstance(e, socket.timeout):
+                            pass
+                        elif e.errno == socket.EINTR:
+                            pass  # happens when the process receives a signal
+                        else:
+                            raise
+        logger.debug("End run worker")
+
+    def _message_callback(self, message):
+        # Save current message being processed so
+        # we will be able to send ACK when we receive SIGQUIT."""
+        self._current_message = message
         try:
-            yield message
+            self._process_message(message)
         finally:
-            self.current_message = None
+            self._current_message = None
 
-    def start_daemon_threads(self):
-        """Start the function as threads listed in self.daemon_thread."""
-        for f in self.daemon_threads:
-            start_daemon_thread(f)
-
-    def import_modules(self):
-        """Import modules defined in the configuration.
-        This method is called before start consuming messages.
-
-        """
-        for module in self.config.IMPORTS:
-            importer.import_module(module, self.config.IMPORT_PATH)
-
-    def process_message(self, message):
+    def _process_message(self, message):
         """Processes the message received from the queue."""
         try:
-            task_description = message.get_object()
-            logger.info("Processing task: %r", task_description)
+            description = json.loads(message.body)
         except Exception:
-            message.ack()
-            logger.error("Canot decode message. Dropped!")
-            return
+            message.channel.basic_reject(message.delivery_tag, requeue=False)
+            logger.error("Cannot decode message. Dropping.")
+        else:
+            logger.info("Processing task: %r", description)
+            self._process_description(message, description)
 
+    def _process_description(self, message, description):
         try:
-            task = self.import_task(task_description)
-            task.message = message
-            args, kwargs = task_description['args'], task_description['kwargs']
-            self.apply_task(task, args, kwargs)
+            task = importer.import_object(description['module'],
+                                          description['function'])
+            args, kwargs = description['args'], description['kwargs']
+        except Exception:
+            logger.error('Cannot import task')
+            exc_info = sys.exc_info()
+            signals.worker_failure.send(self.kuyruk, description=description,
+                                        exc_info=exc_info, worker=self)
+            message.channel.basic_reject(message.delivery_tag, requeue=False)
+        else:
+            self._process_task(message, description, task, args, kwargs)
+
+    def _process_task(self, message, description, task, args, kwargs):
+        try:
+            task.apply(*args, **kwargs)
         except Reject:
             logger.warning('Task is rejected')
             sleep(1)  # Prevent cpu burning
-            message.reject()
-        except ObjectNotFound:
-            self.handle_not_found(message, task_description)
-        except Timeout:
-            self.handle_timeout(message, task_description)
-        except InvalidTask:
-            self.handle_invalid(message, task_description)
+            message.channel.basic_reject(message.delivery_tag, requeue=True)
+        except Discard:
+            logger.warning('Task is discarded')
+            message.channel.basic_reject(message.delivery_tag, requeue=False)
         except Exception:
-            self.handle_exception(message, task_description)
+            logger.error('Task raised an exception')
+            exc_info = sys.exc_info()
+            logger.error(''.join(traceback.format_exception(*exc_info)))
+            signals.worker_failure.send(self.kuyruk, description=description,
+                                        task=task, args=args, kwargs=kwargs,
+                                        exc_info=exc_info, worker=self)
+            message.channel.basic_reject(message.delivery_tag, requeue=False)
         else:
             logger.info('Task is successful')
-            delattr(task, 'message')
-            message.ack()
+            message.channel.basic_ack(message.delivery_tag)
         finally:
             logger.debug("Task is processed")
 
-    def handle_exception(self, message, task_description):
-        """Handles the exception while processing the message."""
-        logger.error('Task raised an exception')
-        logger.error(traceback.format_exc())
-        retry_count = task_description.get('retry', 0)
-        if retry_count:
-            logger.debug('Retry count: %s', retry_count)
-            message.discard()
-            task_description['retry'] = retry_count - 1
-            self.queue.send(task_description)
-        else:
-            logger.debug('No retry left')
-            self.capture_exception(task_description)
-            message.discard()
-            if self.config.SAVE_FAILED_TASKS:
-                self.save_failed_task(task_description)
-
-    def handle_not_found(self, message, task_description):
-        """Called if the task is class task but the object with the given id
-        is not found. The default action is logging the error and acking
-        the message.
-
-        """
-        logger.error(
-            "<%s.%s id=%r> is not found",
-            task_description['module'],
-            task_description['class'],
-            task_description['args'][0])
-        message.ack()
-
-    def handle_timeout(self, message, task_description):
-        """Called when the task is timed out while running the wrapped
-        function.
-
-        """
-        logger.error('Task has timed out.')
-        self.handle_exception(message, task_description)
-
-    def handle_invalid(self, message, task_description):
-        """Called when the message from queue is invalid."""
-        logger.error("Invalid message.")
-        self.capture_exception(task_description)
-        message.discard()
-
-    def save_failed_task(self, task_description):
-        """Saves the task to ``kuyruk_failed`` queue. Failed tasks can be
-        investigated later and requeued with ``kuyruk reuqueue`` command.
-
-        """
-        logger.info('Saving failed task')
-        task_description['queue'] = self.queue.name
-        task_description['worker_hostname'] = socket.gethostname()
-        task_description['worker_pid'] = os.getpid()
-        task_description['worker_cmd'] = ' '.join(sys.argv)
-        task_description['worker_timestamp'] = datetime.utcnow()
-        task_description['exception'] = traceback.format_exc()
-        exc_type = sys.exc_info()[0]
-        task_description['exception_type'] = "%s.%s" % (
-            exc_type.__module__, exc_type.__name__)
-
-        try:
-            self.redis.hset('failed_tasks', task_description['id'],
-                            JSONEncoder().encode(task_description))
-            logger.debug('Saved')
-        except Exception:
-            logger.error('Cannot save failed task to Redis!')
-            logger.debug(traceback.format_exc())
-            if self.sentry:
-                self.sentry.captureException()
-
-    @set_current_task
-    def apply_task(self, task, args, kwargs):
-        """Imports and runs the wrapped function in task."""
-        result = task._run(*args, **kwargs)
-        logger.debug('Result: %r', result)
-
-    def import_task(self, task_description):
-        """This is the method where user modules are loaded."""
-        module, function, cls = (
-            task_description['module'],
-            task_description['function'],
-            task_description['class'])
-        return importer.import_task(
-            module, cls, function, self.config.IMPORT_PATH)
-
-    def capture_exception(self, task_description):
-        """Sends the exceptin in current stack to Sentry."""
-        if self.sentry:
-            ident = self.sentry.get_ident(self.sentry.captureException(
-                extra={
-                    'task_description': task_description,
-                    'hostname': socket.gethostname(),
-                    'pid': os.getpid(),
-                    'uptime': self.uptime}))
-            logger.error("Exception caught; reference is %s", ident)
-            task_description['sentry_id'] = ident
-
-    def is_master_alive(self):
-        return os.getppid() != 1
-
-    def watch_master(self):
-        """Watch the master and shutdown gracefully when it is dead."""
-        while True:
-            if not self.is_master_alive():
-                logger.critical('Master is dead')
-                self.warm_shutdown()
-            sleep(1)
-
-    def watch_load(self):
+    def _watch_load(self):
         """Pause consuming messages if lood goes above the allowed limit."""
         while not self.shutdown_pending.is_set():
             load = os.getloadavg()[0]
             if load > self.config.MAX_LOAD:
-                logger.warning('Load is high (%s), pausing consume', load)
-                self.consumer.pause(10)
+                if self._pause is False:
+                    logger.warning(
+                        'Load is above the treshold (%.2f/%s), '
+                        'pausing consumer', load, self.config.MAX_LOAD)
+                    self._pause = True
+            else:
+                if self._pause is True:
+                    logger.warning(
+                        'Load is below the treshold (%.2f/%s), '
+                        'resuming consumer', load, self.config.MAX_LOAD)
+                    self._pause = False
             sleep(1)
 
-    def shutdown_timer(self):
+    def _shutdown_timer(self):
         """Counts down from MAX_WORKER_RUN_TIME. When it reaches zero sutdown
         gracefully.
 
@@ -304,8 +200,9 @@ class Worker(KuyrukProcess):
         if not self.config.MAX_WORKER_RUN_TIME:
             return
 
-        while True:
-            passed = time() - self.started
+        started = time()
+        while not self.shutdown_pending.is_set():
+            passed = time() - started
             remaining = self.config.MAX_WORKER_RUN_TIME - passed
             if remaining > 0:
                 sleep(remaining)
@@ -314,65 +211,56 @@ class Worker(KuyrukProcess):
                 self.warm_shutdown()
                 break
 
-    def register_signals(self):
-        super(Worker, self).register_signals()
-        signal.signal(signal.SIGTERM, self.handle_sigterm)
-        signal.signal(signal.SIGQUIT, self.handle_sigquit)
+    def warm_shutdown(self):
+        """Exits after the current task is finished."""
+        logger.warning("Warm shutdown")
+        self.shutdown_pending.set()
 
-    def handle_sigterm(self, signum, frame):
+    def cold_shutdown(self):
+        """Exits immediately."""
+        logger.warning("Cold shutdown")
+        _exit(0)
+
+    def _handle_sigint(self, signum, frame):
+        """If running from terminal pressing Ctrl-C will initiate a warm
+        shutdown. The second interrupt will do a cold shutdown.
+
+        """
+        logger.warning("Handling SIGINT")
+        if sys.stdin.isatty() and not self.shutdown_pending.is_set():
+            self.warm_shutdown()
+        else:
+            self.cold_shutdown()
+        logger.debug("Handled SIGINT")
+
+    def _handle_sigterm(self, signum, frame):
         """Initiates a warm shutdown."""
         logger.warning("Catched SIGTERM")
         self.warm_shutdown()
 
-    def handle_sigquit(self, signum, frame):
-        """Send ACK for the current task and exit."""
+    def _handle_sigquit(self, signum, frame):
+        """Drop the current task and exit."""
         logger.warning("Catched SIGQUIT")
-        if self.current_message:
+        if self._current_message:
             try:
-                logger.warning("Acking current task...")
-                self.current_message.ack()
+                logger.warning("Dropping current task...")
+                self._current_message.channel.basic_reject(
+                    self._current_message.delivery_tag, requeue=False)
+                self._current_message.channel.close()
             except Exception:
                 logger.critical("Cannot send ACK for the current task.")
                 traceback.print_exc()
         logger.warning("Exiting...")
-        self._exit(0)
+        _exit(0)
 
-    def quit_task(self):
-        self.handle_sigquit(None, None)
 
-    def warm_shutdown(self):
-        """Exit after the last task is finished."""
-        logger.warning("Warm shutdown")
-        self.consumer.stop()
-        self.shutdown_pending.set()
+def _exit(code):
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(code)
 
-    def cold_shutdown(self):
-        """Exit immediately."""
-        logger.warning("Cold shutdown")
-        self._exit(0)
 
-    def get_stats(self):
-        """Generate stats to be sent to manager."""
-        method = self.queue.declare(force=True).method
-        try:
-            current_task = self.current_task.name
-        except AttributeError:
-            current_task = None
-
-        return {
-            'type': 'worker',
-            'hostname': socket.gethostname(),
-            'uptime': self.uptime,
-            'pid': os.getpid(),
-            'ppid': os.getppid(),
-            'version': kuyruk.__version__,
-            'current_task': current_task,
-            'current_args': self.current_args,
-            'current_kwargs': self.current_kwargs,
-            'consuming': self.consumer.consuming,
-            'queue': {
-                'name': method.queue,
-                'messages_ready': method.message_count,
-                'consumers': method.consumer_count,
-            }
-        }
+def print_stack(sig, frame):
+    print '=' * 70
+    print ''.join(traceback.format_stack())
+    print '-' * 70

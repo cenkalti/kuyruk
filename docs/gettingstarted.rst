@@ -2,8 +2,12 @@ Getting Started
 ===============
 
 Running a function in background requires only few steps with Kuyruk.
-This tutorial assumes that you have a RabbitMQ server running at localhost
+This tutorial assumes that you have a running RabbitMQ server on localhost
 with default configuration.
+
+Following files and commands are in
+`example directory <https://github.com/cenkalti/kuyruk/tree/master/example>`_
+for convenience.
 
 
 Installing
@@ -19,15 +23,13 @@ Kuyruk is available on PyPI. You can install it via pip.
 Defining Tasks
 --------------
 
-Instantiate a :class:`~kuyruk.Kuyruk` object somewhere.
-Then just put a :meth:`~kuyruk.Kuyruk.task` decorator on top of your function that you
-want to run in background. After decorating, when you call the function it
-will send the task to default queue instead of invoking it. Since Kuyruk does
-not support a result backend yet you should not be using the return value of
-the function.
+Instantiate a :class:`~kuyruk.Kuyruk` object and put a
+:meth:`~kuyruk.Kuyruk.task` decorator on top of your function.
+This will convert your function into a :class:`~kuyruk.Task` object.
 
 .. code-block:: python
 
+   # tasks.py
    from kuyruk import Kuyruk
 
    kuyruk = Kuyruk()
@@ -37,24 +39,26 @@ the function.
        print message
 
 
-For more information on defining tasks see the documentation on
-:meth:`~kuyruk.Kuyruk.task` decorator.
+You can specify some options when defining task. See
+:meth:`~kuyruk.Kuyruk.task` for details.
 
 
 Sending the Task to RabbitMQ
 ----------------------------
 
-Kuyuk requires no change in client code. After wrapping a function with
-:meth:`~kuyruk.Kuyruk.task` decorator calling the function as usual will send a
-message to the queue instead of running the function.
+When you call the :class:`~kuyruk.Task` object, Kuyruk will serialize the task
+as JSON and will send it to a queue on RabbitMQ instead of running it.
+
+.. code-block:: python
+
+   echo("Hello World")
 
 
 Running a Worker
 ----------------
 
+Run the following command to process tasks in default queue.
+
 .. code-block:: bash
 
-    $ kuyruk worker
-
-Running the above command is enough for processing the tasks in the
-default queue.
+    $ kuyruk --app tasks.kuyruk worker

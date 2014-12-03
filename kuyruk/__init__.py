@@ -1,19 +1,17 @@
 from __future__ import absolute_import
+import atexit
 import logging
+from threading import RLock
+from contextlib import contextmanager, closing
 
-import pika
-import pika.exceptions
+import amqp
 
-from kuyruk import exceptions
+from kuyruk import exceptions, importer
 from kuyruk.task import Task
-from kuyruk.queue import Queue
 from kuyruk.config import Config
 from kuyruk.worker import Worker
-from kuyruk.events import EventMixin
-from kuyruk.connection import Connection
 
-__version__ = '1.2.4'
-__all__ = ['Kuyruk', 'Task', 'Worker']
+__all__ = ['Kuyruk', 'Config', 'Task']
 
 
 logger = logging.getLogger(__name__)
@@ -24,50 +22,71 @@ null_handler = logging.NullHandler()
 logger.addHandler(null_handler)
 
 
-# Pika should do this. Patch submitted to Pika.
-logging.getLogger('pika').addHandler(null_handler)
-
-
-class Kuyruk(EventMixin):
+class Kuyruk(object):
     """
-    Main class for Kuyruk distributed task queue. It holds the configuration
-    values and provides a task decorator for user application
+    Provides :func:`~kuyruk.Kuyruk.task` decorator to convert a function
+    into a :class:`~kuyruk.Task`.
 
-    :param config: A module that contains configuration options.
-                   See :ref:`configuration-options` for default values.
+    Provides :func:`~kuyruk.Kuyruk.channel` context manager for opening a
+    new channel on the connection.
+    Connection is opened when the first channel is created.
+
+    Maintains a single connection to RabbitMQ server.
+    If you use the :class:`~kuyruk.Kuyruk` object as a context manager,
+    the connection will be closed when exiting.
+
+    :param config: Must be an instance of :class:`~kuyruk.Config`.
+                   If ``None``, default config is used.
+                   See :class:`~kuyruk.Config` for default values.
 
     """
-    Reject = exceptions.Reject  # Shortcut for raising from tasks
+    # Aliases for raising from tasks
+    Reject = exceptions.Reject
+    Discard = exceptions.Discard
 
-    def __init__(self, config=None, task_class=Task):
-        self.task_class = task_class
-        self.config = Config()
+    def __init__(self, config=None):
+        if config is None:
+            config = Config()
+        if not isinstance(config, Config):
+            raise TypeError
+        self.config = config
         self._connection = None
-        self._channel = None
-        if config:
-            self.config.from_object(config)
+        self._lock = RLock()  # protects self._connection
 
-    def task(self, queue='kuyruk', eager=False, retry=0, task_class=None,
-             max_run_time=None, local=False, arg_class=None):
+        # Close open RabbitMQ connection at exit.
+        def _close():
+            try:
+                self._close_connection()
+            except Exception:
+                pass
+        atexit.register(_close)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._close_connection()
+
+    def _close_connection(self):
+        with self._lock:
+            if self._connection is not None:
+                self._connection.close()
+
+    def task(self, queue='kuyruk', local=False, retry=0, max_run_time=None):
         """
-        Wrap functions with this decorator to convert them to background
-        tasks. After wrapping, calling the function will send a message to
-        queue instead of running the function.
+        Wrap functions with this decorator to convert them to *tasks*.
+        After wrapping, calling the function will send a message to
+        a queue instead of running the function.
 
         :param queue: Queue name for the tasks.
-        :param eager: Run task in process, do not use RabbitMQ.
-        :param retry: Retry this times before give up. Task will be re-routed
-            and executed on another worker.
-        :param task_class: Custom task class.
-            Must be a subclass of :class:`~Task`.
-            If this is :const:`None` then :attr:`Task.task_class` will be used.
+        :param retry: Retry this times before give up.
+            The failed task will be retried in the same worker.
         :param max_run_time: Maximum allowed time in seconds for task to
             complete.
-        :param arg_class: Class of the first argument. If it is present,
-            the first argument will be converted to it's ``id`` when sending
-            the task to the queue and it will be reloaded on worker when
-            running the task.
-        :return: Callable :class:`~Task` object wrapping the original function.
+        :param local: Append hostname to the queue name. Worker needs to be
+            started on the local queue to receive this task.
+        :return: Callable :class:`~kuyruk.Task` object wrapping the original
+            function.
 
         """
         def decorator():
@@ -75,81 +94,51 @@ class Kuyruk(EventMixin):
                 # Function may be wrapped with no-arg decorator
                 queue_ = 'kuyruk' if callable(queue) else queue
 
-                task_class_ = task_class or self.task_class
-                return task_class_(
-                    f, self,
-                    queue=queue_, eager=eager, local=local, retry=retry,
-                    max_run_time=max_run_time, arg_class=arg_class)
+                return Task(
+                    f, self, queue=queue_, local=local,
+                    retry=retry, max_run_time=max_run_time)
             return inner
 
         if callable(queue):
-            logger.debug('task without args')
+            # task without args
             return decorator()(queue)
         else:
-            logger.debug('task with args')
+            # task with args
             return decorator()
 
-    def connection(self):
-        """
-        Returns the shared RabbitMQ connection.
-        Creates a new connection if it is not connected.
-
-        """
-        if self._connection is None or not self._connection.is_open:
-            self._connection = self._connect()
-
-        return self._connection
-
+    @contextmanager
     def channel(self):
+        """Returns a new channel as a context manager.
+        A lock will be held when this function is called.
+        Exiting from the context manager will release the lock.
+        Be aware of this when using Kuyruk in a multi-threaded program.
         """
-        Returns the shared channel.
-        Creates a new channel if there is no available.
+        with self._lock:
+            # Connect once
+            if self._connection is None:
+                self._connection = self._connect()
 
-        """
-        if self._channel is None or not self._channel.is_open:
-            self._channel = self._open_channel()
-
-        return self._channel
-
-    def close(self):
-        if self._connection is not None:
-            if self._connection.is_open:
-                self._connection.close()
-
-    def _connect(self):
-        """Returns new connection object."""
-        parameters = pika.ConnectionParameters(
-            host=self.config.RABBIT_HOST,
-            port=self.config.RABBIT_PORT,
-            virtual_host=self.config.RABBIT_VIRTUAL_HOST,
-            credentials=pika.PlainCredentials(
-                self.config.RABBIT_USER,
-                self.config.RABBIT_PASSWORD),
-            heartbeat_interval=0,  # We don't want heartbeats
-            socket_timeout=2,
-            connection_attempts=2)
-        connection = Connection(parameters)
-        logger.info('Connected to RabbitMQ')
-        return connection
-
-    def _open_channel(self):
-        """Returns a new channel."""
-        CLOSED = (pika.exceptions.ConnectionClosed,
-                  pika.exceptions.ChannelClosed)
-
-        try:
-            channel = self.connection().channel()
-        except CLOSED:
-            logger.warning("Connection is closed. Reconnecting...")
-
-            # If there is a connection, try to close it
-            if self._connection:
+            # Try to create new channel.
+            # If fails try again with a new connection.
+            try:
+                channel = self._connection.channel()
+            except Exception:
                 try:
                     self._connection.close()
-                except CLOSED:
+                except Exception:
                     pass
+                self._connection = self._connect()
+                channel = self._connection.channel()
 
-            self._connection = self._connect()
-            channel = self._connection.channel()
+            with closing(channel):
+                yield channel
 
-        return channel
+    def _connect(self):
+        """Returns a new connection."""
+        conn = amqp.Connection(
+            host="%s:%s" % (self.config.RABBIT_HOST, self.config.RABBIT_PORT),
+            user_id=self.config.RABBIT_USER,
+            password=self.config.RABBIT_PASSWORD,
+            virtual_host=self.config.RABBIT_VIRTUAL_HOST)
+        logger.info('Connected to RabbitMQ')
+        return conn
