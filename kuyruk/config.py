@@ -103,7 +103,7 @@ class Config(object):
         Keys must start with `KUYRUK_`."""
         for key, value in os.environ.items():
             if key.startswith('KUYRUK_'):
-                key = key.lstrip('KUYRUK_')
+                key = key[7:]
                 self._eval_item(key, value)
 
     def from_cmd_args(self, args):
