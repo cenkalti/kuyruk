@@ -2,7 +2,7 @@ language: python
 python:
   - 2.7
 install:
-  - pip install -r dev_requirements.txt
+  - pip install -r requirements_test.txt
   - pip install --allow-all-external -e .
   - pip install coveralls
 script:
