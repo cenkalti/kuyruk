@@ -14,8 +14,8 @@ from kuyruk.config import Config
 
 
 # Override defaults for testing
-Config.LOGGING_LEVEL = "debug"
-Config.MAX_LOAD = 999
+Config.WORKER_LOGGING_LEVEL = "debug"
+Config.WORKER_MAX_LOAD = 999
 
 
 kuyruk = Kuyruk()

@@ -39,8 +39,8 @@ class Worker(object):
         self._pause = False
         self._consuming = False
         self._current_message = None
-        if self.config.MAX_LOAD is None:
-            self.config.MAX_LOAD = multiprocessing.cpu_count()
+        if self.config.WORKER_MAX_LOAD is None:
+            self.config.WORKER_MAX_LOAD = multiprocessing.cpu_count()
 
         signals.worker_init.send(self.kuyruk, worker=self)
 
@@ -73,11 +73,11 @@ class Worker(object):
         logger.debug("End run worker")
 
     def _setup_logging(self):
-        if self.config.LOGGING_CONFIG:
-            logging.config.fileConfig(self.config.LOGGING_CONFIG)
+        if self.config.WORKER_LOGGING_CONFIG:
+            logging.config.fileConfig(self.config.WORKER_LOGGING_CONFIG)
         else:
             logging.getLogger('rabbitpy').level = logging.WARNING
-            level = getattr(logging, self.config.LOGGING_LEVEL.upper())
+            level = getattr(logging, self.config.WORKER_LOGGING_LEVEL.upper())
             fmt = "%(levelname).1s " \
                   "%(name)s.%(funcName)s:%(lineno)d - %(message)s"
             logging.basicConfig(level=level, format=fmt)
@@ -179,17 +179,17 @@ class Worker(object):
         """Pause consuming messages if lood goes above the allowed limit."""
         while not self.shutdown_pending.is_set():
             load = os.getloadavg()[0]
-            if load > self.config.MAX_LOAD:
+            if load > self.config.WORKER_MAX_LOAD:
                 if self._pause is False:
                     logger.warning(
                         'Load is above the treshold (%.2f/%s), '
-                        'pausing consumer', load, self.config.MAX_LOAD)
+                        'pausing consumer', load, self.config.WORKER_MAX_LOAD)
                     self._pause = True
             else:
                 if self._pause is True:
                     logger.warning(
                         'Load is below the treshold (%.2f/%s), '
-                        'resuming consumer', load, self.config.MAX_LOAD)
+                        'resuming consumer', load, self.config.WORKER_MAX_LOAD)
                     self._pause = False
             sleep(1)
 
@@ -198,13 +198,13 @@ class Worker(object):
         gracefully.
 
         """
-        if not self.config.MAX_WORKER_RUN_TIME:
+        if not self.config.WORKER_MAX_RUN_TIME:
             return
 
         started = time()
         while not self.shutdown_pending.is_set():
             passed = time() - started
-            remaining = self.config.MAX_WORKER_RUN_TIME - passed
+            remaining = self.config.WORKER_MAX_RUN_TIME - passed
             if remaining > 0:
                 sleep(remaining)
             else:

@@ -44,16 +44,16 @@ class Config(object):
     # Worker Options
     ################
 
-    MAX_LOAD = None
+    WORKER_MAX_LOAD = None
     """Pause consuming queue when the load goes above this level."""
 
-    MAX_WORKER_RUN_TIME = None
+    WORKER_MAX_RUN_TIME = None
     """Gracefully shutdown worker after running this seconds."""
 
-    LOGGING_LEVEL = 'INFO'
+    WORKER_LOGGING_LEVEL = 'INFO'
     """Logging level of root logger."""
 
-    LOGGING_CONFIG = None
+    WORKER_LOGGING_CONFIG = None
     """INI style logging configuration file.
     This has precedence over ``LOGGING_LEVEL``."""
 
