@@ -72,15 +72,15 @@ class Config(object):
                 self._setattr(key, value)
         logger.info("Config is loaded from dict: %r", d)
 
-    def from_pymodule(self, module_name):
-        if not isinstance(module_name, str):
+    def from_pymodule(self, name):
+        if not isinstance(name, str):
             raise TypeError
-        module = importer.import_module(module_name)
+        module = importer.import_module(name)
         for key, value in module.__dict__.items():
             if (key.isupper() and
                     not isinstance(value, types.ModuleType)):
                 self._setattr(key, value)
-        logger.info("Config is loaded from module: %s", module_name)
+        logger.info("Config is loaded from module: %s", name)
 
     def from_pyfile(self, filename):
         """Load values from a Python file."""
@@ -104,23 +104,12 @@ class Config(object):
         for key, value in os.environ.items():
             if key.startswith('KUYRUK_'):
                 key = key[7:]
-                self._eval_item(key, value)
-
-    def from_cmd_args(self, args):
-        """Load values from command line arguments."""
-        to_attr = lambda x: x.upper().replace('-', '_')
-        for key, value in vars(args).items():
-            if value is not None:
-                key = to_attr(key)
-                self._eval_item(key, value)
-
-    def _eval_item(self, key, value):
-        if hasattr(Config, key):
-            try:
-                value = ast.literal_eval(value)
-            except (ValueError, SyntaxError):
-                pass
-            self._setattr(key, value)
+                if hasattr(Config, key):
+                    try:
+                        value = ast.literal_eval(value)
+                    except (ValueError, SyntaxError):
+                        pass
+                    self._setattr(key, value)
 
     def _setattr(self, key, value):
         if not hasattr(self.__class__, key):
