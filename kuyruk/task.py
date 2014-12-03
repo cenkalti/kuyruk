@@ -112,8 +112,7 @@ class Task(object):
         }
 
     def _send_signal(self, sig, **data):
-        for sender in (self, self.kuyruk):
-            sig.send(sender, task=self, **data)
+        sig.send(self.kuyruk, task=self, **data)
 
     @profile
     def apply(self, *args, **kwargs):

@@ -83,11 +83,8 @@ class KuyrukTestCase(unittest.TestCase):
         tasks.task_with_signal_handlers('hello world')
         presend_mock.assert_called_once()
         with run_kuyruk() as worker:
-            worker.expect('function1')
             worker.expect('function2')
             worker.expect('hello world')
-            worker.expect('function3')
-            worker.expect('function4')
             worker.expect('function5')
 
     def test_max_run_time(self):
