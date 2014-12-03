@@ -10,7 +10,7 @@ Released on 03-12-2014.
 
 This is major rewrite of Kuyruk and it is not backwards compatible.
 
-- Add Python 3 support.
+- Added Python 3 support.
 - Replaced pika with amqp.
 - Fixed multi-threading issues.
 - Removed master subcommand.
@@ -18,7 +18,7 @@ This is major rewrite of Kuyruk and it is not backwards compatible.
 - Removed requeue subcommand.
 - Removed manager subcommand.
 - Exceptions are not sent to Sentry.
-- Failed tasks are not saved to redis anymore.
+- Failed tasks are not saved to Redis anymore.
 - Failed tasks are retried in the same worker.
 - Unknown keys in config are now errors.
 - Changed some config variable names.
