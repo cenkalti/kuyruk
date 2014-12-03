@@ -37,6 +37,7 @@ User's Guide
    gettingstarted
    worker
    extending
+   extensions
    changelog
 
 
