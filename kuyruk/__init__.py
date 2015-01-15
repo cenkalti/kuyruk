@@ -110,8 +110,7 @@ class Kuyruk(object):
     @contextmanager
     def channel(self):
         """Returns a new channel as a context manager.
-        A lock will be held when this function is called.
-        Exiting from the context manager will release the lock.
+        A lock will be held in the context.
         Be aware of this when using Kuyruk in a multi-threaded program.
         """
         with self._lock:
