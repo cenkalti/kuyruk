@@ -137,7 +137,7 @@ class Kuyruk(object):
         """Returns a new connection."""
         conn = amqp.Connection(
             host="%s:%s" % (self.config.RABBIT_HOST, self.config.RABBIT_PORT),
-            user_id=self.config.RABBIT_USER,
+            userid=self.config.RABBIT_USER,
             password=self.config.RABBIT_PASSWORD,
             virtual_host=self.config.RABBIT_VIRTUAL_HOST)
         logger.info('Connected to RabbitMQ')
