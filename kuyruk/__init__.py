@@ -51,6 +51,7 @@ class Kuyruk(object):
         if not isinstance(config, Config):
             raise TypeError
         self.config = config
+        self.extensions = {}
         self._connection = None
         self._lock = RLock()  # protects self._connection
 
