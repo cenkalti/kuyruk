@@ -56,19 +56,6 @@ class KuyrukTestCase(unittest.TestCase):
             worker.expect('ZeroDivisionError')
         assert len_queue("kuyruk") == 0
 
-    def test_cold_shutdown(self):
-        """Cold shutdown stops stuck worker"""
-        tasks.loop_forever()
-        with run_kuyruk(terminate=False) as worker:
-            worker.expect('looping forever')
-            worker.send_signal(signal.SIGINT)
-            worker.expect('Warm shutdown')
-            worker.expect('Handled SIGINT')
-            worker.send_signal(signal.SIGINT)
-            worker.expect('Cold shutdown')
-            worker.expect_exit(0)
-            wait_until(not_running, timeout=TIMEOUT)
-
     def test_reject(self):
         """Rejected task is requeued"""
         tasks.rejecting_task()
@@ -97,11 +84,9 @@ class KuyrukTestCase(unittest.TestCase):
     def test_worker_sigquit(self):
         """Ack current message and exit"""
         tasks.loop_forever()
-        with run_kuyruk(terminate=False) as worker:
+        with run_kuyruk() as worker:
             worker.expect('looping forever')
             pid = get_pid('kuyruk: worker')
-            os.kill(pid, signal.SIGQUIT)
+            os.kill(pid, signal.SIGUSR2)
             worker.expect('Dropping current task')
-            worker.expect('Exiting')
-            worker.expect_exit(0)
         assert len_queue("kuyruk") == 0, worker.get_output()

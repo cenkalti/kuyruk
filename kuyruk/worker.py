@@ -10,7 +10,7 @@ import logging.config
 import threading
 import traceback
 import multiprocessing
-from time import time, sleep
+from time import sleep
 
 from setproctitle import setproctitle
 
@@ -37,7 +37,8 @@ class Worker(object):
 
         self.shutdown_pending = threading.Event()
         self._pause = False
-        self._consuming = False
+        self._started = None
+        self.consuming = False
         self._current_message = None
         if self.config.WORKER_MAX_LOAD is None:
             self.config.WORKER_MAX_LOAD = multiprocessing.cpu_count()
@@ -50,7 +51,7 @@ class Worker(object):
 
     def run(self):
         """Runs the worker and consumes messages from RabbitMQ.
-        Returns only after `warm_shutdown()` is called.
+        Returns only after `shutdown()` is called.
 
         """
         setproctitle("kuyruk: worker on %s" % self.queue)
@@ -59,8 +60,10 @@ class Worker(object):
 
         signal.signal(signal.SIGINT, self._handle_sigint)
         signal.signal(signal.SIGTERM, self._handle_sigterm)
-        signal.signal(signal.SIGQUIT, self._handle_sigquit)
-        signal.signal(signal.SIGUSR1, print_stack)  # for debugging
+        signal.signal(signal.SIGUSR1, self._handle_sigusr1)
+        signal.signal(signal.SIGUSR2, self._handle_sigusr2)
+
+        self._started = os.times()[4]
 
         for f in (self._watch_load, self._shutdown_timer):
             t = threading.Thread(target=f)
@@ -96,16 +99,16 @@ class Worker(object):
                 consumer_tag = '%s@%s' % (os.getpid(), socket.gethostname())
                 while not self.shutdown_pending.is_set():
                     # Consume or pause
-                    if self._pause and self._consuming:
+                    if self._pause and self.consuming:
                         ch.basic_cancel(consumer_tag)
                         logger.info('Consumer cancelled')
-                        self._consuming = False
-                    elif not self._pause and not self._consuming:
+                        self.consuming = False
+                    elif not self._pause and not self.consuming:
                         ch.basic_consume(queue=self.queue,
                                          consumer_tag=consumer_tag,
-                                         callback=self._message_callback)
+                                         callback=self._process_message)
                         logger.info('Consumer started')
-                        self._consuming = True
+                        self.consuming = True
 
                     try:
                         ch.connection.drain_events(timeout=0.1)
@@ -117,15 +120,6 @@ class Worker(object):
                         else:
                             raise
         logger.debug("End run worker")
-
-    def _message_callback(self, message):
-        # Save current message being processed so
-        # we will be able to send ACK when we receive SIGQUIT."""
-        self._current_message = message
-        try:
-            self._process_message(message)
-        finally:
-            self._current_message = None
 
     def _process_message(self, message):
         """Processes the message received from the queue."""
@@ -154,7 +148,17 @@ class Worker(object):
 
     def _process_task(self, message, description, task, args, kwargs):
         try:
-            task.apply(*args, **kwargs)
+            self._current_message = message
+            self.current_task = task
+            self.current_args = args
+            self.current_kwargs = kwargs
+            try:
+                task.apply(*args, **kwargs)
+            finally:
+                self._current_message = None
+                self.current_task = None
+                self.current_args = None
+                self.current_kwargs = None
         except Reject:
             logger.warning('Task is rejected')
             sleep(1)  # Prevent cpu burning
@@ -194,6 +198,11 @@ class Worker(object):
                     self._pause = False
             sleep(1)
 
+    @property
+    def uptime(self):
+        if self._started is not None:
+            return os.times()[4] - self._started
+
     def _shutdown_timer(self):
         """Counts down from MAX_WORKER_RUN_TIME. When it reaches zero sutdown
         gracefully.
@@ -202,67 +211,42 @@ class Worker(object):
         if not self.config.WORKER_MAX_RUN_TIME:
             return
 
-        started = time()
         while not self.shutdown_pending.is_set():
-            passed = time() - started
-            remaining = self.config.WORKER_MAX_RUN_TIME - passed
+            remaining = self.config.WORKER_MAX_RUN_TIME - self.uptime
             if remaining > 0:
                 sleep(remaining)
             else:
                 logger.warning('Run time reached zero')
-                self.warm_shutdown()
+                self.shutdown()
                 break
 
-    def warm_shutdown(self):
+    def shutdown(self):
         """Exits after the current task is finished."""
-        logger.warning("Warm shutdown")
+        logger.warning("Shutdown requested")
         self.shutdown_pending.set()
 
-    def cold_shutdown(self):
-        """Exits immediately."""
-        logger.warning("Cold shutdown")
-        _exit(0)
-
     def _handle_sigint(self, signum, frame):
-        """If running from terminal pressing Ctrl-C will initiate a warm
-        shutdown. The second interrupt will do a cold shutdown.
-
-        """
-        logger.warning("Handling SIGINT")
-        if sys.stdin.isatty() and not self.shutdown_pending.is_set():
-            self.warm_shutdown()
-        else:
-            self.cold_shutdown()
-        logger.debug("Handled SIGINT")
+        """Shutdown after processing current task."""
+        logger.warning("Catched SIGINT")
+        self.shutdown()
 
     def _handle_sigterm(self, signum, frame):
-        """Initiates a warm shutdown."""
+        """Shutdown after processing current task."""
         logger.warning("Catched SIGTERM")
-        self.warm_shutdown()
+        self.shutdown()
 
-    def _handle_sigquit(self, signum, frame):
-        """Drop the current task and exit."""
+    def _handle_sigusr1(self, signum, frame):
+        """Print stacktrace."""
+        print('=' * 70)
+        print(''.join(traceback.format_stack()))
+        print('-' * 70)
+
+    def _handle_sigusr2(self, signum, frame):
+        """Drop current task."""
         logger.warning("Catched SIGQUIT")
         if self._current_message:
-            try:
-                logger.warning("Dropping current task...")
-                self._current_message.channel.basic_reject(
-                    self._current_message.delivery_tag, requeue=False)
-                self._current_message.channel.close()
-            except Exception:
-                logger.critical("Cannot send ACK for the current task.")
-                traceback.print_exc()
-        logger.warning("Exiting...")
-        _exit(0)
+            logger.warning("Dropping current task...")
+            raise Discard
 
-
-def _exit(code):
-    sys.stdout.flush()
-    sys.stderr.flush()
-    os._exit(code)
-
-
-def print_stack(sig, frame):
-    print('=' * 70)
-    print(''.join(traceback.format_stack()))
-    print('-' * 70)
+    def drop_task(self):
+        os.kill(os.getpid(), signal.SIGUSR2)
