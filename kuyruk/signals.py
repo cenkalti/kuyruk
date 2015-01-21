@@ -111,6 +111,13 @@ worker_failure = Signal()
 #:    * worker: The Worker object
 worker_init = Signal()
 
+#: Sent when the worker is started.
+#:
+#: Arguments:
+#:    * sender: Kuyruk object
+#:    * worker: The Worker object
+worker_start = Signal()
+
 #: Sent when the worker shuts down.
 #:
 #: Arguments:

@@ -67,9 +67,10 @@ class Worker(object):
             t.daemon = True
             t.start()
 
+        signals.worker_start.send(self.kuyruk, worker=self)
         self._consume_messages()
-
         signals.worker_shutdown.send(self.kuyruk, worker=self)
+
         logger.debug("End run worker")
 
     def _setup_logging(self):
