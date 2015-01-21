@@ -40,6 +40,9 @@ class Worker(object):
         self._started = None
         self.consuming = False
         self._current_message = None
+        self.current_task = None
+        self.current_args = None
+        self.current_kwargs = None
         if self.config.WORKER_MAX_LOAD is None:
             self.config.WORKER_MAX_LOAD = multiprocessing.cpu_count()
 
