@@ -186,8 +186,8 @@ def time_limit(seconds):
 
 
 def get_queue_name(name, host=None, local=False):
-    if local:
-        host = socket.gethostname()
     if host:
-        name = "%s.%s" % (name, host)
+        return "%s.%s" % (name, host)
+    if local:
+        return "%s.%s" % (name, socket.gethostname())
     return name
