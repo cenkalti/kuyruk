@@ -19,3 +19,12 @@ Kuyruk-Requeue
 https://github.com/cenkalti/kuyruk-requeue
 
 Save failed tasks to Redis and requeue them.
+
+
+
+Kuyruk-Manager
+--------------
+
+https://github.com/cenkalti/kuyruk-manager
+
+See and manage Kuyruk workers..
