@@ -11,7 +11,7 @@ from kuyruk.task import Task
 from kuyruk.config import Config
 from kuyruk.worker import Worker
 
-__version__ = '3.1.0'
+__version__ = '3.2.0'
 __all__ = ['Kuyruk', 'Config', 'Task']
 
 
