@@ -24,3 +24,7 @@ class Discard(KuyrukError):
 class Timeout(KuyrukError):
     """Raised if a task exceeds it's allowed run time."""
     pass
+
+
+class ConnectionError(KuyrukError):
+    pass
