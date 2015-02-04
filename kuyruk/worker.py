@@ -16,7 +16,7 @@ from setproctitle import setproctitle
 
 from kuyruk import importer, signals
 from kuyruk.task import get_queue_name
-from kuyruk.exceptions import Reject, Discard, ConnectionError
+from kuyruk.exceptions import Reject, Discard
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,6 @@ class Worker(object):
         self.current_task = None
         self.current_args = None
         self.current_kwargs = None
-        self._heartbeat_exc_info = None
         if self.config.WORKER_MAX_LOAD is None:
             self.config.WORKER_MAX_LOAD = multiprocessing.cpu_count()
 
@@ -64,7 +63,6 @@ class Worker(object):
 
         signal.signal(signal.SIGINT, self._handle_sigint)
         signal.signal(signal.SIGTERM, self._handle_sigterm)
-        signal.signal(signal.SIGHUP, self._handle_sighup)
         signal.signal(signal.SIGUSR1, self._handle_sigusr1)
         signal.signal(signal.SIGUSR2, self._handle_sigusr2)
 
@@ -115,9 +113,6 @@ class Worker(object):
                         logger.info('Consumer started')
                         self.consuming = True
 
-                    if self._heartbeat_exc_info:
-                        break
-
                     try:
                         ch.connection.drain_events(timeout=0.1)
                     except socket.error as e:
@@ -160,11 +155,6 @@ class Worker(object):
             self.current_task = task
             self.current_args = args
             self.current_kwargs = kwargs
-            stop_heartbeat = threading.Event()
-            heartbeat_thread = threading.Thread(
-                target=self._heartbeat_tick,
-                args=(message.channel.connection, stop_heartbeat))
-            heartbeat_thread.start()
             try:
                 task.apply(*args, **kwargs)
             finally:
@@ -172,8 +162,6 @@ class Worker(object):
                 self.current_task = None
                 self.current_args = None
                 self.current_kwargs = None
-                stop_heartbeat.set()
-                heartbeat_thread.join()
         except Reject:
             logger.warning('Task is rejected')
             sleep(1)  # Prevent cpu burning
@@ -181,8 +169,6 @@ class Worker(object):
         except Discard:
             logger.warning('Task is discarded')
             message.channel.basic_reject(message.delivery_tag, requeue=False)
-        except ConnectionError:
-            pass
         except Exception:
             logger.error('Task raised an exception')
             exc_info = sys.exc_info()
@@ -252,10 +238,6 @@ class Worker(object):
         logger.warning("Catched SIGTERM")
         self.shutdown()
 
-    def _handle_sighup(self, signum, frame):
-        logger.warning("Catched SIGHUP")
-        raise ConnectionError(self._heartbeat_exc_info)
-
     def _handle_sigusr1(self, signum, frame):
         """Print stacktrace."""
         print('=' * 70)
@@ -271,17 +253,3 @@ class Worker(object):
 
     def drop_task(self):
         os.kill(os.getpid(), signal.SIGUSR2)
-
-    def _heartbeat_tick(self, connection, stop_event):
-        while not stop_event.is_set():
-            try:
-                with self.kuyruk._lock:
-                    connection.drain_events(timeout=0.1)
-                    connection.heartbeat_tick()
-            except socket.timeout:
-                pass
-            except Exception as e:
-                logger.error(e)
-                self._heartbeat_exc_info = sys.exc_info()
-                os.kill(os.getpid(), signal.SIGHUP)
-                break
