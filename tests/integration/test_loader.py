@@ -34,19 +34,18 @@ class LoaderTestCase(unittest.TestCase):
                 'apppackage.tasks.print_message'
             ),
         ]
-        with Kuyruk() as k:
-            with k.channel() as ch:
-                for args, cwd, name in cases:
-                    print(cwd, args, name)
+        with Kuyruk().channel() as ch:
+            for args, cwd, name in cases:
+                print(cwd, args, name)
 
-                    ch.queue_delete("kuyruk")
+                ch.queue_delete("kuyruk")
 
-                    # Every call sends a task to the queue
-                    run_python(args, cwd=cwd)
+                # Every call sends a task to the queue
+                run_python(args, cwd=cwd)
 
-                    # Can we load the task by name?
-                    got = get_name()
-                    assert got == name, got
+                # Can we load the task by name?
+                got = get_name()
+                assert got == name, got
 
 
 def run_python(args, cwd):
@@ -56,8 +55,7 @@ def run_python(args, cwd):
 
 
 def get_name():
-    with Kuyruk() as k:
-        with k.channel() as ch:
-            message = ch.basic_get("kuyruk")
-            desc = json.loads(message.body)
-            return '.'.join([desc['module'], desc['function']])
+    with Kuyruk().channel() as ch:
+        message = ch.basic_get("kuyruk")
+        desc = json.loads(message.body)
+        return '.'.join([desc['module'], desc['function']])

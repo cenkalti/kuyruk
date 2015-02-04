@@ -1,7 +1,5 @@
 from __future__ import absolute_import
-import atexit
 import logging
-from threading import RLock
 from contextlib import contextmanager, closing
 
 import amqp
@@ -32,10 +30,6 @@ class Kuyruk(object):
     new channel on the connection.
     Connection is opened when the first channel is created.
 
-    Maintains a single connection to RabbitMQ server.
-    If you use the :class:`~kuyruk.Kuyruk` object as a context manager,
-    the connection will be closed when exiting.
-
     :param config: Must be an instance of :class:`~kuyruk.Config`.
                    If ``None``, default config is used.
                    See :class:`~kuyruk.Config` for default values.
@@ -52,27 +46,6 @@ class Kuyruk(object):
             raise TypeError
         self.config = config
         self.extensions = {}
-        self._connection = None
-        self._lock = RLock()  # protects self._connection
-
-        # Close open RabbitMQ connection at exit.
-        def _close():
-            try:
-                self._close_connection()
-            except Exception:
-                pass
-        atexit.register(_close)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._close_connection()
-
-    def _close_connection(self):
-        with self._lock:
-            if self._connection is not None:
-                self._connection.close()
 
     def task(self, queue='kuyruk', local=False, retry=0, max_run_time=None):
         """
@@ -110,39 +83,22 @@ class Kuyruk(object):
 
     @contextmanager
     def channel(self):
-        """Returns a new channel as a context manager.
-        A lock will be held in the context.
-        Be aware of this when using Kuyruk in a multi-threaded program.
+        """Returns a new channel from a new connection as a context manager.
         """
-        with self._lock:
-            # Connect once
-            if self._connection is None:
-                self._connection = self._connect()
+        with self.connection() as conn:
+            ch = conn.channel()
+            logger.info('Opened new channel')
+            with closing(ch):
+                yield ch
 
-            # Try to create new channel.
-            # If fails try again with a new connection.
-            try:
-                channel = self._connection.channel()
-            except Exception:
-                try:
-                    self._connection.close()
-                except Exception:
-                    pass
-                self._connection = self._connect()
-                channel = self._connection.channel()
-
-            with closing(channel):
-                yield channel
-
-    def _connect(self):
-        """Returns a new connection."""
+    @contextmanager
+    def connection(self):
+        """Returns a new connection as a context manager."""
         conn = amqp.Connection(
             host="%s:%s" % (self.config.RABBIT_HOST, self.config.RABBIT_PORT),
             userid=self.config.RABBIT_USER,
             password=self.config.RABBIT_PASSWORD,
             virtual_host=self.config.RABBIT_VIRTUAL_HOST)
         logger.info('Connected to RabbitMQ')
-        return conn
-
-    def send_heartbeat(self):
-        self._connection.send_heartbeat()
+        with closing(conn):
+            yield conn

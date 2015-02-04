@@ -90,38 +90,37 @@ class Worker(object):
             logging.basicConfig(level=level, format=fmt)
 
     def _consume_messages(self):
-        with self.kuyruk as k:
-            with k.channel() as ch:
-                ch.queue_declare(
-                    queue=self.queue, durable=True, auto_delete=False)
+        with self.kuyruk.channel() as ch:
+            ch.queue_declare(
+                queue=self.queue, durable=True, auto_delete=False)
 
-                # Set prefetch count to 1. If we don't set this, RabbitMQ keeps
-                # sending messages while we are already working on a message.
-                ch.basic_qos(0, 1, False)
+            # Set prefetch count to 1. If we don't set this, RabbitMQ keeps
+            # sending messages while we are already working on a message.
+            ch.basic_qos(0, 1, False)
 
-                consumer_tag = '%s@%s' % (os.getpid(), socket.gethostname())
-                while not self.shutdown_pending.is_set():
-                    # Consume or pause
-                    if self._pause and self.consuming:
-                        ch.basic_cancel(consumer_tag)
-                        logger.info('Consumer cancelled')
-                        self.consuming = False
-                    elif not self._pause and not self.consuming:
-                        ch.basic_consume(queue=self.queue,
-                                         consumer_tag=consumer_tag,
-                                         callback=self._process_message)
-                        logger.info('Consumer started')
-                        self.consuming = True
+            consumer_tag = '%s@%s' % (os.getpid(), socket.gethostname())
+            while not self.shutdown_pending.is_set():
+                # Consume or pause
+                if self._pause and self.consuming:
+                    ch.basic_cancel(consumer_tag)
+                    logger.info('Consumer cancelled')
+                    self.consuming = False
+                elif not self._pause and not self.consuming:
+                    ch.basic_consume(queue=self.queue,
+                                     consumer_tag=consumer_tag,
+                                     callback=self._process_message)
+                    logger.info('Consumer started')
+                    self.consuming = True
 
-                    try:
-                        ch.connection.drain_events(timeout=0.1)
-                    except socket.error as e:
-                        if isinstance(e, socket.timeout):
-                            pass
-                        elif e.errno == errno.EINTR:
-                            pass  # happens when the process receives a signal
-                        else:
-                            raise
+                try:
+                    ch.connection.drain_events(timeout=0.1)
+                except socket.error as e:
+                    if isinstance(e, socket.timeout):
+                        pass
+                    elif e.errno == errno.EINTR:
+                        pass  # happens when the process receives a signal
+                    else:
+                        raise
         logger.debug("End run worker")
 
     def _process_message(self, message):

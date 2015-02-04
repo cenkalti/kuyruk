@@ -23,19 +23,19 @@ logger = logging.getLogger(__name__)
 
 def delete_queue(*queues):
     """Delete queues from RabbitMQ"""
-    with Kuyruk() as k:
+    k = Kuyruk()
+    with k.connection() as conn:
         for name in queues:
             logger.debug("deleting queue %s", name)
-            with k.channel() as ch:
+            with conn.channel() as ch:
                 ch.queue_delete(queue=name)
 
 
 def len_queue(queue):
-    with Kuyruk() as k:
-        with k.channel() as ch:
-            _, count, _ = ch.queue_declare(queue=queue, durable=True,
-                                           passive=True, auto_delete=False)
-            return count
+    with Kuyruk().channel() as ch:
+        _, count, _ = ch.queue_declare(queue=queue, durable=True,
+                                       passive=True, auto_delete=False)
+        return count
 
 
 def is_empty(queue):
