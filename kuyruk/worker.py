@@ -118,8 +118,8 @@ class Worker(object):
                     break
 
                 try:
-                    ch.connection.drain_events(timeout=0.1)
-                    ch.connection.heartbeat_tick()
+                    ch.connection.drain_events(timeout=1)
+                    ch.connection.send_heartbeat()
                 except socket.error as e:
                     if isinstance(e, socket.timeout):
                         pass
@@ -275,8 +275,7 @@ class Worker(object):
     def _heartbeat_tick(self, connection, stop_event):
         while not stop_event.is_set():
             try:
-                connection.drain_events(timeout=0.1)
-                connection.heartbeat_tick()
+                connection.send_heartbeat()
             except socket.timeout:
                 pass
             except Exception as e:
