@@ -119,8 +119,8 @@ class Worker(object):
                     break
 
                 try:
-                    ch.connection.drain_events(timeout=1)
                     ch.connection.send_heartbeat()
+                    ch.connection.drain_events(timeout=1)
                 except socket.error as e:
                     if isinstance(e, socket.timeout):
                         pass
