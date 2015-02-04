@@ -143,6 +143,3 @@ class Kuyruk(object):
             virtual_host=self.config.RABBIT_VIRTUAL_HOST)
         logger.info('Connected to RabbitMQ')
         return conn
-
-    def send_heartbeat(self):
-        self._connection.send_heartbeat()
