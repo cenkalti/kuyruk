@@ -275,8 +275,9 @@ class Worker(object):
     def _heartbeat_tick(self, connection, stop_event):
         while not stop_event.is_set():
             try:
-                connection.drain_events(timeout=1)
-                connection.heartbeat_tick()
+                with self.kuyruk._lock:
+                    connection.drain_events(timeout=0.1)
+                    connection.heartbeat_tick()
             except socket.timeout:
                 pass
             except Exception as e:
