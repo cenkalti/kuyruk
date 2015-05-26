@@ -83,8 +83,9 @@ class Task(object):
         :return: :const:`None`
 
         """
-        logger.debug("Task.send_to_queueue args=%r, kwargs=%r", args, kwargs)
-        queue = get_queue_name(self.queue, host=host, local=local or self.local)
+        logger.debug("Task.send_to_queue args=%r, kwargs=%r", args, kwargs)
+        queue = get_queue_name(self.queue, host=host,
+                               local=local or self.local)
         description = self._get_description(args, kwargs, queue)
         self._send_signal(signals.task_presend, args=args, kwargs=kwargs,
                           description=description)
