@@ -86,7 +86,6 @@ class Worker(object):
         if self.config.WORKER_LOGGING_CONFIG:
             logging.config.fileConfig(self.config.WORKER_LOGGING_CONFIG)
         else:
-            logging.getLogger('rabbitpy').level = logging.WARNING
             level = getattr(logging, self.config.WORKER_LOGGING_LEVEL.upper())
             fmt = "%(levelname).1s " \
                   "%(name)s.%(funcName)s:%(lineno)d - %(message)s"
