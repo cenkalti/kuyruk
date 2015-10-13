@@ -8,7 +8,7 @@ Usage
 
 .. code-block:: shell
 
-    $ kuyruk -app path.to.kuyruk.instance --queue queue_name
+    $ kuyruk --app path.to.kuyruk.instance --queue queue_name
 
 If ``queue_name`` is not given default queue name("kuyruk") is used.
 

@@ -23,7 +23,7 @@ def main():
     parser.add_argument(
         '-v', '--version', action='version', version=__version__)
     parser.add_argument(
-        '-a', '--app', required=True, help='Path to the Kuyruk object')
+        '-a', '--app', required=True, help='path to the Kuyruk object')
 
     subparsers = parser.add_subparsers(help='sub-command name')
 
