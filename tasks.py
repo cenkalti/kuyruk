@@ -1,3 +1,12 @@
+"""
+NOTE: These are Invoke tasks, NOT Kuyruk tasks.
+
+Invoke provides a clean, high level API for running shell commands
+and defining/organizing task functions from a tasks.py file.
+
+http://www.pyinvoke.org
+
+"""
 from invoke import run, task
 
 
