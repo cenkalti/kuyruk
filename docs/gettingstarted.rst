@@ -51,7 +51,8 @@ as JSON and will send it to a queue on RabbitMQ instead of running it.
 
 .. code-block:: python
 
-   echo("Hello World")
+   import tasks
+   tasks.echo("Hello, World!")
 
 
 Running a Worker
