@@ -253,10 +253,15 @@ class Worker(object):
         self.shutdown()
 
     def _handle_sighup(self, signum, frame):
+        """Used internally to fail the task when connection to RabbitMQ is
+        lost during the execution of the task.
+
+        """
         logger.warning("Catched SIGHUP")
         raise ConnectionError(self._heartbeat_exc_info)
 
-    def _handle_sigusr1(self, signum, frame):
+    @staticmethod
+    def _handle_sigusr1(signum, frame):
         """Print stacktrace."""
         print('=' * 70)
         print(''.join(traceback.format_stack()))
@@ -264,7 +269,7 @@ class Worker(object):
 
     def _handle_sigusr2(self, signum, frame):
         """Drop current task."""
-        logger.warning("Catched SIGQUIT")
+        logger.warning("Catched SIGUSR2")
         if self._current_message:
             logger.warning("Dropping current task...")
             raise Discard

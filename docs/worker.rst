@@ -8,25 +8,43 @@ Usage
 
 .. code-block:: shell
 
-    $ kuyruk --app path.to.kuyruk.instance --queue queue_name
+    $ kuyruk --app <path.to.kuyruk.instance> --queue <queue_name>
 
 If ``queue_name`` is not given default queue name("kuyruk") is used.
+
+Example:
+
+.. code-block:: shell
+
+    $ kuyruk --app tasks.kuyruk --queue download_file
 
 OS Signals
 ----------
 
-SIGINT
-    If Kuyruk is run from an interactive shell the first signal initiates a
-    warm shutdown. Second signal does a cold shutdown.
+Description of how worker processes react to OS signals.
 
-    If not run from an interactive shell, it is the same as cold shutdown.
+SIGINT
+    Worker exits after completing the current task.
+
+    *This is the signal sent when you press CTRL-C on your keyboard.*
 
 SIGTERM
-    Warm shutdown. Exits after current task finishes.
+    Worker exits after completing the current task.
 
 SIGQUIT
-    Drops current task and exits immediately. Can be used if the task is stuck.
-    The task will not be requeued.
+    Worker quits immediately. This is unclean shutdown.
+    If worker is running a task it will be requeued by RabbitMQ.
+
+    *This is the signal sent when you press CTRL-\ on your keyboard.*
 
 SIGUSR1
-    Prints stacktrace. Useful for debugging stuck tasks.
+    Prints stacktrace. Useful for debugging stuck tasks or seeing what the
+    worker is doing.
+
+SIGUSR2
+    Discard current task and proceed to next one.
+    Discarded task will not be requeued by RabbitMQ.
+
+SIGHUP
+    Used internally to fail the task when connection to RabbitMQ is
+    lost during the execution of a long running task. Do not use it.
