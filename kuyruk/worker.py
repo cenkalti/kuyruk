@@ -13,8 +13,6 @@ import traceback
 import multiprocessing
 from time import sleep
 
-from setproctitle import setproctitle
-
 from kuyruk import importer, signals
 from kuyruk.task import get_queue_name
 from kuyruk.exceptions import Reject, Discard, ConnectionError
@@ -59,6 +57,11 @@ class Worker(object):
         Returns only after `shutdown()` is called.
 
         """
+        # Lazy import setproctitle.
+        # There is bug with the latest version of Python with
+        # uWSGI and setproctitle combination.
+        # Watch: https://github.com/unbit/uwsgi/issues/1030
+        from setproctitle import setproctitle
         setproctitle("kuyruk: worker on %s" % self.queue)
 
         self._setup_logging()
