@@ -3,6 +3,13 @@ Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 4.0.6
+-------------
+
+Released on 08-02-2016
+
+- Fixed a bug related with Python 2.7.11, uWSGI and setproctitle.
+
 Version 2.0.0
 -------------
 
