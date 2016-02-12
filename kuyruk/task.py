@@ -27,7 +27,7 @@ def profile(f):
         start = time()
         result = f(self, *args, **kwargs)
         end = time()
-        logger.info("%s finished in %i seconds." % (self._name, end - start))
+        logger.info("%s finished in %i seconds." % (self.name, end - start))
         return result
     return inner
 
@@ -48,7 +48,7 @@ class Task(object):
         self._send_signal(signals.task_init)
 
     def __repr__(self):
-        return "<Task of %r>" % self._name
+        return "<Task of %r>" % self.name
 
     def __call__(self, *args, **kwargs):
         """When a fucntion is wrapped with a task decorator it will be
@@ -157,7 +157,7 @@ class Task(object):
             send_signal(signals.task_postapply)
 
     @property
-    def _name(self):
+    def name(self):
         """Full path to the task in the form of `<module>.<function>`.
         Workers find and import tasks by this path.
 
