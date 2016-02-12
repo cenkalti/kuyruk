@@ -3,6 +3,13 @@ Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 4.0.7
+-------------
+
+Released on 12-02-2016.
+
+- Export Task.name property for fixing a bug in kuyruk-manager.
+
 Version 4.0.6
 -------------
 
