@@ -37,7 +37,7 @@ User's Guide
 
    gettingstarted
    worker
-   extending
+   signals
    extensions
    changelog
 

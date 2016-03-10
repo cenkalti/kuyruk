@@ -1,5 +1,5 @@
-Extending
-=========
+Signals
+=======
 
 Kuyruk can be extended via signals. Kuyruk has a signalling support via
 `Blinker <http://pythonhosted.org/blinker/>`_ library.
@@ -34,8 +34,8 @@ executing the function and commiting it after the task is executed:
         # Work with the session...
         session.commit()
 
-Signals
--------
+List of Signals
+---------------
 
 .. automodule:: kuyruk.signals
    :member-order: bysource
