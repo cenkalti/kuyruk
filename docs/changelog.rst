@@ -3,6 +3,13 @@ Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 4.1.0
+-------------
+
+Released on 11-03-2016.
+
+- Workers can consume tasks from multiple queues.
+
 Version 4.0.7
 -------------
 
