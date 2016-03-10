@@ -8,6 +8,7 @@ import socket
 import signal
 import logging
 import logging.config
+import warnings
 import threading
 import traceback
 import multiprocessing
@@ -30,10 +31,10 @@ class Worker(object):
     def __init__(self, app, args):
         self.kuyruk = app
 
-        if not args.queue:
-            raise ValueError("empty queue name")
-        self.queue = get_queue_name(args.queue, local=args.local)
+        if not args.queues:
+            raise ValueError("no queue given")
 
+        self.queues = [get_queue_name(q, local=args.local) for q in args.queues]
         self.shutdown_pending = threading.Event()
         self._pause = False
         self._started = None
@@ -46,7 +47,15 @@ class Worker(object):
         if self.config.WORKER_MAX_LOAD is None:
             self.config.WORKER_MAX_LOAD = multiprocessing.cpu_count()
 
+        self._pid = os.getpid()
+        self._hostname = socket.gethostname()
+
         signals.worker_init.send(self.kuyruk, worker=self)
+
+    @property
+    def queue(self):
+        warnings.warn("Worker.queue is deprecated. Use Worker.queues instead.")
+        return self.queues[0]
 
     @property
     def config(self):
@@ -62,7 +71,7 @@ class Worker(object):
         # uWSGI and setproctitle combination.
         # Watch: https://github.com/unbit/uwsgi/issues/1030
         from setproctitle import setproctitle
-        setproctitle("kuyruk: worker on %s" % self.queue)
+        setproctitle("kuyruk: worker on %s" % ','.join(self.queues))
 
         self._setup_logging()
 
@@ -96,24 +105,19 @@ class Worker(object):
 
     def _consume_messages(self):
         with self.kuyruk.channel() as ch:
-            ch.queue_declare(
-                queue=self.queue, durable=True, auto_delete=False)
-
             # Set prefetch count to 1. If we don't set this, RabbitMQ keeps
             # sending messages while we are already working on a message.
-            ch.basic_qos(0, 1, False)
+            ch.basic_qos(0, 1, True)
 
-            consumer_tag = '%s@%s' % (os.getpid(), socket.gethostname())
+            self._declare_queues(ch)
             while not self.shutdown_pending.is_set():
                 # Consume or pause
                 if self._pause and self.consuming:
-                    ch.basic_cancel(consumer_tag)
+                    self._cancel_queues(ch)
                     logger.info('Consumer cancelled')
                     self.consuming = False
                 elif not self._pause and not self.consuming:
-                    ch.basic_consume(queue=self.queue,
-                                     consumer_tag=consumer_tag,
-                                     callback=self._process_message)
+                    self._consume_queues(ch)
                     logger.info('Consumer started')
                     self.consuming = True
 
@@ -131,6 +135,27 @@ class Worker(object):
                     else:
                         raise
         logger.debug("End run worker")
+
+    def _consumer_tag(self, queue):
+        return "%s:%s@%s" % (queue, self._pid, self._hostname)
+
+    def _declare_queues(self, ch):
+        for queue in self.queues:
+            logger.debug("queue_declare: %s", queue)
+            ch.queue_declare(
+                queue=queue, durable=True, auto_delete=False)
+
+    def _consume_queues(self, ch):
+        for queue in self.queues:
+            logger.debug("basic_consume: %s", queue)
+            ch.basic_consume(queue=queue,
+                             consumer_tag=self._consumer_tag(queue),
+                             callback=self._process_message)
+
+    def _cancel_queues(self, ch):
+        for queue in self.queues:
+            logger.debug("basic_cancel: %s", queue)
+            ch.basic_cancel(self._consumer_tag(queue))
 
     def _process_message(self, message):
         """Processes the message received from the queue."""

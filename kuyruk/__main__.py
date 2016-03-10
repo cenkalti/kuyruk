@@ -31,7 +31,8 @@ def main():
     parser_worker = subparsers.add_parser('worker', help='run a worker')
     parser_worker.set_defaults(func=run_worker)
     parser_worker.add_argument(
-        '-q', '--queue', default='kuyruk', help='consume tasks from')
+        '-q', '--queue', dest='queues', default=[], action='append',
+        help='consume tasks from queue (may be specified multiple times)')
     parser_worker.add_argument(
         '-l', '--local', action="store_true",
         help='append hostname to the queue name')
@@ -46,6 +47,10 @@ def main():
 
     # Parse arguments
     args = parser.parse_args()
+
+    # Use "kuyruk" if no queue is given
+    if not args.queues:
+        args.queues = ['kuyruk']
 
     # Import Kuyruk app
     sys.path.insert(0, '')
