@@ -25,7 +25,8 @@ def main():
     parser.add_argument(
         '-a', '--app', required=True, help='path to the Kuyruk object')
 
-    subparsers = parser.add_subparsers(help='sub-command name')
+    subparsers = parser.add_subparsers(dest='subparser_name',
+                                       help='sub-command name')
 
     # Parser for the "worker" sub-command
     parser_worker = subparsers.add_parser('worker', help='run a worker')
@@ -49,7 +50,7 @@ def main():
     args = parser.parse_args()
 
     # Use "kuyruk" if no queue is given
-    if not args.queues:
+    if args.subparser_name == 'worker' and not args.queues:
         args.queues = ['kuyruk']
 
     # Import Kuyruk app
