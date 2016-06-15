@@ -51,7 +51,7 @@ class Task(object):
         return "<Task of %r>" % self.name
 
     def __call__(self, *args, **kwargs):
-        """When a fucntion is wrapped with a task decorator it will be
+        """When a function is wrapped with a task decorator it will be
         converted to a Task object. By overriding __call__ method we are
         sending this task to queue instead of invoking the function
         without changing the client code.
