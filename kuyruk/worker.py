@@ -1,7 +1,6 @@
 from __future__ import absolute_import, print_function
 import os
 import sys
-import time
 import json
 import errno
 import socket
@@ -306,9 +305,8 @@ class Worker(object):
         os.kill(os.getpid(), signal.SIGUSR2)
 
     def _heartbeat_tick(self, connection, stop_event):
-        while not stop_event.is_set():
+        while not stop_event.wait(1):
             try:
-                time.sleep(1)
                 connection.send_heartbeat()
             except socket.timeout:
                 pass
