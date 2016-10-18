@@ -3,6 +3,14 @@ Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 4.1.2
+-------------
+
+Released on 18-10-2016.
+
+- Fixed 1 second delay after processing a task.
+- Fixed a depreciation warning from recent version of amqp library.
+
 Version 4.1.0
 -------------
 
