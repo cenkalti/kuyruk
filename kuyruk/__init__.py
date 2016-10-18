@@ -99,6 +99,7 @@ class Kuyruk(object):
             userid=self.config.RABBIT_USER,
             password=self.config.RABBIT_PASSWORD,
             virtual_host=self.config.RABBIT_VIRTUAL_HOST)
+        conn.connect()
         logger.info('Connected to RabbitMQ')
         with closing(conn):
             yield conn
