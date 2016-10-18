@@ -23,7 +23,7 @@ setup(
     author=u'Cenk Altı',
     author_email='cenkalti@gmail.com',
     keywords='rabbitmq distributed task queue',
-    url='https://github.com/cenk/kuyruk',
+    url='https://github.com/cenkalti/kuyruk',
     packages=['kuyruk'],
     include_package_data=True,
     install_requires=[

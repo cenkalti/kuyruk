@@ -6,7 +6,7 @@ This tutorial assumes that you have a running RabbitMQ server on localhost
 with default configuration.
 
 Following files and commands are in
-`example directory <https://github.com/cenk/kuyruk/tree/master/example>`_
+`example directory <https://github.com/cenkalti/kuyruk/tree/master/example>`_
 for convenience.
 
 

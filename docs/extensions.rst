@@ -7,7 +7,7 @@ These are some extensions that adds a functionality to Kuyruk.
 Kuyruk-Sentry
 -------------
 
-https://github.com/cenk/kuyruk-sentry
+https://github.com/cenkalti/kuyruk-sentry
 
 Sends exceptions in Kuyruk workers to Sentry.
 
@@ -16,7 +16,7 @@ Sends exceptions in Kuyruk workers to Sentry.
 Kuyruk-Requeue
 --------------
 
-https://github.com/cenk/kuyruk-requeue
+https://github.com/cenkalti/kuyruk-requeue
 
 Save failed tasks to Redis and requeue them.
 
@@ -25,6 +25,6 @@ Save failed tasks to Redis and requeue them.
 Kuyruk-Manager
 --------------
 
-https://github.com/cenk/kuyruk-manager
+https://github.com/cenkalti/kuyruk-manager
 
 See and manage Kuyruk workers..
