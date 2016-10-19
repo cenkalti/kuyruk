@@ -158,6 +158,9 @@ class Worker(object):
 
     def _process_message(self, message):
         """Processes the message received from the queue."""
+        if self.shutdown_pending.is_set():
+            return
+
         try:
             description = json.loads(message.body)
         except Exception:
