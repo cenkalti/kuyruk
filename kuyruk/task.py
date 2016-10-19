@@ -48,7 +48,8 @@ class Task(object):
 
     def send_to_queue(self, args=None, kwargs=None, host=None, local=False):
         """
-        Sends this task to queue.
+        Sends a message to the queue.
+        A worker will run the task's function when it receives the message.
 
         :param args: Arguments that will be passed to task on execution.
         :param kwargs: Keyword arguments that will be passed to task
