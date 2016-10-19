@@ -44,18 +44,9 @@ class Task(object):
 
         """
         logger.debug("Task.__call__ args=%r, kwargs=%r", args, kwargs)
+        self.send_to_queue(args, kwargs)
 
-        # Allow the sender to override the destination of the message.
-        host = kwargs.pop('kuyruk_host', None)
-        local = kwargs.pop('kuyruk_local', False)
-
-        if self.kuyruk.config.EAGER:
-            # Run the task in current process
-            self.apply(*args, **kwargs)
-        else:
-            self._send_to_queue(args, kwargs, host=host, local=local)
-
-    def _send_to_queue(self, args, kwargs, host=None, local=False):
+    def send_to_queue(self, args=None, kwargs=None, host=None, local=False):
         """
         Sends this task to queue.
 
@@ -69,8 +60,14 @@ class Task(object):
         :return: :const:`None`
 
         """
+        if self.kuyruk.config.EAGER:
+            # Run the task in current process
+            self.apply(*args, **kwargs)
+            return
+
         logger.debug("Task.send_to_queue args=%r, kwargs=%r", args, kwargs)
-        queue = get_queue_name(self.queue, host=host, local=local or self.local)
+        local = local or self.local
+        queue = get_queue_name(self.queue, host=host, local=local)
         description = self._get_description(args, kwargs, queue)
         self._send_signal(signals.task_presend, args=args, kwargs=kwargs,
                           description=description)
