@@ -99,7 +99,13 @@ class Kuyruk(object):
             userid=self.config.RABBIT_USER,
             password=self.config.RABBIT_PASSWORD,
             virtual_host=self.config.RABBIT_VIRTUAL_HOST)
-        conn.connect()
+
+        # from amqp==2.0.0 explicit connect is required.
+        try:
+            conn.connect()
+        except AttributeError:
+            pass
+
         logger.info('Connected to RabbitMQ')
         with closing(conn):
             yield conn
