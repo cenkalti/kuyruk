@@ -3,6 +3,14 @@ Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 5.0.0
+-------------
+
+Released on 19-10-2016.
+
+- Removed kuyruk_host and kuyruk_local arguments of task calls.
+- Exported Task.send_to_queue method.
+
 Version 4.1.2
 -------------
 
