@@ -6,9 +6,7 @@ import signal
 import socket
 import logging
 import traceback
-from time import time
 from uuid import uuid1
-from functools import wraps
 from datetime import datetime
 from contextlib import contextmanager
 
@@ -18,18 +16,6 @@ from kuyruk import signals, importer
 from kuyruk.exceptions import Timeout
 
 logger = logging.getLogger(__name__)
-
-
-def profile(f):
-    """Logs the time spent while running the task."""
-    @wraps(f)
-    def inner(self, *args, **kwargs):
-        start = time()
-        result = f(self, *args, **kwargs)
-        end = time()
-        logger.info("%s finished in %i seconds." % (self.name, end - start))
-        return result
-    return inner
 
 
 class Task(object):
@@ -114,7 +100,6 @@ class Task(object):
     def _send_signal(self, sig, **data):
         sig.send(self.kuyruk, task=self, **data)
 
-    @profile
     def apply(self, *args, **kwargs):
         """Called by workers to run the wrapped function.
         You may call it yourself if you want to run the task in current process

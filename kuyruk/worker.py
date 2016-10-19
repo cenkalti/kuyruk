@@ -2,6 +2,7 @@ from __future__ import absolute_import, print_function
 import os
 import sys
 import json
+import time
 import errno
 import socket
 import signal
@@ -11,7 +12,6 @@ import warnings
 import threading
 import traceback
 import multiprocessing
-from time import sleep
 
 from kuyruk import importer, signals
 from kuyruk.task import get_queue_name
@@ -196,7 +196,7 @@ class Worker(object):
                 args=(message.channel.connection, stop_heartbeat))
             heartbeat_thread.start()
             try:
-                task.apply(*args, **kwargs)
+                self._apply_task(task, args, kwargs)
             finally:
                 self._current_message = None
                 self.current_task = None
@@ -206,7 +206,7 @@ class Worker(object):
                 heartbeat_thread.join()
         except Reject:
             logger.warning('Task is rejected')
-            sleep(1)  # Prevent cpu burning
+            time.sleep(1)  # Prevent cpu burning
             message.channel.basic_reject(message.delivery_tag, requeue=True)
         except Discard:
             logger.warning('Task is discarded')
@@ -227,6 +227,16 @@ class Worker(object):
         finally:
             logger.debug("Task is processed")
 
+    @staticmethod
+    def _apply_task(task, args, kwargs):
+        """Logs the time spent while running the task."""
+        start = time.time()
+        try:
+            task.apply(*args, **kwargs)
+        finally:
+            end = time.time()
+            logger.info("%s finished in %i seconds." % (task.name, end - start))
+
     def _watch_load(self):
         """Pause consuming messages if lood goes above the allowed limit."""
         while not self.shutdown_pending.is_set():
@@ -243,7 +253,7 @@ class Worker(object):
                         'Load is below the treshold (%.2f/%s), '
                         'resuming consumer', load, self.config.WORKER_MAX_LOAD)
                     self._pause = False
-            sleep(1)
+            time.sleep(1)
 
     @property
     def uptime(self):
@@ -261,7 +271,7 @@ class Worker(object):
         while not self.shutdown_pending.is_set():
             remaining = self.config.WORKER_MAX_RUN_TIME - self.uptime
             if remaining > 0:
-                sleep(remaining)
+                time.sleep(remaining)
             else:
                 logger.warning('Run time reached zero')
                 self.shutdown()
