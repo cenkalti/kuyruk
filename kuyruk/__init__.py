@@ -9,7 +9,7 @@ from kuyruk.task import Task
 from kuyruk.config import Config
 from kuyruk.worker import Worker
 
-__version__ = '5.0.3'
+__version__ = '5.0.4'
 __all__ = ['Kuyruk', 'Config', 'Task', 'Worker']
 
 
