@@ -46,7 +46,7 @@ class Task(object):
         logger.debug("Task.__call__ args=%r, kwargs=%r", args, kwargs)
         self.send_to_queue(args, kwargs)
 
-    def send_to_queue(self, args=None, kwargs=None, host=None, local=False):
+    def send_to_queue(self, args=(), kwargs={}, host=None, local=False):
         """
         Sends a message to the queue.
         A worker will run the task's function when it receives the message.
