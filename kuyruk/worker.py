@@ -230,6 +230,11 @@ class Worker(object):
     @staticmethod
     def _apply_task(task, args, kwargs):
         """Logs the time spent while running the task."""
+        if args is None:
+            args = ()
+        if kwargs is None:
+            kwargs = {}
+
         start = time.time()
         try:
             task.apply(*args, **kwargs)
