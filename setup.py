@@ -30,7 +30,6 @@ setup(
         'amqp>=1.4.6',
         'setproctitle>=1.1.8',
         'blinker>=1.3',
-        'argparse>=1.2.1',
     ],
     description='Simple task queue',
     long_description=read('README.rst'),
