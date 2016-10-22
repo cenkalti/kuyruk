@@ -1,3 +1,4 @@
+import importlib
 import os
 import sys
 import ast
@@ -59,6 +60,13 @@ class Config(object):
 
     def from_object(self, obj):
         """Load values from an object."""
+        if isinstance(obj, str):
+            module_name, obj_name = obj.rsplit('.', 1)
+            obj_module = importlib.import_module(module_name)
+            try:
+                obj = getattr(obj_module, obj_name)
+            except AttributeError as e:
+                raise ImportError(e)
         for key in dir(obj):
             if key.isupper():
                 value = getattr(obj, key)
