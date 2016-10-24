@@ -38,7 +38,6 @@ class Worker(object):
         self._pause = False
         self._started = None
         self.consuming = False
-        self._current_message = None
         self.current_task = None
         self.current_args = None
         self.current_kwargs = None
@@ -186,7 +185,6 @@ class Worker(object):
 
     def _process_task(self, message, description, task, args, kwargs):
         try:
-            self._current_message = message
             self.current_task = task
             self.current_args = args
             self.current_kwargs = kwargs
@@ -198,7 +196,6 @@ class Worker(object):
             try:
                 self._apply_task(task, args, kwargs)
             finally:
-                self._current_message = None
                 self.current_task = None
                 self.current_args = None
                 self.current_kwargs = None
@@ -315,7 +312,7 @@ class Worker(object):
     def _handle_sigusr2(self, signum, frame):
         """Drop current task."""
         logger.warning("Catched SIGUSR2")
-        if self._current_message:
+        if self.current_task:
             logger.warning("Dropping current task...")
             raise Discard
 
