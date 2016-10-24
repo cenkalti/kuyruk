@@ -23,7 +23,10 @@ def import_module(name):
 
 def import_object(module_name, object_name):
     module = import_module(module_name)
-    return getattr(module, object_name)
+    try:
+        return getattr(module, object_name)
+    except AttributeError as e:
+        raise ImportError(e)
 
 
 def import_object_str(s):
