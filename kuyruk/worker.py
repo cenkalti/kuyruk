@@ -186,22 +186,7 @@ class Worker(object):
     def _process_task(self, message, description, task, args, kwargs):
         reply_to = message.properties.get('reply_to')
         try:
-            self.current_task = task
-            self.current_args = args
-            self.current_kwargs = kwargs
-            stop_heartbeat = threading.Event()
-            heartbeat_thread = threading.Thread(
-                target=self._heartbeat_tick,
-                args=(message.channel.connection, stop_heartbeat))
-            heartbeat_thread.start()
-            try:
-                result = self._apply_task(task, args, kwargs)
-            finally:
-                self.current_task = None
-                self.current_args = None
-                self.current_kwargs = None
-                stop_heartbeat.set()
-                heartbeat_thread.join()
+            result = self._run_task(message, task, args, kwargs)
         except Reject:
             logger.warning('Task is rejected')
             time.sleep(1)  # Prevent cpu burning
@@ -226,6 +211,26 @@ class Worker(object):
                 self._send_reply(reply_to, message.channel, result, None)
         finally:
             logger.debug("Task is processed")
+
+    def _run_task(self, message, task, args, kwargs):
+        stop_heartbeat = threading.Event()
+        heartbeat_thread = threading.Thread(
+            target=self._heartbeat_tick,
+            args=(message.channel.connection, stop_heartbeat))
+        heartbeat_thread.start()
+
+        self.current_task = task
+        self.current_args = args
+        self.current_kwargs = kwargs
+        try:
+            return self._apply_task(task, args, kwargs)
+        finally:
+            self.current_task = None
+            self.current_args = None
+            self.current_kwargs = None
+
+            stop_heartbeat.set()
+            heartbeat_thread.join()
 
     @staticmethod
     def _apply_task(task, args, kwargs):
