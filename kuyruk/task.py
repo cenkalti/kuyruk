@@ -15,7 +15,6 @@ import amqp
 from kuyruk import signals, importer
 from kuyruk.exceptions import Timeout
 from kuyruk.result import Result
-from kuyruk.heartbeat import Heartbeat
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +112,7 @@ class Task(object):
         body = json.dumps(description)
         msg = amqp.Message(body=body, reply_to='amq.rabbitmq.reply-to')
         with self.kuyruk.channel() as ch:
-            result = Result(channel=ch)
+            result = Result(ch.connection)
             ch.basic_consume(queue='amq.rabbitmq.reply-to', no_ack=True,
                              callback=result._process_message)
             ch.queue_declare(queue=queue, durable=True, auto_delete=False)
@@ -121,12 +120,11 @@ class Task(object):
             self._send_signal(signals.task_postsend, args=args,
                               kwargs=kwargs, description=description)
 
-            hb = Heartbeat(ch.connection)
-            hb.start()
+            result._start_heartbeat()
             try:
                 yield result
             finally:
-                hb.stop()
+                result._stop_heartbeat()
 
     def _get_description(self, args, kwargs, queue):
         """Return the dictionary to be sent to the queue."""
