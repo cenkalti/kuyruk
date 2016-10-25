@@ -35,6 +35,7 @@ class Result(object):
                 pass
 
             try:
+                self._channel.connection.heartbeat_tick()
                 self._channel.connection.drain_events(timeout=1)
             except socket.timeout:
                 if time.time() - start > timeout:
