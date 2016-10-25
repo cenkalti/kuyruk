@@ -125,12 +125,10 @@ class Worker(object):
                 try:
                     ch.connection.heartbeat_tick()
                     ch.connection.drain_events(timeout=1)
+                except socket.timeout:
+                    pass
                 except socket.error as e:
-                    if isinstance(e, socket.timeout):
-                        pass
-                    elif e.errno == errno.EINTR:
-                        pass  # happens when the process receives a signal
-                    else:
+                    if e.errno != errno.EINTR:
                         raise
         logger.debug("End run worker")
 
