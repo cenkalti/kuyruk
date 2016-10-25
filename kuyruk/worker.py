@@ -17,6 +17,7 @@ import amqp
 
 from kuyruk import importer, signals
 from kuyruk.task import get_queue_name
+from kuyruk.heartbeat import Heartbeat
 from kuyruk.exceptions import Reject, Discard, ConnectionError
 
 logger = logging.getLogger(__name__)
@@ -186,7 +187,8 @@ class Worker(object):
     def _process_task(self, message, description, task, args, kwargs):
         reply_to = message.properties.get('reply_to')
         try:
-            result = self._run_task(message, task, args, kwargs)
+            result = self._run_task(message.channel.connection,
+                                    task, args, kwargs)
         except Reject:
             logger.warning('Task is rejected')
             time.sleep(1)  # Prevent cpu burning
@@ -212,12 +214,9 @@ class Worker(object):
         finally:
             logger.debug("Task is processed")
 
-    def _run_task(self, message, task, args, kwargs):
-        stop_heartbeat = threading.Event()
-        heartbeat_thread = threading.Thread(
-            target=self._heartbeat_tick,
-            args=(message.channel.connection, stop_heartbeat))
-        heartbeat_thread.start()
+    def _run_task(self, connection, task, args, kwargs):
+        hb = Heartbeat(connection, self._on_heartbeat_error)
+        hb.start()
 
         self.current_task = task
         self.current_args = args
@@ -229,8 +228,11 @@ class Worker(object):
             self.current_args = None
             self.current_kwargs = None
 
-            stop_heartbeat.set()
-            heartbeat_thread.join()
+            hb.stop()
+
+    def _on_heartbeat_error(self, exc_info):
+        self._heartbeat_exc_info = sys.exc_info()
+        os.kill(os.getpid(), signal.SIGHUP)
 
     @staticmethod
     def _apply_task(task, args, kwargs):
@@ -340,19 +342,3 @@ class Worker(object):
 
     def drop_task(self):
         os.kill(os.getpid(), signal.SIGUSR2)
-
-    def _heartbeat_tick(self, connection, stop_event):
-        while not stop_event.wait(1):
-            try:
-                try:
-                    connection.heartbeat_tick()
-                except socket.error as e:
-                    if e.errno != errno.EINTR:
-                        raise
-            except socket.timeout:
-                pass
-            except Exception as e:
-                logger.error(e)
-                self._heartbeat_exc_info = sys.exc_info()
-                os.kill(os.getpid(), signal.SIGHUP)
-                break

@@ -15,6 +15,7 @@ import amqp
 from kuyruk import signals, importer
 from kuyruk.exceptions import Timeout
 from kuyruk.result import Result
+from kuyruk.heartbeat import Heartbeat
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +120,13 @@ class Task(object):
             ch.basic_publish(msg, exchange="", routing_key=queue)
             self._send_signal(signals.task_postsend, args=args,
                               kwargs=kwargs, description=description)
-            yield result
+
+            hb = Heartbeat(ch.connection)
+            hb.start()
+            try:
+                yield result
+            finally:
+                hb.stop()
 
     def _get_description(self, args, kwargs, queue):
         """Return the dictionary to be sent to the queue."""
