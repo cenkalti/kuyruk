@@ -209,8 +209,6 @@ class Worker(object):
         except Discard:
             logger.warning('Task is discarded')
             message.channel.basic_reject(message.delivery_tag, requeue=False)
-        except ConnectionError:
-            pass
         except Exception:
             logger.error('Task raised an exception')
             exc_info = sys.exc_info()
