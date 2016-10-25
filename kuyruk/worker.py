@@ -339,7 +339,11 @@ class Worker(object):
     def _heartbeat_tick(self, connection, stop_event):
         while not stop_event.wait(1):
             try:
-                connection.heartbeat_tick()
+                try:
+                    connection.heartbeat_tick()
+                except socket.error as e:
+                    if e.errno != errno.EINTR:
+                        raise
             except socket.timeout:
                 pass
             except Exception as e:
