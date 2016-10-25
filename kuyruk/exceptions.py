@@ -47,4 +47,9 @@ class RemoteException(KuyrukError):
 
 
 class ConnectionError(KuyrukError):
+    """
+    Raised from Task.apply in worker when there is a problem while
+    sending heartbeat.
+
+    """
     pass
