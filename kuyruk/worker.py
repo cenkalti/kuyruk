@@ -123,7 +123,7 @@ class Worker(object):
                     break
 
                 try:
-                    ch.connection.send_heartbeat()
+                    ch.connection.heartbeat_tick()
                     ch.connection.drain_events(timeout=1)
                 except socket.error as e:
                     if isinstance(e, socket.timeout):
