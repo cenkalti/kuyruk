@@ -5,6 +5,7 @@ import unittest
 
 from mock import patch
 
+from kuyruk.exceptions import ResultTimeout, RemoteException
 from tests import tasks
 from tests.integration.util import run_kuyruk, get_pid, delete_queue, len_queue
 
@@ -89,3 +90,24 @@ class KuyrukTestCase(unittest.TestCase):
             os.kill(pid, signal.SIGUSR2)
             worker.expect('Dropping current task')
         assert len_queue("kuyruk") == 0, worker.get_output()
+
+    def test_result_wait(self):
+        with run_kuyruk() as worker:
+            worker.expect('Consumer started')
+            with tasks.add.run_in_queue(args=(1, 2)) as result:
+                n = result.wait(2)
+                print(worker.get_output())
+        assert n == 3
+
+    def test_result_wait_timeout(self):
+        with run_kuyruk() as worker:
+            worker.expect('Consumer started')
+            with tasks.just_sleep.run_in_queue(args=(10, )) as result:
+                self.assertRaises(ResultTimeout, result.wait, 0.1)
+
+    def test_result_wait_exception(self):
+        with run_kuyruk() as worker:
+            worker.expect('Consumer started')
+            with tasks.raise_exception.run_in_queue() as result:
+                worker.expect('Processing task')
+                self.assertRaises(RemoteException, result.wait, 2)

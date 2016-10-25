@@ -29,6 +29,11 @@ def echo(message):
     must_be_called()
 
 
+@kuyruk.task
+def add(a, b):
+    return a + b
+
+
 @kuyruk.task(queue='another_queue')
 def echo_another(message):
     print(message)
@@ -63,9 +68,17 @@ def loop_forever():
         sleep(1)
 
 
+@kuyruk.task
+def just_sleep(seconds):
+    print('sleeping', seconds, 'seconds')
+    sleep(seconds)
+
+
 config_eager = Config()
 config_eager.EAGER = True
 kuyruk_eager = Kuyruk(config_eager)
+
+
 @kuyruk_eager.task()
 def eager_task():
     must_be_called()

@@ -26,5 +26,25 @@ class Timeout(KuyrukError):
     pass
 
 
+class ResultTimeout(KuyrukError):
+    """
+    Raised from Result.wait if reply is not received in timeout seconds.
+
+    """
+    pass
+
+
+class RemoteException(KuyrukError):
+    """
+    Raised from Result.wait if exception is raised on the worker
+    while running the task.
+
+    """
+    def __init__(self, type_, value, traceback):
+        self.type = type_
+        self.value = value
+        self.traceback = traceback
+
+
 class ConnectionError(KuyrukError):
     pass

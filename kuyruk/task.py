@@ -14,6 +14,7 @@ import amqp
 
 from kuyruk import signals, importer
 from kuyruk.exceptions import Timeout
+from kuyruk.result import Result
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +81,46 @@ class Task(object):
         self._send_signal(signals.task_postsend, args=args, kwargs=kwargs,
                           description=description)
 
+    @contextmanager
+    def run_in_queue(self, args=(), kwargs={}, host=None, local=False):
+        """
+        Returns a context manager to send a message to the queue and
+        getting result back.
+
+        :param args: Arguments that will be passed to task on execution.
+        :param kwargs: Keyword arguments that will be passed to task
+            on execution.
+        :param host: Send this task to specific host. ``host`` will be
+            appended to the queue name.
+        :param local: Send this task to this host. Hostname of current host
+            will be appended to the queue name.
+        :return: :const:`None`
+
+        """
+        if self.kuyruk.config.EAGER:
+            result = Result(None)
+            result.result = self.apply(*args, **kwargs)
+            result.exception = None
+            yield result
+
+        logger.debug("Task.run_in_queue args=%r, kwargs=%r", args, kwargs)
+        local = local or self.local
+        queue = get_queue_name(self.queue, host=host, local=local)
+        description = self._get_description(args, kwargs, queue)
+        self._send_signal(signals.task_presend, args=args, kwargs=kwargs,
+                          description=description)
+        body = json.dumps(description)
+        msg = amqp.Message(body=body, reply_to='amq.rabbitmq.reply-to')
+        with self.kuyruk.channel() as ch:
+            result = Result(channel=ch)
+            ch.basic_consume(queue='amq.rabbitmq.reply-to', no_ack=True,
+                             callback=result._process_message)
+            ch.queue_declare(queue=queue, durable=True, auto_delete=False)
+            ch.basic_publish(msg, exchange="", routing_key=queue)
+            self._send_signal(signals.task_postsend, args=args,
+                              kwargs=kwargs, description=description)
+            yield result
+
     def _get_description(self, args, kwargs, queue):
         """Return the dictionary to be sent to the queue."""
         return {
@@ -121,7 +162,7 @@ class Task(object):
                 send_signal(signals.task_prerun)
                 try:
                     with time_limit(self.max_run_time or 0):
-                        self.f(*args, **kwargs)
+                        return self.f(*args, **kwargs)
                 except Exception:
                     traceback.print_exc()
                     send_signal(signals.task_error, exc_info=sys.exc_info())

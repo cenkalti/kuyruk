@@ -13,6 +13,8 @@ import threading
 import traceback
 import multiprocessing
 
+import amqp
+
 from kuyruk import importer, signals
 from kuyruk.task import get_queue_name
 from kuyruk.exceptions import Reject, Discard, ConnectionError
@@ -182,6 +184,7 @@ class Worker(object):
             self._process_task(message, description, task, args, kwargs)
 
     def _process_task(self, message, description, task, args, kwargs):
+        reply_to = message.properties.get('reply_to')
         try:
             self.current_task = task
             self.current_args = args
@@ -192,7 +195,7 @@ class Worker(object):
                 args=(message.channel.connection, stop_heartbeat))
             heartbeat_thread.start()
             try:
-                self._apply_task(task, args, kwargs)
+                result = self._apply_task(task, args, kwargs)
             finally:
                 self.current_task = None
                 self.current_args = None
@@ -216,9 +219,13 @@ class Worker(object):
                                         task=task, args=args, kwargs=kwargs,
                                         exc_info=exc_info, worker=self)
             message.channel.basic_reject(message.delivery_tag, requeue=False)
+            if reply_to:
+                self._send_reply(reply_to, message.channel, None, exc_info)
         else:
             logger.info('Task is successful')
             message.channel.basic_ack(message.delivery_tag)
+            if reply_to:
+                self._send_reply(reply_to, message.channel, result, None)
         finally:
             logger.debug("Task is processed")
 
@@ -232,10 +239,24 @@ class Worker(object):
 
         start = time.time()
         try:
-            task.apply(*args, **kwargs)
+            return task.apply(*args, **kwargs)
         finally:
             end = time.time()
             logger.info("%s finished in %i seconds." % (task.name, end - start))
+
+    def _send_reply(self, reply_to, channel, result, exc_info):
+        logger.debug("Sending reply result=%r", result)
+        msg = {
+            'result': result,
+        }
+        if exc_info:
+            msg['exception'] = {
+                'type': str(exc_info[0].__name__),
+                'value': str(exc_info[1]),
+                'traceback': ''.join(traceback.format_exception(*exc_info)),
+            }
+        msg = amqp.Message(body=json.dumps(msg))
+        channel.basic_publish(msg, exchange="", routing_key=reply_to)
 
     def _watch_load(self):
         """Pause consuming messages if lood goes above the allowed limit."""
