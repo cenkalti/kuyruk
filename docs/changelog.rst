@@ -3,6 +3,13 @@ Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 5.1.0
+-------------
+
+Released on 26-10-2016.
+
+- Added Task.run_in_queue context manager for getting task results.
+
 Version 5.0.0
 -------------
 
