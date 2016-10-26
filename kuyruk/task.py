@@ -85,7 +85,8 @@ class Task(object):
     def run_in_queue(self, args=(), kwargs={}, host=None, local=False):
         """
         Returns a context manager to send a message to the queue and
-        getting result back.
+        getting result back.  Context manager yields a
+        :class:`~kuyruk.result.Result` object for waiting for result.
 
         :param args: Arguments that will be passed to task on execution.
         :param kwargs: Keyword arguments that will be passed to task
@@ -94,7 +95,7 @@ class Task(object):
             appended to the queue name.
         :param local: Send this task to this host. Hostname of current host
             will be appended to the queue name.
-        :return: :const:`None`
+        :return: A context manager.
 
         """
         if self.kuyruk.config.EAGER:

@@ -29,6 +29,16 @@ class Result(object):
         self.exception = d.get('exception')
 
     def wait(self, timeout):
+        """
+        Wait for task result for ``timeout`` seconds.
+        If timeout occurs, :class:`~kuyruk.exceptions.ResultTimeout` is raised.
+        If excecption occurs in worker,
+        :class:`~kuyruk.exceptions.RemoteException` is raised.
+
+        :param timeout: Seconds to wait for the result.
+
+        :return: The result from remote task execution.
+        """
         logger.debug("Waiting for task result")
 
         start = time.time()

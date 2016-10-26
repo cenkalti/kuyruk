@@ -12,8 +12,22 @@ Task Class
    :members:
 
 
+Result Class
+------------
+
+.. autoclass:: kuyruk.result.Result
+   :members:
+
+
 Config Class
 ------------
 
 .. autoclass:: kuyruk.Config
+   :members:
+
+
+Exceptions
+----------
+
+.. automodule:: kuyruk.exceptions
    :members:
