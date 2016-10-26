@@ -113,3 +113,12 @@ class KuyrukTestCase(unittest.TestCase):
                     result.wait(2)
             e = cm.exception
             assert e.type == 'ZeroDivisionError'
+
+    def test_result_wait_discard(self):
+        with run_kuyruk() as worker:
+            worker.expect('Consumer started')
+            with self.assertRaises(RemoteException) as cm:
+                with tasks.discard.run_in_queue() as result:
+                    result.wait(2)
+            e = cm.exception
+            self.assertEqual(e.type, 'kuyruk.exceptions.Discard')

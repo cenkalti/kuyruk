@@ -11,6 +11,7 @@ from time import sleep
 from kuyruk import Kuyruk, Task
 from kuyruk import signals
 from kuyruk.config import Config
+from kuyruk.exceptions import Discard
 
 
 # Override defaults for testing
@@ -54,6 +55,11 @@ def flood():
 @kuyruk.task
 def raise_exception():
     return 1 / 0
+
+
+@kuyruk.task
+def discard():
+    raise Discard
 
 
 @kuyruk.task(retry=1)

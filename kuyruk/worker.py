@@ -196,6 +196,9 @@ class Worker(object):
         except Discard:
             logger.warning('Task is discarded')
             message.channel.basic_reject(message.delivery_tag, requeue=False)
+            if reply_to:
+                exc_info = sys.exc_info()
+                self._send_reply(reply_to, message.channel, None, exc_info)
         except Exception:
             logger.error('Task raised an exception')
             exc_info = sys.exc_info()
@@ -255,10 +258,11 @@ class Worker(object):
             'result': result,
         }
         if exc_info:
+            type_, val, tb = exc_info
             msg['exception'] = {
-                'type': str(exc_info[0].__name__),
-                'value': str(exc_info[1]),
-                'traceback': ''.join(traceback.format_exception(*exc_info)),
+                'type': '%s.%s' % (type_.__module__, str(type_.__name__)),
+                'value': str(val),
+                'traceback': ''.join(traceback.format_tb(tb)),
             }
         msg = amqp.Message(body=json.dumps(msg))
         channel.basic_publish(msg, exchange="", routing_key=reply_to)
