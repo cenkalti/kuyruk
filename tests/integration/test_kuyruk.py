@@ -96,7 +96,6 @@ class KuyrukTestCase(unittest.TestCase):
             worker.expect('Consumer started')
             with tasks.add.run_in_queue(args=(1, 2)) as result:
                 n = result.wait(2)
-                print(worker.get_output())
         assert n == 3
 
     def test_result_wait_timeout(self):
