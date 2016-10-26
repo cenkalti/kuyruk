@@ -111,7 +111,9 @@ class KuyrukTestCase(unittest.TestCase):
                 with tasks.raise_exception.run_in_queue() as result:
                     result.wait(2)
             e = cm.exception
-            assert e.type == 'exceptions.ZeroDivisionError'
+            # exceptions.ZeroDivisionError in Python 2
+            # builtins.ZeroDivisionError in Python 3
+            assert e.type.endswith('.ZeroDivisionError')
 
     def test_result_wait_discard(self):
         with run_kuyruk() as worker:
