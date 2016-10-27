@@ -52,7 +52,8 @@ def main():
     # Import Kuyruk app
     sys.path.insert(0, '')
     app = importer.import_object_str(args.app)
-    assert isinstance(app, Kuyruk)
+    if not isinstance(app, Kuyruk):
+        raise TypeError("%s is not an instance of kuyruk.Kuyruk" % args.app)
 
     # Run the sub-command function
     args.func(app, args)
