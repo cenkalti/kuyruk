@@ -3,6 +3,21 @@ Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 6.0.0
+-------------
+
+Released on XXX
+
+- Changed WORKER_MAX_LOAD behavior.
+  None disables the feature.
+  Set to -1 for number of CPUs on host.
+- Add argumens to worker to override WORKER_MAX_LOAD and
+  WORKER_MAX_RUN_TIME config values.
+- Removed ConnectionError exception class.
+  On heartbeat errors, real exceptions is raised.
+- Removed Task.run_in_queue method.
+  Use Task.send_to_queue with wait_result argument instead.
+
 Version 5.1.0
 -------------
 
