@@ -158,7 +158,6 @@ class Worker(object):
     def _process_message(self, message):
         """Processes the message received from the queue."""
         if self.shutdown_pending.is_set():
-            message.channel.basic_reject(message.delivery_tag, requeue=True)
             return
 
         try:
