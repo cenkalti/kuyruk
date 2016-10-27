@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class KuyrukTestCase(unittest.TestCase):
     """
     Tests here are mostly integration tests. They require a running
-    RabbitMQ and Redis instances to pass succesfully.
+    RabbitMQ and Redis instances to pass successfully.
     Just like the normal user they spawn a real worker process
     and make some assertion in their output.
 
@@ -25,7 +25,7 @@ class KuyrukTestCase(unittest.TestCase):
         delete_queue('kuyruk')
 
     def test_simple_task(self):
-        """Run a task on default queue"""
+        """Task is run on default queue"""
         tasks.echo('hello world')
         with run_kuyruk() as worker:
             worker.expect('Consumer started')
@@ -33,7 +33,7 @@ class KuyrukTestCase(unittest.TestCase):
             worker.expect('Task is processed')
 
     def test_another_queue(self):
-        """Run a task on another queue"""
+        """Task is run on another queue"""
         tasks.echo_another('hello another')
         with run_kuyruk(queue='another_queue') as worker:
             worker.expect('Consumer started')
@@ -66,7 +66,7 @@ class KuyrukTestCase(unittest.TestCase):
 
     @patch('tests.tasks.must_be_called')
     def test_before_after(self, presend_mock):
-        """Run signal handlers"""
+        """Signal handlers are run"""
         tasks.task_with_signal_handlers('hello world')
         presend_mock.assert_called_once()
         with run_kuyruk() as worker:
@@ -75,14 +75,14 @@ class KuyrukTestCase(unittest.TestCase):
             worker.expect('function5')
 
     def test_max_run_time(self):
-        """Timeout long running task"""
+        """Worker raised Timeout if task runs too long"""
         run_time = tasks.sleeping_task.max_run_time + 0.1
         tasks.sleeping_task(run_time)
         with run_kuyruk() as worker:
             worker.expect('Timeout')
 
     def test_worker_sigquit(self):
-        """Ack current message and exit"""
+        """Worker drops the task on SIGQUIT"""
         tasks.loop_forever()
         with run_kuyruk() as worker:
             worker.expect('looping forever')
@@ -92,6 +92,7 @@ class KuyrukTestCase(unittest.TestCase):
         assert len_queue("kuyruk") == 0, worker.get_output()
 
     def test_result_wait(self):
+        """Result is received"""
         with run_kuyruk() as worker:
             worker.expect('Consumer started')
             with tasks.add.run_in_queue(args=(1, 2)) as result:
@@ -99,12 +100,14 @@ class KuyrukTestCase(unittest.TestCase):
         assert n == 3
 
     def test_result_wait_timeout(self):
+        """ResultTimeout is raised if result is not received"""
         with run_kuyruk() as worker:
             worker.expect('Consumer started')
             with tasks.just_sleep.run_in_queue(args=(10, )) as result:
                 self.assertRaises(ResultTimeout, result.wait, 0.1)
 
     def test_result_wait_exception(self):
+        """RemoteException is raised on worker exceptions"""
         with run_kuyruk() as worker:
             worker.expect('Consumer started')
             with self.assertRaises(RemoteException) as cm:
@@ -116,6 +119,7 @@ class KuyrukTestCase(unittest.TestCase):
             assert e.type.endswith('.ZeroDivisionError')
 
     def test_result_wait_discard(self):
+        """RemoteException is raised on discarded tasks"""
         with run_kuyruk() as worker:
             worker.expect('Consumer started')
             with self.assertRaises(RemoteException) as cm:

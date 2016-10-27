@@ -12,6 +12,7 @@ from kuyruk import Kuyruk
 class LoaderTestCase(unittest.TestCase):
 
     def test_function_name(self):
+        """Module and path is correct in task description"""
         cases = [
             (
                 'onefile.py',
