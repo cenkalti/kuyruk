@@ -45,7 +45,13 @@ def main():
         '--max-load',
         type=float,
         help='pause consuming if load is above this value, '
-        'set to -1 to disable pausing.')
+        'set to 0 for disable, '
+        'set to -1 for number of cpus on host')
+    parser_worker.add_argument(
+        '--max-run-time',
+        type=int,
+        help='gracefully shutdown worker after this duration in seconds, '
+        'set to 0 for running forever')
 
     # Add additional subcommands from extensions.
     for entry_point in pkg_resources.iter_entry_points("kuyruk.commands"):

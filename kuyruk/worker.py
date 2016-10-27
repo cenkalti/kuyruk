@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class Worker(object):
-    """Consumes tasks from a queue and runs them.
+    """Consumes tasks from queues and runs them.
 
     :param app: An instance of :class:`~kuyruk.Kuyruk`
     :param args: Command line arguments
@@ -38,23 +38,30 @@ class Worker(object):
         self.queues = [
                 get_queue_name(q, local=args.local) for q in args.queues]
         self.shutdown_pending = threading.Event()
-        self._pause_consuming = False
-        self._started_at = None
         self.consuming = False
         self.current_task = None
         self.current_args = None
         self.current_kwargs = None
-        self._heartbeat_exc_info = None
-        self._max_load = args.max_load or app.config.WORKER_MAX_LOAD
-        if self._max_load is None:
-            self._max_load == multiprocessing.cpu_count()
+
+        self._started_at = None
         self._pid = os.getpid()
         self._hostname = socket.gethostname()
+        self._heartbeat_exc_info = None
+
+        self._max_run_time = app.config.WORKER_MAX_RUN_TIME
+        if args.max_run_time is not None:
+            self._max_run_time = args.max_run_time
+
+        self._max_load = app.config.WORKER_MAX_LOAD
+        if args.max_load is not None:
+            self._max_load = args.max_load
+        if self._max_load == -1:
+            self._max_load == multiprocessing.cpu_count()
 
         self._threads = []
-        if self._max_load != -1:
+        if self._max_load:
             self._threads.append(threading.Thread(target=self._watch_load))
-        if app.config.WORKER_MAX_RUN_TIME != -1:
+        if self._max_run_time:
             self._threads.append(threading.Thread(target=self._shutdown_timer))
 
         signals.worker_init.send(self.kuyruk, worker=self)
@@ -119,19 +126,15 @@ class Worker(object):
             ch.basic_qos(0, 1, True)
 
             self._declare_queues(ch)
-            while not self.shutdown_pending.is_set():
-                # Consume or pause
-                if self._pause_consuming and self.consuming:
-                    self._cancel_queues(ch)
-                    logger.info('Consumer cancelled')
-                    self.consuming = False
-                elif not self._pause_consuming and not self.consuming:
-                    self._consume_queues(ch)
-                    logger.info('Consumer started')
-                    self.consuming = True
+            self._consume_queues(ch)
+            logger.info('Consumer started')
 
+            while not self.shutdown_pending.is_set():
                 if self._heartbeat_exc_info:
                     break
+
+                if self._max_load:
+                    self._pause_or_resume(ch)
 
                 try:
                     ch.connection.heartbeat_tick()
@@ -152,7 +155,27 @@ class Worker(object):
             ch.queue_declare(
                 queue=queue, durable=True, auto_delete=False)
 
+    def _pause_or_resume(self, channel):
+        try:
+            load = self._current_load
+        except AttributeError:
+            should_pause = False
+        else:
+            should_pause = load > self._max_load
+
+        if should_pause and self.consuming:
+            logger.warning(
+                'Load is above the treshold (%.2f/%s), '
+                'pausing consumer', load, self._max_load)
+            self._cancel_queues(channel)
+        elif not should_pause and not self.consuming:
+            logger.warning(
+                'Load is below the treshold (%.2f/%s), '
+                'resuming consumer', load, self._max_load)
+            self._consume_queues(channel)
+
     def _consume_queues(self, ch):
+        self.consuming = True
         for queue in self.queues:
             logger.debug("basic_consume: %s", queue)
             ch.basic_consume(queue=queue,
@@ -160,6 +183,7 @@ class Worker(object):
                              callback=self._process_message)
 
     def _cancel_queues(self, ch):
+        self.consuming = False
         for queue in self.queues:
             logger.debug("basic_cancel: %s", queue)
             ch.basic_cancel(self._consumer_tag(queue))
@@ -278,19 +302,7 @@ class Worker(object):
     def _watch_load(self):
         """Pause consuming messages if lood goes above the allowed limit."""
         while not self.shutdown_pending.wait(1):
-            load = os.getloadavg()[0]
-            if load > self._max_load:
-                if self._pause_consuming is False:
-                    logger.warning(
-                        'Load is above the treshold (%.2f/%s), '
-                        'pausing consumer', load, self._max_load)
-                    self._pause_consuming = True
-            else:
-                if self._pause_consuming is True:
-                    logger.warning(
-                        'Load is below the treshold (%.2f/%s), '
-                        'resuming consumer', load, self._max_load)
-                    self._pause_consuming = False
+            self._current_load = os.getloadavg()[0]
 
     @property
     def uptime(self):
@@ -302,7 +314,7 @@ class Worker(object):
         gracefully.
 
         """
-        remaining = self.config.WORKER_MAX_RUN_TIME - self.uptime
+        remaining = self._max_run_time - self.uptime
         if not self.shutdown_pending.wait(remaining):
             logger.warning('Run time reached zero')
             self.shutdown()
