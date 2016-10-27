@@ -37,8 +37,8 @@ class Worker(object):
 
         self.queues = [get_queue_name(q, local=args.local) for q in args.queues]
         self.shutdown_pending = threading.Event()
-        self._pause = False
-        self._started = None
+        self._pause_consuming = False
+        self._started_at = None
         self.consuming = False
         self.current_task = None
         self.current_args = None
@@ -81,7 +81,7 @@ class Worker(object):
         signal.signal(signal.SIGUSR1, self._handle_sigusr1)
         signal.signal(signal.SIGUSR2, self._handle_sigusr2)
 
-        self._started = os.times()[4]
+        self._started_at = os.times()[4]
 
         for f in (self._watch_load, self._shutdown_timer):
             t = threading.Thread(target=f)
@@ -112,11 +112,11 @@ class Worker(object):
             self._declare_queues(ch)
             while not self.shutdown_pending.is_set():
                 # Consume or pause
-                if self._pause and self.consuming:
+                if self._pause_consuming and self.consuming:
                     self._cancel_queues(ch)
                     logger.info('Consumer cancelled')
                     self.consuming = False
-                elif not self._pause and not self.consuming:
+                elif not self._pause_consuming and not self.consuming:
                     self._consume_queues(ch)
                     logger.info('Consumer started')
                     self.consuming = True
@@ -274,23 +274,23 @@ class Worker(object):
         while not self.shutdown_pending.is_set():
             load = os.getloadavg()[0]
             if load > self._max_load:
-                if self._pause is False:
+                if self._pause_consuming is False:
                     logger.warning(
                         'Load is above the treshold (%.2f/%s), '
                         'pausing consumer', load, self._max_load)
-                    self._pause = True
+                    self._pause_consuming = True
             else:
-                if self._pause is True:
+                if self._pause_consuming is True:
                     logger.warning(
                         'Load is below the treshold (%.2f/%s), '
                         'resuming consumer', load, self._max_load)
-                    self._pause = False
+                    self._pause_consuming = False
             time.sleep(1)
 
     @property
     def uptime(self):
-        if self._started is not None:
-            return os.times()[4] - self._started
+        if self._started_at is not None:
+            return os.times()[4] - self._started_at
 
     def _shutdown_timer(self):
         """Counts down from MAX_WORKER_RUN_TIME. When it reaches zero sutdown
