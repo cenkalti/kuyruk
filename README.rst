@@ -4,11 +4,12 @@
 Kuyruk
 ======
 
-.. image:: https://travis-ci.org/cenkalti/kuyruk.png
-   :target: https://travis-ci.org/cenkalti/kuyruk
+.. image:: https://travis-ci.org/cenkalti/kuyruk.svg?branch=master
+   :target: https://travis-ci.org/cenkalti/kuyruk?branch=master
 
-.. image:: https://coveralls.io/repos/cenkalti/kuyruk/badge.png?branch=master
-   :target: https://coveralls.io/r/cenkalti/kuyruk?branch=master
+.. image:: https://coveralls.io/repos/github/cenkalti/kuyruk/badge.svg?branch=master
+   :target: https://coveralls.io/github/cenkalti/kuyruk?branch=master
+
 
 Kuyruk is a simple and easy way of distributing tasks to run on servers.
 
