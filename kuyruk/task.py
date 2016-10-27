@@ -46,8 +46,7 @@ class Task(object):
         logger.debug("Task.__call__ args=%r, kwargs=%r", args, kwargs)
         self.send_to_queue(args, kwargs)
 
-    def send_to_queue(self, args=(), kwargs={}, host=None, local=False,
-                      wait_result=None):
+    def send_to_queue(self, args=(), kwargs={}, host=None, wait_result=None):
         """
         Sends a message to the queue.
         A worker will run the task's function when it receives the message.
@@ -57,8 +56,6 @@ class Task(object):
             on execution.
         :param host: Send this task to specific host. ``host`` will be
             appended to the queue name.
-        :param local: Send this task to this host. Hostname of current host
-            will be appended to the queue name.
         :param wait_result:
             Wait for result from worker for ``wait_result`` seconds.
             If timeout occurs,
@@ -75,8 +72,7 @@ class Task(object):
             return result if wait_result else None
 
         logger.debug("Task.send_to_queue args=%r, kwargs=%r", args, kwargs)
-        local = local or self.local
-        queue = get_queue_name(self.queue, host=host, local=local)
+        queue = self._queue_for_host(host)
         description = self._get_description(args, kwargs, queue)
         self._send_signal(signals.task_presend, args=args, kwargs=kwargs,
                           description=description)
@@ -102,6 +98,13 @@ class Task(object):
 
             if wait_result:
                 return result.wait(wait_result)
+
+    def _queue_for_host(self, host):
+        if host:
+            if host == 'localhost':
+                host = socket.gethostname()
+            return "%s.%s" % (self.queue, host)
+        return self.queue
 
     def _get_description(self, args, kwargs, queue):
         """Return the dictionary to be sent to the queue."""
@@ -189,11 +192,3 @@ def time_limit(seconds):
         yield
     finally:
         signal.alarm(0)
-
-
-def get_queue_name(name, host=None, local=False):
-    if host:
-        return "%s.%s" % (name, host)
-    if local:
-        return "%s.%s" % (name, socket.gethostname())
-    return name

@@ -15,7 +15,6 @@ import multiprocessing
 import amqp
 
 from kuyruk import importer, signals
-from kuyruk.task import get_queue_name
 from kuyruk.heartbeat import Heartbeat
 from kuyruk.exceptions import Reject, Discard
 
@@ -35,8 +34,14 @@ class Worker(object):
         if not args.queues:
             args.queues = ['kuyruk']
 
-        self.queues = [
-                get_queue_name(q, local=args.local) for q in args.queues]
+        def add_host(queue):
+            if queue.endswith('.'):
+                return "%s.%s" % (queue, self._hostname)
+            else:
+                return queue
+
+        self._hostname = socket.gethostname()
+        self.queues = [add_host(q) for q in args.queues]
         self.shutdown_pending = threading.Event()
         self.consuming = False
         self.current_task = None
@@ -45,7 +50,6 @@ class Worker(object):
 
         self._started_at = None
         self._pid = os.getpid()
-        self._hostname = socket.gethostname()
         self._heartbeat_exc_info = None
 
         self._max_run_time = app.config.WORKER_MAX_RUN_TIME

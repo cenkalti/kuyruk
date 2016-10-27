@@ -37,11 +37,6 @@ def main():
         action='append',
         help='consume tasks from queue (may be specified multiple times)')
     parser_worker.add_argument(
-        '-l',
-        '--local',
-        action="store_true",
-        help='append hostname to the queue name')
-    parser_worker.add_argument(
         '--max-load',
         type=float,
         help='pause consuming if load is above this value, '
