@@ -17,7 +17,7 @@ import amqp
 from kuyruk import importer, signals
 from kuyruk.task import get_queue_name
 from kuyruk.heartbeat import Heartbeat
-from kuyruk.exceptions import Reject, Discard, ConnectionError
+from kuyruk.exceptions import Reject, Discard
 
 logger = logging.getLogger(__name__)
 
@@ -340,7 +340,7 @@ class Worker(object):
 
         """
         logger.warning("Catched SIGHUP")
-        raise ConnectionError(self._heartbeat_exc_info)
+        raise self._heartbeat_exc_info
 
     @staticmethod
     def _handle_sigusr1(signum, frame):

@@ -44,12 +44,3 @@ class RemoteException(KuyrukError):
         self.type = type_
         self.value = value
         self.traceback = traceback
-
-
-class ConnectionError(KuyrukError):
-    """
-    Raised from Task.apply in worker when there is a problem while
-    sending heartbeat.
-
-    """
-    pass
