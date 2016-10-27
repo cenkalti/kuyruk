@@ -28,7 +28,8 @@ class Timeout(KuyrukError):
 
 class ResultTimeout(KuyrukError):
     """
-    Raised from Result.wait if reply is not received in timeout seconds.
+    Raised from :func:`kuyruk.Task.send_to_queue` if ``wait_result`` is set and
+    reply is not received in ``wait_result`` seconds.
 
     """
     pass
@@ -36,8 +37,8 @@ class ResultTimeout(KuyrukError):
 
 class RemoteException(KuyrukError):
     """
-    Raised from Result.wait if exception is raised on the worker
-    while running the task.
+    Raised from :func:`kuyruk.Task.send_to_queue` if ``wait_result`` is set and
+    exception is raised on the worker while running the task.
 
     """
     def __init__(self, type_, value, traceback):

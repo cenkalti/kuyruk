@@ -4,7 +4,6 @@ import errno
 import socket
 import logging
 
-from kuyruk.heartbeat import Heartbeat
 from kuyruk.exceptions import ResultTimeout, RemoteException
 
 logger = logging.getLogger(__name__)
@@ -14,35 +13,17 @@ class Result(object):
 
     def __init__(self, connection):
         self._connection = connection
-        self._heartbeat = Heartbeat(connection)
 
-    def _start_heartbeat(self):
-        self._heartbeat.start()
-
-    def _stop_heartbeat(self):
-        self._heartbeat.stop()
-
-    def _process_message(self, message):
+    def process_message(self, message):
         logger.debug("Reply received: %s", message.body)
         d = json.loads(message.body)
         self.result = d['result']
         self.exception = d.get('exception')
 
     def wait(self, timeout):
-        """
-        Wait for task result for ``timeout`` seconds.
-        If timeout occurs, :class:`~kuyruk.exceptions.ResultTimeout` is raised.
-        If excecption occurs in worker,
-        :class:`~kuyruk.exceptions.RemoteException` is raised.
-
-        :param timeout: Seconds to wait for the result.
-
-        :return: The result from remote task execution.
-        """
         logger.debug("Waiting for task result")
 
         start = time.time()
-        self._stop_heartbeat()
 
         while True:
             try:

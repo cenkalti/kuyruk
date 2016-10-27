@@ -95,24 +95,22 @@ class KuyrukTestCase(unittest.TestCase):
         """Result is received"""
         with run_kuyruk() as worker:
             worker.expect('Consumer started')
-            with tasks.add.run_in_queue(args=(1, 2)) as result:
-                n = result.wait(2)
+            n = tasks.add.send_to_queue(args=(1, 2), wait_result=2)
         assert n == 3
 
     def test_result_wait_timeout(self):
         """ResultTimeout is raised if result is not received"""
         with run_kuyruk() as worker:
             worker.expect('Consumer started')
-            with tasks.just_sleep.run_in_queue(args=(10, )) as result:
-                self.assertRaises(ResultTimeout, result.wait, 0.1)
+            self.assertRaises(ResultTimeout, tasks.just_sleep.send_to_queue,
+                              args=(10, ), wait_result=0.1)
 
     def test_result_wait_exception(self):
         """RemoteException is raised on worker exceptions"""
         with run_kuyruk() as worker:
             worker.expect('Consumer started')
             with self.assertRaises(RemoteException) as cm:
-                with tasks.raise_exception.run_in_queue() as result:
-                    result.wait(2)
+                tasks.raise_exception.send_to_queue(wait_result=2)
             e = cm.exception
             # exceptions.ZeroDivisionError in Python 2
             # builtins.ZeroDivisionError in Python 3
@@ -123,7 +121,6 @@ class KuyrukTestCase(unittest.TestCase):
         with run_kuyruk() as worker:
             worker.expect('Consumer started')
             with self.assertRaises(RemoteException) as cm:
-                with tasks.discard.run_in_queue() as result:
-                    result.wait(2)
+                tasks.discard.send_to_queue(wait_result=2)
             e = cm.exception
             self.assertEqual(e.type, 'kuyruk.exceptions.Discard')

@@ -46,7 +46,8 @@ class Task(object):
         logger.debug("Task.__call__ args=%r, kwargs=%r", args, kwargs)
         self.send_to_queue(args, kwargs)
 
-    def send_to_queue(self, args=(), kwargs={}, host=None, local=False):
+    def send_to_queue(self, args=(), kwargs={}, host=None, local=False,
+                      wait_result=None):
         """
         Sends a message to the queue.
         A worker will run the task's function when it receives the message.
@@ -58,13 +59,20 @@ class Task(object):
             appended to the queue name.
         :param local: Send this task to this host. Hostname of current host
             will be appended to the queue name.
-        :return: :const:`None`
+        :param wait_result:
+            Wait for result from worker for ``wait_result`` seconds.
+            If timeout occurs,
+            :class:`~kuyruk.exceptions.ResultTimeout` is raised.
+            If excecption occurs in worker,
+            :class:`~kuyruk.exceptions.RemoteException` is raised.
+        :return: Result from worker if ``wait_result`` is set,
+            else :const:`None`.
 
         """
         if self.kuyruk.config.EAGER:
             # Run the task in current process
-            self.apply(*args, **kwargs)
-            return
+            result = self.apply(*args, **kwargs)
+            return result if wait_result else None
 
         logger.debug("Task.send_to_queue args=%r, kwargs=%r", args, kwargs)
         local = local or self.local
@@ -72,59 +80,28 @@ class Task(object):
         description = self._get_description(args, kwargs, queue)
         self._send_signal(signals.task_presend, args=args, kwargs=kwargs,
                           description=description)
+
         body = json.dumps(description)
         msg = amqp.Message(body=body)
+        if wait_result:
+            # Use direct reply-to feature from RabbitMQ:
+            # https://www.rabbitmq.com/direct-reply-to.html
+            msg.properties['reply_to'] = 'amq.rabbitmq.reply-to'
+            msg.properties['expiration'] = str(int(wait_result * 1000))
+
         with self.kuyruk.channel() as ch:
+            if wait_result:
+                result = Result(ch.connection)
+                ch.basic_consume(queue='amq.rabbitmq.reply-to', no_ack=True,
+                                 callback=result.process_message)
+
             ch.queue_declare(queue=queue, durable=True, auto_delete=False)
             ch.basic_publish(msg, exchange="", routing_key=queue)
-        self._send_signal(signals.task_postsend, args=args, kwargs=kwargs,
-                          description=description)
+            self._send_signal(signals.task_postsend, args=args, kwargs=kwargs,
+                              description=description)
 
-    @contextmanager
-    def run_in_queue(self, args=(), kwargs={}, host=None, local=False):
-        """
-        Returns a context manager to send a message to the queue and
-        getting result back.  Context manager yields a
-        :class:`~kuyruk.result.Result` object for waiting for result.
-
-        :param args: Arguments that will be passed to task on execution.
-        :param kwargs: Keyword arguments that will be passed to task
-            on execution.
-        :param host: Send this task to specific host. ``host`` will be
-            appended to the queue name.
-        :param local: Send this task to this host. Hostname of current host
-            will be appended to the queue name.
-        :return: A context manager.
-
-        """
-        if self.kuyruk.config.EAGER:
-            result = Result(None)
-            result.result = self.apply(*args, **kwargs)
-            result.exception = None
-            yield result
-
-        logger.debug("Task.run_in_queue args=%r, kwargs=%r", args, kwargs)
-        local = local or self.local
-        queue = get_queue_name(self.queue, host=host, local=local)
-        description = self._get_description(args, kwargs, queue)
-        self._send_signal(signals.task_presend, args=args, kwargs=kwargs,
-                          description=description)
-        body = json.dumps(description)
-        msg = amqp.Message(body=body, reply_to='amq.rabbitmq.reply-to')
-        with self.kuyruk.channel() as ch:
-            result = Result(ch.connection)
-            ch.basic_consume(queue='amq.rabbitmq.reply-to', no_ack=True,
-                             callback=result._process_message)
-            ch.queue_declare(queue=queue, durable=True, auto_delete=False)
-            ch.basic_publish(msg, exchange="", routing_key=queue)
-            self._send_signal(signals.task_postsend, args=args,
-                              kwargs=kwargs, description=description)
-
-            result._start_heartbeat()
-            try:
-                yield result
-            finally:
-                result._stop_heartbeat()
+            if wait_result:
+                return result.wait(wait_result)
 
     def _get_description(self, args, kwargs, queue):
         """Return the dictionary to be sent to the queue."""
