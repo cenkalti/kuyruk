@@ -35,7 +35,8 @@ class Worker(object):
         if not args.queues:
             args.queues = ['kuyruk']
 
-        self.queues = [get_queue_name(q, local=args.local) for q in args.queues]
+        self.queues = [
+                get_queue_name(q, local=args.local) for q in args.queues]
         self.shutdown_pending = threading.Event()
         self._pause_consuming = False
         self._started_at = None
@@ -248,8 +249,8 @@ class Worker(object):
         try:
             return task.apply(*args, **kwargs)
         finally:
-            end = time.time()
-            logger.info("%s finished in %i seconds." % (task.name, end - start))
+            delta = time.time() - start
+            logger.info("%s finished in %i seconds." % (task.name, delta))
 
     def _send_reply(self, reply_to, channel, result, exc_info):
         logger.debug("Sending reply result=%r", result)
