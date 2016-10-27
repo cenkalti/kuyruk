@@ -17,6 +17,10 @@ Released on XXX
   On heartbeat errors, real exceptions is raised.
 - Removed Task.run_in_queue method.
   Use Task.send_to_queue with wait_result argument instead.
+- Removed local argument from Task.send_to_queue method.
+  Pass host="localhost" for sending to local queue.
+- Removed local argument from worker command.
+  If queue name ends with "." hostname will be appended to queue name.
 
 Version 5.1.0
 -------------
