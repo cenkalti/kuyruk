@@ -302,11 +302,10 @@ class Worker(object):
         gracefully.
 
         """
-        while not self.shutdown_pending.wait(1):
-            remaining = self.config.WORKER_MAX_RUN_TIME - self.uptime
-            if remaining < 0:
-                logger.warning('Run time reached zero')
-                self.shutdown()
+        remaining = self.config.WORKER_MAX_RUN_TIME - self.uptime
+        if not self.shutdown_pending.wait(remaining):
+            logger.warning('Run time reached zero')
+            self.shutdown()
 
     def shutdown(self):
         """Exits after the current task is finished."""
