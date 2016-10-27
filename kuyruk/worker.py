@@ -51,6 +51,12 @@ class Worker(object):
         self._pid = os.getpid()
         self._hostname = socket.gethostname()
 
+        self._threads = []
+        if self._max_load != -1:
+            self._threads.append(threading.Thread(target=self._watch_load))
+        if app.config.WORKER_MAX_RUN_TIME != -1:
+            self._threads.append(threading.Thread(target=self._shutdown_timer))
+
         signals.worker_init.send(self.kuyruk, worker=self)
 
     @property
@@ -84,14 +90,16 @@ class Worker(object):
 
         self._started_at = os.times()[4]
 
-        for f in (self._watch_load, self._shutdown_timer):
-            t = threading.Thread(target=f)
-            t.daemon = True
+        for t in self._threads:
             t.start()
-
-        signals.worker_start.send(self.kuyruk, worker=self)
-        self._consume_messages()
-        signals.worker_shutdown.send(self.kuyruk, worker=self)
+        try:
+            signals.worker_start.send(self.kuyruk, worker=self)
+            self._consume_messages()
+            signals.worker_shutdown.send(self.kuyruk, worker=self)
+        finally:
+            self.shutdown_pending.set()
+            for t in self._threads:
+                t.join()
 
         logger.debug("End run worker")
 
