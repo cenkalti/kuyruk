@@ -272,7 +272,7 @@ class Worker(object):
         if self._max_load == -1:
             return
 
-        while not self.shutdown_pending.is_set():
+        while not self.shutdown_pending.wait(1):
             load = os.getloadavg()[0]
             if load > self._max_load:
                 if self._pause_consuming is False:
@@ -286,7 +286,6 @@ class Worker(object):
                         'Load is below the treshold (%.2f/%s), '
                         'resuming consumer', load, self._max_load)
                     self._pause_consuming = False
-            time.sleep(1)
 
     @property
     def uptime(self):
@@ -301,14 +300,11 @@ class Worker(object):
         if self.config.WORKER_MAX_RUN_TIME == -1:
             return
 
-        while not self.shutdown_pending.is_set():
+        while not self.shutdown_pending.wait(1):
             remaining = self.config.WORKER_MAX_RUN_TIME - self.uptime
-            if remaining > 0:
-                time.sleep(remaining)
-            else:
+            if remaining < 0:
                 logger.warning('Run time reached zero')
                 self.shutdown()
-                break
 
     def shutdown(self):
         """Exits after the current task is finished."""
