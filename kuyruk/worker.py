@@ -277,9 +277,6 @@ class Worker(object):
 
     def _watch_load(self):
         """Pause consuming messages if lood goes above the allowed limit."""
-        if self._max_load == -1:
-            return
-
         while not self.shutdown_pending.wait(1):
             load = os.getloadavg()[0]
             if load > self._max_load:
@@ -305,9 +302,6 @@ class Worker(object):
         gracefully.
 
         """
-        if self.config.WORKER_MAX_RUN_TIME == -1:
-            return
-
         while not self.shutdown_pending.wait(1):
             remaining = self.config.WORKER_MAX_RUN_TIME - self.uptime
             if remaining < 0:
