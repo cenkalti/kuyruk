@@ -55,7 +55,8 @@ class Task(object):
         :param kwargs: Keyword arguments that will be passed to task
             on execution.
         :param host: Send this task to specific host. ``host`` will be
-            appended to the queue name.
+            appended to the queue name. If ``host`` is "localhost", hostname
+            of the server will be appended to the queue name.
         :param wait_result:
             Wait for result from worker for ``wait_result`` seconds.
             If timeout occurs,

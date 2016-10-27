@@ -35,7 +35,8 @@ def main():
         dest='queues',
         default=[],
         action='append',
-        help='consume tasks from queue (may be specified multiple times)')
+        help='consume tasks from queue (may be specified multiple times), '
+        'if queue name ends with "." hostname will be appended to queue name')
     parser_worker.add_argument(
         '--max-load',
         type=float,
