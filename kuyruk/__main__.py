@@ -12,7 +12,6 @@ import pkg_resources
 from kuyruk import __version__, importer, Kuyruk
 from kuyruk.worker import Worker
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -25,17 +24,23 @@ def main():
     parser.add_argument(
         '-a', '--app', required=True, help='path to the Kuyruk object')
 
-    subparsers = parser.add_subparsers(dest='subparser_name',
-                                       help='sub-command name')
+    subparsers = parser.add_subparsers(
+        dest='subparser_name', help='sub-command name')
 
     # Parser for the "worker" sub-command
     parser_worker = subparsers.add_parser('worker', help='run a worker')
     parser_worker.set_defaults(func=run_worker)
     parser_worker.add_argument(
-        '-q', '--queue', dest='queues', default=[], action='append',
+        '-q',
+        '--queue',
+        dest='queues',
+        default=[],
+        action='append',
         help='consume tasks from queue (may be specified multiple times)')
     parser_worker.add_argument(
-        '-l', '--local', action="store_true",
+        '-l',
+        '--local',
+        action="store_true",
         help='append hostname to the queue name')
 
     # Add additional subcommands from extensions.
