@@ -7,7 +7,6 @@ import socket
 import signal
 import logging
 import logging.config
-import warnings
 import threading
 import traceback
 import multiprocessing
@@ -69,11 +68,6 @@ class Worker(object):
             self._threads.append(threading.Thread(target=self._shutdown_timer))
 
         signals.worker_init.send(self.kuyruk, worker=self)
-
-    @property
-    def queue(self):
-        warnings.warn("Worker.queue is deprecated. Use Worker.queues instead.")
-        return self.queues[0]
 
     @property
     def config(self):

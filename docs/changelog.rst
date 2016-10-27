@@ -21,6 +21,7 @@ Released on XXX
   Pass host="localhost" for sending to local queue.
 - Removed local argument from worker command.
   If queue name ends with "." hostname will be appended to queue name.
+- Removed deprecated Worker.queue property.
 
 Version 5.1.0
 -------------
