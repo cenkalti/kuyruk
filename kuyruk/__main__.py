@@ -49,10 +49,6 @@ def main():
     # Parse arguments
     args = parser.parse_args()
 
-    # Use "kuyruk" if no queue is given
-    if args.subparser_name == 'worker' and not args.queues:
-        args.queues = ['kuyruk']
-
     # Import Kuyruk app
     sys.path.insert(0, '')
     app = importer.import_object_str(args.app)

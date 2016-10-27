@@ -34,7 +34,7 @@ class Worker(object):
         self.kuyruk = app
 
         if not args.queues:
-            raise ValueError("no queue given")
+            args.queues = ['kuyruk']
 
         self.queues = [get_queue_name(q, local=args.local) for q in args.queues]
         self.shutdown_pending = threading.Event()
