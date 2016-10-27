@@ -49,7 +49,6 @@ class Worker(object):
 
         self._started_at = None
         self._pid = os.getpid()
-        self._heartbeat_exc_info = None
 
         self._max_run_time = app.config.WORKER_MAX_RUN_TIME
         if args.max_run_time is not None:
@@ -128,9 +127,6 @@ class Worker(object):
             logger.info('Consumer started')
 
             while not self.shutdown_pending.is_set():
-                if self._heartbeat_exc_info:
-                    break
-
                 if self._max_load:
                     self._pause_or_resume(ch)
 
