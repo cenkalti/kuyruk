@@ -44,9 +44,9 @@ class Worker(object):
         self.current_args = None
         self.current_kwargs = None
         self._heartbeat_exc_info = None
-        if self.config.WORKER_MAX_LOAD is None:
-            self.config.WORKER_MAX_LOAD = multiprocessing.cpu_count()
-
+        self._max_load = args.max_load or app.config.WORKER_MAX_LOAD
+        if self._max_load is None:
+            self._max_load == multiprocessing.cpu_count()
         self._pid = os.getpid()
         self._hostname = socket.gethostname()
 
@@ -268,19 +268,22 @@ class Worker(object):
 
     def _watch_load(self):
         """Pause consuming messages if lood goes above the allowed limit."""
+        if self._max_load == -1:
+            return
+
         while not self.shutdown_pending.is_set():
             load = os.getloadavg()[0]
-            if load > self.config.WORKER_MAX_LOAD:
+            if load > self._max_load:
                 if self._pause is False:
                     logger.warning(
                         'Load is above the treshold (%.2f/%s), '
-                        'pausing consumer', load, self.config.WORKER_MAX_LOAD)
+                        'pausing consumer', load, self._max_load)
                     self._pause = True
             else:
                 if self._pause is True:
                     logger.warning(
                         'Load is below the treshold (%.2f/%s), '
-                        'resuming consumer', load, self.config.WORKER_MAX_LOAD)
+                        'resuming consumer', load, self._max_load)
                     self._pause = False
             time.sleep(1)
 
@@ -294,7 +297,7 @@ class Worker(object):
         gracefully.
 
         """
-        if not self.config.WORKER_MAX_RUN_TIME:
+        if self.config.WORKER_MAX_RUN_TIME == -1:
             return
 
         while not self.shutdown_pending.is_set():

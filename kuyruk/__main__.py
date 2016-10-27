@@ -41,6 +41,11 @@ def main():
         '--local',
         action="store_true",
         help='append hostname to the queue name')
+    parser_worker.add_argument(
+        '--max-load',
+        type=float,
+        help='pause consuming if load is above this value, '
+        'set to -1 to disable pausing.')
 
     # Add additional subcommands from extensions.
     for entry_point in pkg_resources.iter_entry_points("kuyruk.commands"):
