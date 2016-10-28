@@ -73,10 +73,6 @@ class Worker(object):
 
         signals.worker_init.send(self.kuyruk, worker=self)
 
-    @property
-    def config(self):
-        return self.kuyruk.config
-
     def run(self):
         """Runs the worker and consumes messages from RabbitMQ.
         Returns only after `shutdown()` is called.

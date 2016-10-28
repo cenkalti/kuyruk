@@ -24,6 +24,7 @@ Released on XXX
 - Removed deprecated Worker.queue property.
 - Removed WORKER_LOGGING_CONFIG configuration value.
 - Added --logging-level to worker arguments.
+- Removed Kuyruk.config property.
 
 Version 5.1.0
 -------------
