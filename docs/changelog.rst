@@ -20,7 +20,7 @@ Released on XXX
 - Removed local argument from Task.send_to_queue method.
   Pass host="localhost" for sending to local queue.
 - Removed local argument from worker command.
-  If queue name ends with "." hostname will be appended to queue name.
+  If queue name ends with ".localhost" hostname will be appended to queue name.
 - Removed deprecated Worker.queue property.
 
 Version 5.1.0

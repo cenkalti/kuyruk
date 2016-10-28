@@ -34,7 +34,8 @@ class Worker(object):
             args.queues = ['kuyruk']
 
         def add_host(queue):
-            if queue.endswith('.'):
+            if queue.endswith('.localhost'):
+                queue = queue.rsplit('.localhost')[0]
                 return "%s.%s" % (queue, self._hostname)
             else:
                 return queue
