@@ -22,6 +22,8 @@ Released on XXX
 - Removed local argument from worker command.
   If queue name ends with ".localhost" hostname will be appended to queue name.
 - Removed deprecated Worker.queue property.
+- Removed WORKER_LOGGING_CONFIG configuration value.
+- Added --logging-level to worker arguments.
 
 Version 5.1.0
 -------------
