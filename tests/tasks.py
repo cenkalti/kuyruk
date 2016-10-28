@@ -16,7 +16,6 @@ from kuyruk.exceptions import Discard
 
 # Override defaults for testing
 Config.WORKER_LOGGING_LEVEL = "debug"
-Config.WORKER_MAX_LOAD = 999
 
 
 kuyruk = Kuyruk()
