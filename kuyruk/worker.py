@@ -90,7 +90,10 @@ class Worker(object):
         setproctitle("kuyruk: worker on %s" % ','.join(self.queues))
 
         if self._logging_level:
-            self._setup_logging()
+            logging.basicConfig(
+                level=getattr(logging, self._logging_level.upper()),
+                format="%(levelname).1s "
+                       "%(name)s.%(funcName)s:%(lineno)d - %(message)s")
 
         signal.signal(signal.SIGINT, self._handle_sigint)
         signal.signal(signal.SIGTERM, self._handle_sigterm)
@@ -112,15 +115,6 @@ class Worker(object):
                 t.join()
 
         logger.debug("End run worker")
-
-    def _setup_logging(self):
-        if self.config.WORKER_LOGGING_CONFIG:
-            logging.config.fileConfig(self.config.WORKER_LOGGING_CONFIG)
-        else:
-            level = getattr(logging, self._logging_level.upper())
-            fmt = "%(levelname).1s " \
-                  "%(name)s.%(funcName)s:%(lineno)d - %(message)s"
-            logging.basicConfig(level=level, format=fmt)
 
     def _consume_messages(self):
         with self.kuyruk.channel() as ch:

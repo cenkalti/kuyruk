@@ -53,10 +53,6 @@ class Config(object):
     WORKER_LOGGING_LEVEL = 'INFO'
     """Logging level of root logger."""
 
-    WORKER_LOGGING_CONFIG = None
-    """INI style logging configuration file.
-    This has precedence over ``LOGGING_LEVEL``."""
-
     def from_object(self, obj):
         """Load values from an object."""
         if isinstance(obj, str):
