@@ -260,7 +260,7 @@ class Worker(object):
             hb.stop()
 
     def _on_heartbeat_error(self, exc_info):
-        self._heartbeat_exc_info = sys.exc_info()
+        self._heartbeat_exc_info = exc_info
         os.kill(os.getpid(), signal.SIGHUP)
 
     @staticmethod
