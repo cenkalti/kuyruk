@@ -51,6 +51,10 @@ class Worker(object):
         self._started_at = None
         self._pid = os.getpid()
 
+        self._logging_level = app.config.WORKER_LOGGING_LEVEL
+        if args.logging_level is not None:
+            self._logging_level = args.logging_level
+
         self._max_run_time = app.config.WORKER_MAX_RUN_TIME
         if args.max_run_time is not None:
             self._max_run_time = args.max_run_time
@@ -85,7 +89,8 @@ class Worker(object):
         from setproctitle import setproctitle
         setproctitle("kuyruk: worker on %s" % ','.join(self.queues))
 
-        self._setup_logging()
+        if self._logging_level:
+            self._setup_logging()
 
         signal.signal(signal.SIGINT, self._handle_sigint)
         signal.signal(signal.SIGTERM, self._handle_sigterm)
@@ -112,7 +117,7 @@ class Worker(object):
         if self.config.WORKER_LOGGING_CONFIG:
             logging.config.fileConfig(self.config.WORKER_LOGGING_CONFIG)
         else:
-            level = getattr(logging, self.config.WORKER_LOGGING_LEVEL.upper())
+            level = getattr(logging, self._logging_level.upper())
             fmt = "%(levelname).1s " \
                   "%(name)s.%(funcName)s:%(lineno)d - %(message)s"
             logging.basicConfig(level=level, format=fmt)

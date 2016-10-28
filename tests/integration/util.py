@@ -48,8 +48,10 @@ def run_kuyruk(queue='kuyruk', terminate=True):
     args = [
         sys.executable, '-u',
         '-m', 'kuyruk.__main__',  # run main module
-        "--app", "tests.tasks.kuyruk",
-        "worker", '--queue', queue,
+        '--app', 'tests.tasks.kuyruk',
+        'worker',
+        '--queue', queue,
+        '--logging-level', 'debug',
     ]
 
     environ = os.environ.copy()

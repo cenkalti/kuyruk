@@ -14,10 +14,6 @@ from kuyruk.config import Config
 from kuyruk.exceptions import Discard
 
 
-# Override defaults for testing
-Config.WORKER_LOGGING_LEVEL = "debug"
-
-
 kuyruk = Kuyruk()
 # These functions below needs to be at module level in order that
 # Kuyruk worker to determine their fully qualified name.

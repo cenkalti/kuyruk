@@ -49,6 +49,11 @@ def main():
         type=int,
         help='gracefully shutdown worker after this duration in seconds, '
         'set to 0 for running forever')
+    parser_worker.add_argument(
+        '-l',
+        '--logging-level',
+        choices=['debug', 'info', 'warning', 'error', 'critical'],
+        help='console logging level')
 
     # Add additional subcommands from extensions.
     for entry_point in pkg_resources.iter_entry_points("kuyruk.commands"):
