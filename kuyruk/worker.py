@@ -12,6 +12,7 @@ import traceback
 import multiprocessing
 
 import amqp
+from monotonic import monotonic
 
 from kuyruk import importer, signals
 from kuyruk.heartbeat import Heartbeat
@@ -275,11 +276,11 @@ class Worker(object):
         if kwargs is None:
             kwargs = {}
 
-        start = time.time()
+        start = monotonic()
         try:
             return task.apply(*args, **kwargs)
         finally:
-            delta = time.time() - start
+            delta = monotonic() - start
             logger.info("%s finished in %i seconds." % (task.name, delta))
 
     def _send_reply(self, reply_to, channel, result, exc_info):

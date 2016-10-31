@@ -1,8 +1,9 @@
-import time
 import json
 import errno
 import socket
 import logging
+
+from monotonic import monotonic
 
 from kuyruk.exceptions import ResultTimeout, RemoteException
 
@@ -23,7 +24,7 @@ class Result(object):
     def wait(self, timeout):
         logger.debug("Waiting for task result")
 
-        start = time.time()
+        start = monotonic()
 
         while True:
             try:
@@ -39,7 +40,7 @@ class Result(object):
                 self._connection.heartbeat_tick()
                 self._connection.drain_events(timeout=1)
             except socket.timeout:
-                if time.time() - start > timeout:
+                if monotonic() - start > timeout:
                     raise ResultTimeout
             except socket.error as e:
                 if e.errno != errno.EINTR:

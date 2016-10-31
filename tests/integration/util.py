@@ -4,11 +4,12 @@ import sys
 import errno
 import logging
 import subprocess
-from time import time, sleep
+from time import sleep
 from functools import partial
 from contextlib import contextmanager
 
 from what import What
+from monotonic import monotonic
 
 from kuyruk import Kuyruk
 
@@ -141,11 +142,11 @@ def do_while(f_do, f_condition, timeout=None):
         return f_condition()
 
     original_timeout = timeout
-    start = time()
+    start = monotonic()
     while should_do():
         f_do()
         if timeout:
-            passed = time() - start
+            passed = monotonic() - start
             timeout = original_timeout - passed
 
 
