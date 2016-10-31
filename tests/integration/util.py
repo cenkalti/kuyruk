@@ -43,16 +43,17 @@ def is_empty(queue):
 
 
 @contextmanager
-def run_worker(queue='kuyruk', terminate=True):
+def run_worker(terminate=True, **kwargs):
     assert not_running()
     args = [
         sys.executable, '-u',
         '-m', 'kuyruk.__main__',  # run main module
         '--app', 'tests.tasks.kuyruk',
         'worker',
-        '--queue', queue,
         '--logging-level', 'debug',
     ]
+    for key, value in kwargs.items():
+        args.extend(['--%s' % key.replace('_', '-'), str(value)])
 
     environ = os.environ.copy()
     environ['COVERAGE_PROCESS_START'] = '.coveragerc'

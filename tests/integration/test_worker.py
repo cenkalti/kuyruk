@@ -74,7 +74,7 @@ class WorkerTestCase(unittest.TestCase):
             worker.expect('hello world')
             worker.expect('function5')
 
-    def test_max_run_time(self):
+    def test_task_max_run_time(self):
         """Worker raised Timeout if task runs too long"""
         run_time = tasks.sleeping_task.max_run_time + 0.1
         tasks.sleeping_task(run_time)
@@ -124,3 +124,9 @@ class WorkerTestCase(unittest.TestCase):
                 tasks.discard.send_to_queue(wait_result=2)
             e = cm.exception
             self.assertEqual(e.type, 'kuyruk.exceptions.Discard')
+
+    def test_worker_max_run_time(self):
+        """Worker shutdowns gracefully after WORKER_MAX_RUN_TIME seconds"""
+        with run_worker(max_run_time=1) as worker:
+            worker.expect('Consumer started')
+            worker.expect('Shutdown requested', timeout=2)
