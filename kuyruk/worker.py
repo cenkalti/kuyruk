@@ -15,7 +15,7 @@ import amqp
 
 from kuyruk import importer, signals
 from kuyruk.heartbeat import Heartbeat
-from kuyruk.exceptions import Reject, Discard
+from kuyruk.exceptions import Reject, Discard, HeartbeatError
 
 logger = logging.getLogger(__name__)
 
@@ -221,6 +221,14 @@ class Worker(object):
             if reply_to:
                 exc_info = sys.exc_info()
                 self._send_reply(reply_to, message.channel, None, exc_info)
+        except HeartbeatError as e:
+            logger.error('Error while sending heartbeat')
+            exc_info = e.exc_info
+            logger.error(''.join(traceback.format_exception(*exc_info)))
+            signals.worker_failure.send(self.kuyruk, description=description,
+                                        task=task, args=args, kwargs=kwargs,
+                                        exc_info=exc_info, worker=self)
+            raise
         except Exception:
             logger.error('Task raised an exception')
             exc_info = sys.exc_info()
@@ -330,7 +338,7 @@ class Worker(object):
 
         """
         logger.warning("Catched SIGHUP")
-        raise self._heartbeat_exc_info
+        raise HeartbeatError(self._heartbeat_exc_info)
 
     @staticmethod
     def _handle_sigusr1(signum, frame):

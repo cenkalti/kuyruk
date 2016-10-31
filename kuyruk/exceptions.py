@@ -45,3 +45,12 @@ class RemoteException(KuyrukError):
         self.type = type_
         self.value = value
         self.traceback = traceback
+
+
+class HeartbeatError(KuyrukError):
+    """
+    Raised when there is problem while sending heartbeat during task execution.
+
+    """
+    def __init__(self, exc_info):
+        self.exc_info = exc_info

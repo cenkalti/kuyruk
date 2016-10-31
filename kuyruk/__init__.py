@@ -1,5 +1,5 @@
 import logging
-from contextlib import contextmanager, closing
+from contextlib import contextmanager
 
 import amqp
 
@@ -87,8 +87,14 @@ class Kuyruk(object):
         with self.connection() as conn:
             ch = conn.channel()
             logger.info('Opened new channel')
-            with closing(ch):
+            try:
                 yield ch
+            finally:
+                if ch.is_open:
+                    try:
+                        ch.close()
+                    except IOError:
+                        pass
 
     @contextmanager
     def connection(self):
@@ -106,5 +112,17 @@ class Kuyruk(object):
             pass
 
         logger.info('Connected to RabbitMQ')
-        with closing(conn):
+        try:
             yield conn
+        finally:
+            if _is_alive(conn):
+                conn.close()
+
+
+def _is_alive(conn):
+    try:
+        conn.send_heartbeat()
+    except IOError:
+        return False
+    else:
+        return True

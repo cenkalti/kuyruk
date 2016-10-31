@@ -13,8 +13,7 @@ Released on XXX
   Set to -1 for number of CPUs on host.
 - Add argumens to worker to override WORKER_MAX_LOAD and
   WORKER_MAX_RUN_TIME config values.
-- Removed ConnectionError exception class.
-  On heartbeat errors, real exceptions is raised.
+- Renamed ConnectionError to HeartbeatError.
 - Removed Task.run_in_queue method.
   Use Task.send_to_queue with wait_result argument instead.
 - Removed local argument from Task.send_to_queue method.

@@ -53,7 +53,6 @@ class WorkerTestCase(unittest.TestCase):
         tasks.retry_task()
         with run_worker() as worker:
             worker.expect('ZeroDivisionError')
-            worker.expect('ZeroDivisionError')
         assert len_queue("kuyruk") == 0
 
     def test_reject(self):
