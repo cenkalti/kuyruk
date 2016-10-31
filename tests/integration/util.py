@@ -8,6 +8,7 @@ from time import sleep
 from functools import partial
 from contextlib import contextmanager
 
+import requests
 from what import What
 from monotonic import monotonic
 
@@ -41,6 +42,21 @@ def len_queue(queue):
 
 def is_empty(queue):
     return len_queue(queue) == 0
+
+
+def drop_connections():
+    server = 'http://localhost:15672'
+    auth = ('guest', 'guest')
+    r = requests.get(server + '/api/connections', auth=auth)
+    r.raise_for_status()
+    for conn in r.json():
+        if conn['client_properties'].get('product') == 'py-amqp':
+            name = conn['name']
+            url = server + '/api/connections/' + name
+            r = requests.delete(url, auth=auth)
+            r.raise_for_status()
+            r = requests.delete(url, auth=auth)
+            r.raise_for_status()
 
 
 @contextmanager

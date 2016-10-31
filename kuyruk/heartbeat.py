@@ -26,7 +26,7 @@ class Heartbeat(object):
         while not self._stop.wait(1):
             try:
                 try:
-                    self._connection.heartbeat_tick()
+                    self._connection.send_heartbeat()
                 except socket.error as e:
                     if e.errno != errno.EINTR:
                         raise
