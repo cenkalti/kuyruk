@@ -4,7 +4,6 @@ import json
 import signal
 import socket
 import logging
-import traceback
 from uuid import uuid1
 from datetime import datetime
 from contextlib import contextmanager
@@ -150,7 +149,6 @@ class Task(object):
                     with time_limit(self.max_run_time or 0):
                         return self.f(*args, **kwargs)
                 except Exception:
-                    traceback.print_exc()
                     send_signal(signals.task_error, exc_info=sys.exc_info())
                     if tries <= 0:
                         raise
