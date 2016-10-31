@@ -43,7 +43,7 @@ def is_empty(queue):
 
 
 @contextmanager
-def run_kuyruk(queue='kuyruk', terminate=True):
+def run_worker(queue='kuyruk', terminate=True):
     assert not_running()
     args = [
         sys.executable, '-u',
