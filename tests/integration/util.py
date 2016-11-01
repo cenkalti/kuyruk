@@ -3,11 +3,11 @@ import os
 import sys
 import errno
 import logging
-import subprocess
 from time import sleep
 from functools import partial
 from contextlib import contextmanager
 
+import psutil
 import requests
 from what import What
 from monotonic import monotonic
@@ -120,15 +120,12 @@ def is_running():
 
 def get_pids(pattern):
     logger.debug('get_pids: %s', pattern)
-    cmd = "pgrep -fl '%s'" % pattern
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    out = p.communicate()[0]
-    logger.debug("\n%s", out)
-    lines = out.splitlines()
-    lines = [l.decode() for l in lines]
-    lines = [l.split(" ", 1) for l in lines]
-    lines = [(pid, cmd) for (pid, cmd) in lines if not cmd.startswith(("sh", "/bin/sh"))]
-    pids = [int(pid) for (pid, cmd) in lines]
+    procs = []
+    for p in psutil.process_iter():
+        if p.name().startswith(pattern):
+            procs.append(p)
+
+    pids = [p.pid for p in procs]
     logger.debug('pids: %s', pids)
     return pids
 
