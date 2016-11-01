@@ -46,7 +46,7 @@ class Kuyruk(object):
         self.config = config
         self.extensions = {}
 
-    def task(self, queue='kuyruk', local=False, retry=0, max_run_time=None):
+    def task(self, queue='kuyruk', retry=0, max_run_time=None):
         """
         Wrap functions with this decorator to convert them to *tasks*.
         After wrapping, calling the function will send a message to
@@ -57,8 +57,6 @@ class Kuyruk(object):
             The failed task will be retried in the same worker.
         :param max_run_time: Maximum allowed time in seconds for task to
             complete.
-        :param local: Append hostname to the queue name. Worker needs to be
-            started on the local queue to receive this task.
         :return: Callable :class:`~kuyruk.Task` object wrapping the original
             function.
 
@@ -69,7 +67,7 @@ class Kuyruk(object):
                 queue_ = 'kuyruk' if callable(queue) else queue
 
                 return Task(
-                    f, self, queue=queue_, local=local,
+                    f, self, queue=queue_,
                     retry=retry, max_run_time=max_run_time)
             return inner
 

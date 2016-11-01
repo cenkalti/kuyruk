@@ -3,6 +3,13 @@ Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 7.0.0
+-------------
+
+Released on 01-11-2016.
+
+- Removed "local" argument from task decorator.
+
 Version 6.0.0
 -------------
 

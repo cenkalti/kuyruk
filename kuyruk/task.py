@@ -22,12 +22,11 @@ class Task(object):
     and sends it to the queue.
 
     """
-    def __init__(self, f, kuyruk, queue='kuyruk', local=False,
+    def __init__(self, f, kuyruk, queue='kuyruk',
                  retry=0, max_run_time=None):
         self.f = f
         self.kuyruk = kuyruk
         self.queue = queue
-        self.local = local
         self.retry = retry
         self.max_run_time = max_run_time
         self._send_signal(signals.task_init)
@@ -106,8 +105,6 @@ class Task(object):
                 return result.wait(wait_result)
 
     def _queue_for_host(self, host):
-        if not host and self.local:
-            host = 'localhost'
         if not host:
             return self.queue
         if host == 'localhost':

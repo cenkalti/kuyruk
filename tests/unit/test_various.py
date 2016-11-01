@@ -1,4 +1,3 @@
-import socket
 import logging
 import unittest
 
@@ -47,8 +46,3 @@ class KuyrukTestCase(unittest.TestCase):
         t = k.task(f)
         self.assertEqual(t._queue_for_host(None), 'kuyruk')
         self.assertEqual(t._queue_for_host('foo'), 'kuyruk.foo')
-
-        localhost = socket.gethostname()
-        l = k.task(local=True)(f)
-        self.assertEqual(l._queue_for_host(None), 'kuyruk.%s' % localhost)
-        self.assertEqual(l._queue_for_host('bar'), 'kuyruk.bar')
