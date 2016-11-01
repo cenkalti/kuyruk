@@ -181,3 +181,11 @@ class WorkerTestCase(unittest.TestCase):
             worker.expect('Task is successful')
             worker.expect_exit(0)
         assert len_queue("kuyruk") == 0, worker.get_output()
+
+    def test_sigusr1(self):
+        """Print stacktrace on SIGUSR1"""
+        with run_worker() as worker:
+            worker.expect('Consumer started')
+            pid = get_pid('kuyruk: worker')
+            os.kill(pid, signal.SIGUSR1)
+            worker.expect('traceback.format_stack')
