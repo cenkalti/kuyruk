@@ -139,3 +139,9 @@ class WorkerTestCase(unittest.TestCase):
             drop_connections()
             worker.expect('HeartbeatError')
             worker.expect_exit(1)
+
+    def test_import_app_error(self):
+        """TypeError is raised when app is not istance of Kuyruk"""
+        with run_worker(terminate=False, app='sys.argv') as worker:
+            worker.expect('TypeError')
+            worker.expect_exit(1)

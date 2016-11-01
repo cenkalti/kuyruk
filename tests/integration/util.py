@@ -60,12 +60,12 @@ def drop_connections():
 
 
 @contextmanager
-def run_worker(terminate=True, **kwargs):
+def run_worker(app='test.tasks.kuyruk', terminate=True, **kwargs):
     assert not_running()
     args = [
         sys.executable, '-u',
         '-m', 'kuyruk.__main__',  # run main module
-        '--app', 'tests.tasks.kuyruk',
+        '--app', app,
         'worker',
         '--logging-level', 'debug',
     ]
