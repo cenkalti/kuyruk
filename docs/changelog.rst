@@ -8,45 +8,45 @@ Version 7.0.0
 
 Released on 01-11-2016.
 
-- Removed "local" argument from task decorator.
+- Removed ``local`` argument from ``Kuyruk.task`` decorator.
 
 Version 6.0.0
 -------------
 
 Released on 01-11-2016.
 
-- Changed WORKER_MAX_LOAD behavior.
-  None disables the feature.
-  Set to -1 for number of CPUs on host.
-- Add argumens to worker to override WORKER_MAX_LOAD and
-  WORKER_MAX_RUN_TIME config values.
-- Renamed ConnectionError to HeartbeatError.
-- Removed Task.run_in_queue method.
-  Use Task.send_to_queue with wait_result argument instead.
-- Removed local argument from Task.send_to_queue method.
-  Pass host="localhost" for sending to local queue.
-- Removed local argument from worker command.
-  If queue name ends with ".localhost" hostname will be appended to queue name.
-- Removed deprecated Worker.queue property.
-- Removed WORKER_LOGGING_CONFIG configuration value.
-- Added --logging-level to worker arguments.
-- Removed Worker.config property.
-- Added message_ttl argument to Task.send_to_queue method.
+- Changed ``WORKER_MAX_LOAD`` behavior.
+  ``None`` disables the feature.
+  Set to ``-1`` for number of CPUs on host.
+- Add argumens to worker command to override ``WORKER_MAX_LOAD`` and
+  ``WORKER_MAX_RUN_TIME`` config values.
+- Renamed ``ConnectionError`` to ``HeartbeatError``.
+- Removed ``Task.run_in_queue`` method.
+  Use ``Task.send_to_queue`` with ``wait_result`` argument instead.
+- Removed ``local`` argument from ``Task.send_to_queue`` method.
+  Pass ``host="localhost"`` for sending to local queue.
+- Removed ``local`` argument from worker command.
+  If queue name ends with ``".localhost"`` hostname will be appended to queue name.
+- Removed deprecated ``Worker.queue`` property.
+- Removed ``WORKER_LOGGING_CONFIG`` configuration value.
+- Added ``--logging-level`` to worker command arguments.
+- Removed ``Worker.config`` property.
+- Added ``message_ttl`` argument to ``Task.send_to_queue`` method.
 
 Version 5.1.0
 -------------
 
 Released on 26-10-2016.
 
-- Added Task.run_in_queue context manager for getting task results.
+- Added ``Task.run_in_queue`` context manager for getting task results.
 
 Version 5.0.0
 -------------
 
 Released on 19-10-2016.
 
-- Removed kuyruk_host and kuyruk_local arguments of task calls.
-- Exported Task.send_to_queue method.
+- Removed ``kuyruk_host`` and ``kuyruk_local`` arguments from task calls.
+- Exported ``Task.send_to_queue`` method.
 
 Version 4.1.2
 -------------
