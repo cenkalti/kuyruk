@@ -3,8 +3,10 @@ import signal
 import logging
 import unittest
 
+import amqp
 from mock import patch
 
+from kuyruk import Kuyruk
 from kuyruk.exceptions import ResultTimeout, RemoteException
 from tests import tasks
 from tests.integration.util import run_worker, get_pid, delete_queue, len_queue
@@ -145,3 +147,12 @@ class WorkerTestCase(unittest.TestCase):
         with run_worker(terminate=False, app='sys.argv') as worker:
             worker.expect('TypeError')
             worker.expect_exit(1)
+
+    def test_invalid_json(self):
+        """Message is dropped when JSON is not valid"""
+        with run_worker() as worker:
+            worker.expect('Consumer started')
+            with Kuyruk().channel() as ch:
+                msg = amqp.Message(body='foo')
+                ch.basic_publish(msg, exchange='', routing_key='kuyruk')
+            worker.expect('Cannot decode message')
