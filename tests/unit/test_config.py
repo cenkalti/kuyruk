@@ -30,3 +30,16 @@ class ConfigTestCase(unittest.TestCase):
         config = Config()
         config.from_object(user_config)
         self.assertEqual(config.WORKER_MAX_LOAD, 21)
+
+    def test_from_config(self):
+        """Config is loaded from dict"""
+        config = Config()
+        config.from_dict({'WORKER_MAX_LOAD': 21})
+        self.assertEqual(config.WORKER_MAX_LOAD, 21)
+
+    def test_from_env_vars(self):
+        """Config is laoded from environment variables"""
+        os.environ['KUYRUK_WORKER_MAX_LOAD'] = '21'
+        config = Config()
+        config.from_env_vars()
+        self.assertEqual(config.WORKER_MAX_LOAD, 21)
