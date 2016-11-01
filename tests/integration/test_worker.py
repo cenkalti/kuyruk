@@ -10,7 +10,7 @@ from mock import patch
 from kuyruk import Kuyruk
 from kuyruk.exceptions import ResultTimeout, RemoteException
 from tests import tasks
-from tests.integration.util import run_worker, get_pid, delete_queue, len_queue
+from tests.integration.util import run_worker, delete_queue, len_queue
 from tests.integration.util import drop_connections
 
 
@@ -89,8 +89,7 @@ class WorkerTestCase(unittest.TestCase):
         tasks.loop_forever()
         with run_worker() as worker:
             worker.expect('looping forever')
-            pid = get_pid('kuyruk: worker')
-            os.kill(pid, signal.SIGUSR2)
+            os.kill(worker.pid, signal.SIGUSR2)
             worker.expect('Dropping current task')
         assert len_queue("kuyruk") == 0, worker.get_output()
 
@@ -176,8 +175,7 @@ class WorkerTestCase(unittest.TestCase):
         tasks.just_sleep(10)
         with run_worker(terminate=False) as worker:
             worker.expect('Processing task')
-            pid = get_pid('kuyruk: worker')
-            os.kill(pid, signal.SIGINT)
+            os.kill(worker.pid, signal.SIGINT)
             worker.expect('Task is successful')
             worker.expect_exit(0)
         assert len_queue("kuyruk") == 0, worker.get_output()
@@ -186,6 +184,5 @@ class WorkerTestCase(unittest.TestCase):
         """Print stacktrace on SIGUSR1"""
         with run_worker() as worker:
             worker.expect('Consumer started')
-            pid = get_pid('kuyruk: worker')
-            os.kill(pid, signal.SIGUSR1)
+            os.kill(worker.pid, signal.SIGUSR1)
             worker.expect('traceback.format_stack')
