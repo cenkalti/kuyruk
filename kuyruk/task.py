@@ -106,13 +106,13 @@ class Task(object):
                 return result.wait(wait_result)
 
     def _queue_for_host(self, host):
-        if self.local:
+        if not host and self.local:
             host = 'localhost'
-        if host:
-            if host == 'localhost':
-                host = socket.gethostname()
-            return "%s.%s" % (self.queue, host)
-        return self.queue
+        if not host:
+            return self.queue
+        if host == 'localhost':
+            host = socket.gethostname()
+        return "%s.%s" % (self.queue, host)
 
     def _get_description(self, args, kwargs, queue):
         """Return the dictionary to be sent to the queue."""
