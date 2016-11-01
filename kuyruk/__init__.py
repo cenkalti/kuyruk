@@ -8,7 +8,7 @@ from kuyruk.task import Task
 from kuyruk.config import Config
 from kuyruk.worker import Worker
 
-__version__ = '6.0.2'
+__version__ = '7.0.0'
 __all__ = ['Kuyruk', 'Config', 'Task', 'Worker']
 
 
