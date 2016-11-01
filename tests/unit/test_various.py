@@ -1,8 +1,10 @@
+import socket
 import logging
 import unittest
 
 from mock import patch
 
+from kuyruk import Kuyruk
 from kuyruk import Task
 from tests import tasks
 
@@ -34,3 +36,19 @@ class KuyrukTestCase(unittest.TestCase):
     def test_task_name(self):
         """Task.name is correct"""
         self.assertEqual(tasks.echo.name, 'tests.tasks:echo')
+
+    def test_task_queue_name(self):
+        """Task queue name is correct"""
+        k = Kuyruk()
+
+        def f():
+            return
+
+        t = k.task(f)
+        self.assertEqual(t._queue_for_host(None), 'kuyruk')
+        self.assertEqual(t._queue_for_host('foo'), 'kuyruk.foo')
+
+        localhost = socket.gethostname()
+        l = k.task(local=True)(f)
+        self.assertEqual(l._queue_for_host(None), 'kuyruk.%s' % localhost)
+        self.assertEqual(l._queue_for_host('bar'), 'kuyruk.bar')
