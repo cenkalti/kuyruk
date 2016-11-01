@@ -1,4 +1,3 @@
-import os
 import json
 import signal
 import logging
@@ -89,7 +88,7 @@ class WorkerTestCase(unittest.TestCase):
         tasks.loop_forever()
         with run_worker() as worker:
             worker.expect('looping forever')
-            os.kill(worker.pid, signal.SIGUSR2)
+            worker.send_signal(signal.SIGUSR2)
             worker.expect('Dropping current task')
         assert len_queue("kuyruk") == 0, worker.get_output()
 
@@ -175,7 +174,7 @@ class WorkerTestCase(unittest.TestCase):
         tasks.just_sleep(10)
         with run_worker(terminate=False) as worker:
             worker.expect('Processing task')
-            os.kill(worker.pid, signal.SIGINT)
+            worker.send_signal(signal.SIGINT)
             worker.expect('Task is successful')
             worker.expect_exit(0)
         assert len_queue("kuyruk") == 0, worker.get_output()
@@ -184,5 +183,5 @@ class WorkerTestCase(unittest.TestCase):
         """Print stacktrace on SIGUSR1"""
         with run_worker() as worker:
             worker.expect('Consumer started')
-            os.kill(worker.pid, signal.SIGUSR1)
+            worker.send_signal(signal.SIGUSR1)
             worker.expect('traceback.format_stack')
