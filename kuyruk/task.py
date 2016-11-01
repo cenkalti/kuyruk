@@ -106,6 +106,8 @@ class Task(object):
                 return result.wait(wait_result)
 
     def _queue_for_host(self, host):
+        if self.local:
+            host = 'localhost'
         if host:
             if host == 'localhost':
                 host = socket.gethostname()
