@@ -99,6 +99,15 @@ class WorkerTestCase(unittest.TestCase):
             n = tasks.add.send_to_queue(args=(1, 2), wait_result=2)
         assert n == 3
 
+    def test_result_serialization_error(self):
+        """Worker does not crash for unserializable result"""
+        with run_worker() as worker:
+            with self.assertRaises(RemoteException) as cm:
+                tasks.object_result.send_to_queue(wait_result=2)
+            worker.expect('Cannot serialize result as JSON')
+        e = cm.exception
+        assert e.type.endswith('.TypeError')
+
     def test_result_wait_timeout(self):
         """ResultTimeout is raised if result is not received"""
         with run_worker() as worker:
@@ -112,10 +121,10 @@ class WorkerTestCase(unittest.TestCase):
             worker.expect('Consumer started')
             with self.assertRaises(RemoteException) as cm:
                 tasks.raise_exception.send_to_queue(wait_result=2)
-            e = cm.exception
-            # exceptions.ZeroDivisionError in Python 2
-            # builtins.ZeroDivisionError in Python 3
-            assert e.type.endswith('.ZeroDivisionError')
+        e = cm.exception
+        # exceptions.ZeroDivisionError in Python 2
+        # builtins.ZeroDivisionError in Python 3
+        assert e.type.endswith('.ZeroDivisionError')
 
     def test_result_wait_discard(self):
         """RemoteException is raised on discarded tasks"""

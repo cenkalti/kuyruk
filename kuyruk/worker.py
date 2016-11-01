@@ -285,18 +285,30 @@ class Worker(object):
 
     def _send_reply(self, reply_to, channel, result, exc_info):
         logger.debug("Sending reply result=%r", result)
-        msg = {
-            'result': result,
-        }
+
+        reply = {'result': result}
         if exc_info:
-            type_, val, tb = exc_info
-            msg['exception'] = {
-                'type': '%s.%s' % (type_.__module__, str(type_.__name__)),
-                'value': str(val),
-                'traceback': ''.join(traceback.format_tb(tb)),
-            }
-        msg = amqp.Message(body=json.dumps(msg))
+            reply['exception'] = self._exc_info_dict(exc_info)
+
+        try:
+            body = json.dumps(reply)
+        except Exception as e:
+            logger.error('Cannot serialize result as JSON: %s', e)
+            exc_info = sys.exc_info()
+            reply = {'result': None,
+                     'exception': self._exc_info_dict(exc_info)}
+            body = json.dumps(reply)
+
+        msg = amqp.Message(body=body)
         channel.basic_publish(msg, exchange="", routing_key=reply_to)
+
+    @staticmethod
+    def _exc_info_dict(exc_info):
+        type_, val, tb = exc_info
+        return {
+            'type': '%s.%s' % (type_.__module__, str(type_.__name__)),
+            'value': str(val),
+            'traceback': ''.join(traceback.format_tb(tb))}
 
     def _watch_load(self):
         """Pause consuming messages if lood goes above the allowed limit."""

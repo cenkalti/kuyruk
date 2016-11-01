@@ -30,6 +30,11 @@ def add(a, b):
     return a + b
 
 
+@kuyruk.task
+def object_result():
+    return object()
+
+
 @kuyruk.task(queue='another_queue')
 def echo_another(message):
     print(message)

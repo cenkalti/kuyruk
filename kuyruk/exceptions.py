@@ -46,6 +46,9 @@ class RemoteException(KuyrukError):
         self.value = value
         self.traceback = traceback
 
+    def __str__(self):
+        return "%s(%r)" % (self.type, self.value)
+
 
 class HeartbeatError(KuyrukError):
     """
