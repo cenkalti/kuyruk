@@ -1,4 +1,5 @@
 import os
+import json
 import signal
 import logging
 import unittest
@@ -156,3 +157,16 @@ class WorkerTestCase(unittest.TestCase):
                 msg = amqp.Message(body='foo')
                 ch.basic_publish(msg, exchange='', routing_key='kuyruk')
             worker.expect('Cannot decode message')
+        self.assertEqual(len_queue('kuyruk'), 0)
+
+    def test_invalid_task_path(self):
+        """Message is dropped when task cannot be imported"""
+        with run_worker() as worker:
+            worker.expect('Consumer started')
+            with Kuyruk().channel() as ch:
+                desc = {'module': 'kuyruk', 'function': 'foo'}
+                body = json.dumps(desc)
+                msg = amqp.Message(body=body)
+                ch.basic_publish(msg, exchange='', routing_key='kuyruk')
+            worker.expect('Cannot import task')
+        self.assertEqual(len_queue('kuyruk'), 0)
