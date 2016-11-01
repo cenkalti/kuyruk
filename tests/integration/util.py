@@ -60,7 +60,7 @@ def drop_connections():
 
 
 @contextmanager
-def run_worker(app='test.tasks.kuyruk', terminate=True, **kwargs):
+def run_worker(app='tests.tasks.kuyruk', terminate=True, **kwargs):
     assert not_running()
     args = [
         sys.executable, '-u',
