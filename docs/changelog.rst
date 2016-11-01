@@ -6,7 +6,7 @@ Here you can see the full list of changes between each Kuyruk release.
 Version 6.0.0
 -------------
 
-Released on XXX
+Released on 01-11-2016.
 
 - Changed WORKER_MAX_LOAD behavior.
   None disables the feature.
