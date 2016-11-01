@@ -24,6 +24,7 @@ Released on XXX
 - Removed WORKER_LOGGING_CONFIG configuration value.
 - Added --logging-level to worker arguments.
 - Removed Worker.config property.
+- Added message_tll argument to Task.send_to_queue method.
 
 Version 5.1.0
 -------------

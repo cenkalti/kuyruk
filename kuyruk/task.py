@@ -45,7 +45,8 @@ class Task(object):
         logger.debug("Task.__call__ args=%r, kwargs=%r", args, kwargs)
         self.send_to_queue(args, kwargs)
 
-    def send_to_queue(self, args=(), kwargs={}, host=None, wait_result=None):
+    def send_to_queue(self, args=(), kwargs={},
+                      host=None, wait_result=None, message_ttl=None):
         """
         Sends a message to the queue.
         A worker will run the task's function when it receives the message.
@@ -62,6 +63,9 @@ class Task(object):
             :class:`~kuyruk.exceptions.ResultTimeout` is raised.
             If excecption occurs in worker,
             :class:`~kuyruk.exceptions.RemoteException` is raised.
+        :param message_ttl:
+            If set, message will be destroyed in queue after ``message_ttl``
+            seconds.
         :return: Result from worker if ``wait_result`` is set,
             else :const:`None`.
 
@@ -83,7 +87,9 @@ class Task(object):
             # Use direct reply-to feature from RabbitMQ:
             # https://www.rabbitmq.com/direct-reply-to.html
             msg.properties['reply_to'] = 'amq.rabbitmq.reply-to'
-            msg.properties['expiration'] = str(int(wait_result * 1000))
+
+        if message_ttl:
+            msg.properties['expiration'] = str(int(message_ttl * 1000))
 
         with self.kuyruk.channel() as ch:
             if wait_result:
