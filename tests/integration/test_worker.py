@@ -170,3 +170,14 @@ class WorkerTestCase(unittest.TestCase):
                 ch.basic_publish(msg, exchange='', routing_key='kuyruk')
             worker.expect('Cannot import task')
         self.assertEqual(len_queue('kuyruk'), 0)
+
+    def test_sigint(self):
+        """Worker shuts down gracefully on SIGINT"""
+        tasks.just_sleep(10)
+        with run_worker(terminate=False) as worker:
+            worker.expect('Processing task')
+            pid = get_pid('kuyruk: worker')
+            os.kill(pid, signal.SIGINT)
+            worker.expect('Task is successful')
+            worker.expect_exit(0)
+        assert len_queue("kuyruk") == 0, worker.get_output()
