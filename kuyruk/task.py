@@ -76,7 +76,7 @@ class Task(object):
 
         logger.debug("Task.send_to_queue args=%r, kwargs=%r", args, kwargs)
         queue = self._queue_for_host(host)
-        description = self._get_description(args, kwargs, queue)
+        description = self._get_description(args, kwargs)
         self._send_signal(signals.task_presend, args=args, kwargs=kwargs,
                           description=description)
 
@@ -111,11 +111,10 @@ class Task(object):
             host = socket.gethostname()
         return "%s.%s" % (self.queue, host)
 
-    def _get_description(self, args, kwargs, queue):
+    def _get_description(self, args, kwargs):
         """Return the dictionary to be sent to the queue."""
         return {
             'id': uuid1().hex,
-            'queue': queue,
             'args': args,
             'kwargs': kwargs,
             'module': self._module_name,

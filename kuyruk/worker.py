@@ -208,6 +208,7 @@ class Worker(object):
             self._process_task(message, description, task, args, kwargs)
 
     def _process_task(self, message, description, task, args, kwargs):
+        queue = message.delivery_info['routing_key']
         reply_to = message.properties.get('reply_to')
         try:
             result = self._run_task(message.channel.connection,
@@ -228,7 +229,8 @@ class Worker(object):
             logger.error(''.join(traceback.format_exception(*exc_info)))
             signals.worker_failure.send(self.kuyruk, description=description,
                                         task=task, args=args, kwargs=kwargs,
-                                        exc_info=exc_info, worker=self)
+                                        exc_info=exc_info, worker=self,
+                                        queue=queue)
             raise
         except Exception:
             logger.error('Task raised an exception')
@@ -236,7 +238,8 @@ class Worker(object):
             logger.error(''.join(traceback.format_exception(*exc_info)))
             signals.worker_failure.send(self.kuyruk, description=description,
                                         task=task, args=args, kwargs=kwargs,
-                                        exc_info=exc_info, worker=self)
+                                        exc_info=exc_info, worker=self,
+                                        queue=queue)
             message.channel.basic_reject(message.delivery_tag, requeue=False)
             if reply_to:
                 self._send_reply(reply_to, message.channel, None, exc_info)

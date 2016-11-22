@@ -37,10 +37,11 @@ class WorkerTestCase(unittest.TestCase):
 
     def test_another_queue(self):
         """Task is run on another queue"""
+        delete_queue('another_queue')
         tasks.echo_another('hello another')
+        assert len_queue('another_queue') == 1
         with run_worker(queue='another_queue') as worker:
             worker.expect('Consumer started')
-            worker.expect('another_queue')
             worker.expect('hello another')
             worker.expect('Task is processed')
 
