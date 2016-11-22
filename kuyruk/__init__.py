@@ -1,3 +1,4 @@
+import sys
 import logging
 from contextlib import contextmanager
 
@@ -85,14 +86,8 @@ class Kuyruk(object):
         with self.connection() as conn:
             ch = conn.channel()
             logger.info('Opened new channel')
-            try:
+            with _safe_close(ch):
                 yield ch
-            finally:
-                if ch.is_open:
-                    try:
-                        ch.close()
-                    except IOError:
-                        pass
 
     @contextmanager
     def connection(self):
@@ -110,17 +105,27 @@ class Kuyruk(object):
             pass
 
         logger.info('Connected to RabbitMQ')
-        try:
+        with _safe_close(conn):
             yield conn
-        finally:
-            if _is_alive(conn):
-                conn.close()
 
 
-def _is_alive(conn):
+@contextmanager
+def _safe_close(obj):
     try:
-        conn.send_heartbeat()
-    except IOError:
-        return False
+        yield
+    except Exception:
+        # Error occurred in block. Save exception info for re-raising later.
+        exc_info = sys.exc_info()
+
+        # We still need to close the object but not interested with errors,
+        # because we will raise the original exception above.
+        try:
+            obj.close()
+        except Exception:
+            pass
+
+        # After closing the object, we are re-raising the saved exception.
+        raise exc_info[0], exc_info[1], exc_info[2]
     else:
-        return True
+        # No error occurred in block. We must close the object as usual.
+        obj.close()
