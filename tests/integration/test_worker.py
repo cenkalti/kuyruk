@@ -52,6 +52,16 @@ class WorkerTestCase(unittest.TestCase):
             worker.expect('ZeroDivisionError')
         assert len_queue("kuyruk") == 0
 
+    def test_declare_error(self):
+        """Worker failed to start if existing queue arguments are different"""
+        with tasks.kuyruk.channel() as ch:
+            ch.queue_declare("kuyruk", durable=False)
+        self.assertRaises(amqp.exceptions.PreconditionFailed,
+                          tasks.echo,
+                          args=('hello world', ))
+        with run_worker(terminate=False) as worker:
+            worker.expect('PRECONDITION_FAILED')
+
     def test_retry(self):
         """Errored task is retried"""
         tasks.retry_task()
