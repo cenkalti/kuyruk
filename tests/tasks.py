@@ -78,6 +78,7 @@ def loop_forever():
 def just_sleep(seconds):
     print('sleeping', seconds, 'seconds')
     sleep(seconds)
+    print('sleep finished')
 
 
 config_eager = Config()

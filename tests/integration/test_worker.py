@@ -123,8 +123,8 @@ class WorkerTestCase(unittest.TestCase):
         """ResultTimeout is raised if result is not received"""
         with run_worker() as worker:
             worker.expect('Consumer started')
-            self.assertRaises(ResultTimeout, tasks.just_sleep.send_to_queue,
-                              args=(10, ), wait_result=0.1)
+            with self.assertRaises(ResultTimeout):
+                tasks.just_sleep.send_to_queue(args=(1, ), wait_result=0.1)
 
     def test_result_wait_exception(self):
         """RemoteException is raised on worker exceptions"""
@@ -191,13 +191,14 @@ class WorkerTestCase(unittest.TestCase):
 
     def test_sigint(self):
         """Worker shuts down gracefully on SIGINT"""
-        tasks.just_sleep(10)
+        tasks.just_sleep(1)
+        tasks.just_sleep(1)
         with run_worker(terminate=False) as worker:
             worker.expect('Processing task')
             worker.send_signal(signal.SIGINT)
             worker.expect('Task is successful')
             worker.expect_exit(0)
-        assert len_queue("kuyruk") == 0, worker.get_output()
+        assert len_queue("kuyruk") == 1, worker.get_output()
 
     def test_sigusr1(self):
         """Print stacktrace on SIGUSR1"""
