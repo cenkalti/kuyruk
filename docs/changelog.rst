@@ -3,6 +3,14 @@ Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 8.0.0
+-------------
+
+Released on 23-11-2016.
+
+- Removed "queue" key from task description dictionary.
+- Improve error handling when closing connections and channels.
+
 Version 7.0.0
 -------------
 
