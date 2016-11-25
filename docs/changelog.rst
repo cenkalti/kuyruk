@@ -3,6 +3,13 @@ Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 8.1.0
+-------------
+
+Released on 25-11-2016.
+
+- Added RabbitMQ connection timeout values to config.
+
 Version 8.0.0
 -------------
 
