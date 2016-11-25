@@ -96,7 +96,11 @@ class Kuyruk(object):
             host="%s:%s" % (self.config.RABBIT_HOST, self.config.RABBIT_PORT),
             userid=self.config.RABBIT_USER,
             password=self.config.RABBIT_PASSWORD,
-            virtual_host=self.config.RABBIT_VIRTUAL_HOST)
+            virtual_host=self.config.RABBIT_VIRTUAL_HOST,
+            connect_timeout=config.RABBIT_CONNECT_TIMEOUT,
+            read_timeout=config.RABBIT_READ_TIMEOUT,
+            write_timeout=config.RABBIT_WRITE_TIMEOUT,
+        )
 
         # from amqp==2.0.0 explicit connect is required.
         try:

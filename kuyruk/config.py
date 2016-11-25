@@ -35,6 +35,10 @@ class Config(object):
     RABBIT_PASSWORD = 'guest'
     """RabbitMQ password."""
 
+    RABBIT_CONNECT_TIMEOUT = 5
+    RABBIT_READ_TIMEOUT = 5
+    RABBIT_WRITE_TIMEOUT = 5
+
     # Instance Options
     ##################
 
