@@ -97,9 +97,9 @@ class Kuyruk(object):
             userid=self.config.RABBIT_USER,
             password=self.config.RABBIT_PASSWORD,
             virtual_host=self.config.RABBIT_VIRTUAL_HOST,
-            connect_timeout=config.RABBIT_CONNECT_TIMEOUT,
-            read_timeout=config.RABBIT_READ_TIMEOUT,
-            write_timeout=config.RABBIT_WRITE_TIMEOUT,
+            connect_timeout=self.config.RABBIT_CONNECT_TIMEOUT,
+            read_timeout=self.config.RABBIT_READ_TIMEOUT,
+            write_timeout=self.config.RABBIT_WRITE_TIMEOUT,
         )
 
         # from amqp==2.0.0 explicit connect is required.
