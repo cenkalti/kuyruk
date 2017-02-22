@@ -96,6 +96,11 @@ def rejecting_task():
     raise kuyruk.Reject
 
 
+@kuyruk.task(reject_delay=1)
+def rejecting_task_with_delay():
+    raise kuyruk.Reject
+
+
 @kuyruk.task(max_run_time=1)
 def sleeping_task(seconds):
     sleep(seconds)

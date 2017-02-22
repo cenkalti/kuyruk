@@ -47,7 +47,8 @@ class Kuyruk(object):
         self.config = config
         self.extensions = {}
 
-    def task(self, queue='kuyruk', retry=0, max_run_time=None):
+    def task(self, queue='kuyruk', retry=0, max_run_time=None,
+             fail_delay=0, reject_delay=0):
         """
         Wrap functions with this decorator to convert them to *tasks*.
         After wrapping, calling the function will send a message to
@@ -69,7 +70,8 @@ class Kuyruk(object):
 
                 return Task(
                     f, self, queue=queue_,
-                    retry=retry, max_run_time=max_run_time)
+                    retry=retry, max_run_time=max_run_time,
+                    fail_delay=fail_delay, reject_delay=reject_delay)
             return inner
 
         if callable(queue):

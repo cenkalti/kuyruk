@@ -23,12 +23,15 @@ class Task(object):
 
     """
     def __init__(self, f, kuyruk, queue='kuyruk',
-                 retry=0, max_run_time=None):
+                 retry=0, max_run_time=None,
+                 fail_delay=0, reject_delay=0):
         self.f = f
         self.kuyruk = kuyruk
         self.queue = queue
         self.retry = retry
         self.max_run_time = max_run_time
+        self.fail_delay = fail_delay
+        self.reject_delay = reject_delay
         self._send_signal(signals.task_init)
 
     def __repr__(self):
