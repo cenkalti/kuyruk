@@ -1,6 +1,9 @@
+import logging
 import collections
 
 from monotonic import monotonic
+
+logger = logging.getLogger(__name__)
 
 Reject = collections.namedtuple('Reject', 'send_time, delivery_tag, requeue')
 
@@ -23,6 +26,7 @@ class DelayedRejects(object):
             if monotonic() < front.send_time:
                 break
 
+            logger.debug('Sending delayed reject: %s', front)
             self._change_prefetch_count(-1)
             self._channel.basic_reject(front.delivery_tag, front.requeue)
             self._queue.popleft()
