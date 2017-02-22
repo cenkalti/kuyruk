@@ -3,6 +3,13 @@ Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 8.2.0
+-------------
+
+Released on 22-02-2017.
+
+- Added delay for failed and rejected taks.
+
 Version 8.1.0
 -------------
 
