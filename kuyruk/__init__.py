@@ -47,18 +47,15 @@ class Kuyruk(object):
         self.config = config
         self.extensions = {}
 
-    def task(self, queue='kuyruk', retry=0, max_run_time=None,
-             fail_delay=0, reject_delay=0):
+    def task(self, queue='kuyruk', **kwargs):
         """
         Wrap functions with this decorator to convert them to *tasks*.
         After wrapping, calling the function will send a message to
         a queue instead of running the function.
 
         :param queue: Queue name for the tasks.
-        :param retry: Retry this times before give up.
-            The failed task will be retried in the same worker.
-        :param max_run_time: Maximum allowed time in seconds for task to
-            complete.
+        :param kwargs: Keyword arguments will be passed to
+            :class:`~kuyruk.Task` constructor.
         :return: Callable :class:`~kuyruk.Task` object wrapping the original
             function.
 
@@ -68,10 +65,7 @@ class Kuyruk(object):
                 # Function may be wrapped with no-arg decorator
                 queue_ = 'kuyruk' if callable(queue) else queue
 
-                return Task(
-                    f, self, queue=queue_,
-                    retry=retry, max_run_time=max_run_time,
-                    fail_delay=fail_delay, reject_delay=reject_delay)
+                return Task(f, self, queue_, **kwargs)
             return inner
 
         if callable(queue):

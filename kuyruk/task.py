@@ -21,8 +21,17 @@ class Task(object):
     """Calling a :class:`~kuyruk.Task` object serializes the task to JSON
     and sends it to the queue.
 
+    :param retry: Retry this times before give up.
+        The failed task will be retried in the same worker.
+    :param max_run_time: Maximum allowed time in seconds for task to
+        complete.
+    :param fail_delay: Seconds to wait before sending failed message
+        back to queue.
+    :param reject_delay: Seconds to wait before sending rejected message
+        back to queue.
+
     """
-    def __init__(self, f, kuyruk, queue='kuyruk',
+    def __init__(self, f, kuyruk, queue,
                  retry=0, max_run_time=None,
                  fail_delay=0, reject_delay=0):
         self.f = f
