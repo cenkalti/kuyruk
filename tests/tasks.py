@@ -42,7 +42,7 @@ def echo_another(message):
 
 @kuyruk.task
 def flood():
-    s = ''.join(random.choice(string.ascii_uppercase) for _ in xrange(70))
+    s = ''.join(random.choice(string.ascii_uppercase) for _ in range(70))
     while True:
         sys.stdout.write(s)
         sys.stdout.write('\n')
