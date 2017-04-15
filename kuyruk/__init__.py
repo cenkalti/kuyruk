@@ -1,4 +1,5 @@
 import sys
+import json
 import logging
 from contextlib import contextmanager
 
@@ -8,6 +9,7 @@ from kuyruk import exceptions
 from kuyruk.task import Task
 from kuyruk.config import Config
 from kuyruk.worker import Worker
+from kuyruk import signals
 
 __version__ = '8.2.0'
 __all__ = ['Kuyruk', 'Config', 'Task', 'Worker']
@@ -107,6 +109,36 @@ class Kuyruk(object):
         logger.info('Connected to RabbitMQ')
         with _safe_close(conn):
             yield conn
+
+    def send_tasks_to_queue(self, subtasks):
+        if self.config.EAGER:
+            for subtask in subtasks:
+                subtask.task.apply(*subtask.args, **subtask.kwargs)
+            return
+
+        declared_queues = set()
+        with self.channel() as ch:
+            for subtask in subtasks:
+                queue = subtask.task._queue_for_host(subtask.host)
+                if queue not in declared_queues:
+                    ch.queue_declare(queue=queue,
+                                     durable=True, auto_delete=False)
+                    declared_queues.add(queue)
+
+                description = subtask.task._get_description(subtask.args,
+                                                            subtask.kwargs)
+                subtask.task._send_signal(signals.task_presend,
+                                          args=subtask.args,
+                                          kwargs=subtask.kwargs,
+                                          description=description)
+
+                body = json.dumps(description)
+                msg = amqp.Message(body=body)
+                ch.basic_publish(msg, exchange="", routing_key=queue)
+                subtask.task._send_signal(signals.task_postsend,
+                                          args=subtask.args,
+                                          kwargs=subtask.kwargs,
+                                          description=description)
 
 
 @contextmanager
