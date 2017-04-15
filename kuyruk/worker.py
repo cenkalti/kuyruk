@@ -242,8 +242,7 @@ class Worker(object):
                                         task=task, args=args, kwargs=kwargs,
                                         exc_info=exc_info, worker=self,
                                         queue=queue)
-            self._rejects.push(task.fail_delay, message.delivery_tag,
-                               requeue=False)
+            self._rejects.push(0, message.delivery_tag, requeue=False)
             if reply_to:
                 self._send_reply(reply_to, message.channel, None, exc_info)
         else:
