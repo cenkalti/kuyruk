@@ -198,7 +198,7 @@ class Task(object):
         return name
 
 
-SubTask = namedtuple("SubTask", "task, args, kwargs, host")
+SubTask = namedtuple("SubTask", ("task", "args", "kwargs", "host"))
 
 
 @contextmanager
