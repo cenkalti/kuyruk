@@ -3,6 +3,13 @@ Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 8.3.0
+-------------
+
+Released on 15-04-2017.
+
+- Added "Kuyruk.send_tasks_to_queue" method for batch sending.
+
 Version 8.2.0
 -------------
 
