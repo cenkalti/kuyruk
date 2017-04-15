@@ -215,3 +215,13 @@ class WorkerTestCase(unittest.TestCase):
             worker.expect('Consumer started')
             worker.send_signal(signal.SIGUSR1)
             worker.expect('traceback.format_stack')
+
+    def test_batch(self):
+        """Batch tasks are run"""
+        li = [tasks.echo.subtask(args=("foo %i" % i, )) for i in range(2)]
+        tasks.kuyruk.send_tasks_to_queue(li)
+        with run_worker() as worker:
+            worker.expect('Consumer started')
+            worker.expect('foo 0')
+            worker.expect('foo 1')
+            worker.expect('Task is processed')

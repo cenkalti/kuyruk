@@ -7,6 +7,7 @@ import logging
 from uuid import uuid1
 from datetime import datetime
 from contextlib import contextmanager
+from collections import namedtuple
 
 import amqp
 
@@ -52,6 +53,9 @@ class Task(object):
         """
         logger.debug("Task.__call__ args=%r, kwargs=%r", args, kwargs)
         self.send_to_queue(args, kwargs)
+
+    def subtask(self, args=(), kwargs={}, host=None):
+        return SubTask(self, args, kwargs, host)
 
     def send_to_queue(self, args=(), kwargs={},
                       host=None, wait_result=None, message_ttl=None):
@@ -192,6 +196,9 @@ class Task(object):
         if name == '__main__':
             name = importer.get_main_module().name
         return name
+
+
+SubTask = namedtuple("SubTask", ("task", "args", "kwargs", "host"))
 
 
 @contextmanager
