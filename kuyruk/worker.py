@@ -10,6 +10,7 @@ import threading
 import traceback
 import multiprocessing
 
+import six
 import amqp
 from monotonic import monotonic
 
@@ -187,6 +188,8 @@ class Worker(object):
             return
 
         try:
+            if isinstance(message.body, six.binary_type):
+                message.body = message.body.decode('utf-8')
             description = json.loads(message.body)
         except Exception:
             message.channel.basic_reject(message.delivery_tag, requeue=False)

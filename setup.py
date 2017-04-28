@@ -31,6 +31,7 @@ setup(
         'setproctitle>=1.1.8',
         'blinker>=1.3',
         'monotonic>=1.2',
+        'six>=1.10.0',
     ],
     description='Simple task queue',
     long_description=read('README.rst'),
