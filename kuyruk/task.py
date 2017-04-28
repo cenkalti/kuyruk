@@ -203,6 +203,10 @@ SubTask = namedtuple("SubTask", ("task", "args", "kwargs", "host"))
 
 @contextmanager
 def time_limit(seconds):
+    if seconds == 0:
+        yield
+        return
+
     def signal_handler(signum, frame):
         raise Timeout
     signal.signal(signal.SIGALRM, signal_handler)
