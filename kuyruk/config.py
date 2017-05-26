@@ -3,7 +3,11 @@ import sys
 import ast
 import types
 import logging
-import pkg_resources
+
+try:
+    import pkg_resources
+except ImportError:
+    pkg_resources = None
 
 from kuyruk import importer
 
@@ -119,7 +123,8 @@ class Config(object):
         setattr(self, key, value)
 
 
-# Add additional config keys from extensions.
-for entry_point in pkg_resources.iter_entry_points("kuyruk.config"):
-    for k, v in entry_point.load().items():
-        setattr(Config, k, v)
+if pkg_resources is not None:
+    # Add additional config keys from extensions.
+    for entry_point in pkg_resources.iter_entry_points("kuyruk.config"):
+        for k, v in entry_point.load().items():
+            setattr(Config, k, v)

@@ -6,7 +6,11 @@ It implements the command line parsing for subcommands and configuration.
 import sys
 import logging
 import argparse
-import pkg_resources
+
+try:
+    import pkg_resources
+except ImportError:
+    pkg_resources = None
 
 from kuyruk import __version__, importer, Kuyruk
 from kuyruk.worker import Worker
@@ -55,13 +59,14 @@ def main():
         choices=['debug', 'info', 'warning', 'error', 'critical'],
         help='console logging level')
 
-    # Add additional subcommands from extensions.
-    for entry_point in pkg_resources.iter_entry_points("kuyruk.commands"):
-        command_func, help_text, customize_parser = entry_point.load()
-        ext_parser = subparsers.add_parser(entry_point.name, help=help_text)
-        ext_parser.set_defaults(func=command_func)
-        if customize_parser:
-            customize_parser(ext_parser)
+    if pkg_resources is not None:
+        # Add additional subcommands from extensions.
+        for entry_point in pkg_resources.iter_entry_points("kuyruk.commands"):
+            command_func, help_text, customize_parser = entry_point.load()
+            ext_parser = subparsers.add_parser(entry_point.name, help=help_text)
+            ext_parser.set_defaults(func=command_func)
+            if customize_parser:
+                customize_parser(ext_parser)
 
     # Parse arguments
     args = parser.parse_args()
