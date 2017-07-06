@@ -44,6 +44,7 @@ class Worker(object):
 
         self._hostname = socket.gethostname()
         self.queues = [add_host(q) for q in args.queues]
+        self._tasks = {}
         self.shutdown_pending = threading.Event()
         self.consuming = False
         self.current_task = None
@@ -200,8 +201,8 @@ class Worker(object):
 
     def _process_description(self, message, description):
         try:
-            task = importer.import_object(description['module'],
-                                          description['function'])
+            task = self._import_task(description['module'],
+                                     description['function'])
             args, kwargs = description['args'], description['kwargs']
         except Exception:
             logger.error('Cannot import task')
@@ -211,6 +212,14 @@ class Worker(object):
             message.channel.basic_reject(message.delivery_tag, requeue=False)
         else:
             self._process_task(message, description, task, args, kwargs)
+
+    def _import_task(self, module, function):
+        if (module, function) in self._tasks:
+            return self._tasks[(module, function)]
+
+        task = importer.import_object(module, function)
+        self._tasks[(module, function)] = task
+        return task
 
     def _process_task(self, message, description, task, args, kwargs):
         queue = message.delivery_info['routing_key']

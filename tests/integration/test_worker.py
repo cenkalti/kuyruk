@@ -35,6 +35,17 @@ class WorkerTestCase(unittest.TestCase):
             worker.expect('hello world')
             worker.expect('Task is processed')
 
+    def test_import_cache(self):
+        """Task is run on default queue"""
+        tasks.echo('hello world')
+        tasks.echo('hello world')
+        with run_worker() as worker:
+            worker.expect('Consumer started')
+            worker.expect('hello world')
+            worker.expect('Task is processed')
+            worker.expect('hello world')
+            worker.expect('Task is processed')
+
     def test_another_queue(self):
         """Task is run on another queue"""
         delete_queue('another_queue')
