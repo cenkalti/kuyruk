@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import platform
 import signal
 import socket
 import logging
@@ -206,6 +207,13 @@ def time_limit(seconds):
     if seconds == 0:
         yield
         return
+
+    if platform.system() == 'Windows':
+        raise NotImplementedError(
+            "There is no way to implement a general purpose time-limit on "
+            "Windows. Read this issue for more details: "
+            "https://github.com/cenkalti/kuyruk/issues/54"
+        )
 
     def signal_handler(signum, frame):
         raise Timeout
