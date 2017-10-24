@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import errno
+import platform
 import socket
 import signal
 import logging
@@ -96,9 +97,13 @@ class Worker(object):
 
         signal.signal(signal.SIGINT, self._handle_sigint)
         signal.signal(signal.SIGTERM, self._handle_sigterm)
-        signal.signal(signal.SIGHUP, self._handle_sighup)
-        signal.signal(signal.SIGUSR1, self._handle_sigusr1)
-        signal.signal(signal.SIGUSR2, self._handle_sigusr2)
+        if platform.system() != 'Windows':
+            # These features will not be available on Windows, but that is OK.
+            # Read this issue for more details:
+            # https://github.com/cenkalti/kuyruk/issues/54
+            signal.signal(signal.SIGHUP, self._handle_sighup)
+            signal.signal(signal.SIGUSR1, self._handle_sigusr1)
+            signal.signal(signal.SIGUSR2, self._handle_sigusr2)
 
         self._started_at = os.times()[4]
 

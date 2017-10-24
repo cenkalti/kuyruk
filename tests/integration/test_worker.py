@@ -1,5 +1,6 @@
 import json
 import signal
+import time
 import logging
 import unittest
 
@@ -174,9 +175,10 @@ class WorkerTestCase(unittest.TestCase):
 
     def test_heartbeat_error(self):
         """HeartbeatError is raised on disconnect"""
-        tasks.just_sleep(10)
+        tasks.just_sleep(20)
         with run_worker(terminate=False) as worker:
             worker.expect('Processing task')
+            time.sleep(10)
             drop_connections()
             worker.expect('HeartbeatError')
             worker.expect_exit(1)
