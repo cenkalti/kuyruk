@@ -3,6 +3,13 @@ Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 8.5.0
+-------------
+
+Released on 25-10-2017.
+
+- Added Windows support.
+
 Version 8.3.0
 -------------
 
