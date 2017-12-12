@@ -141,6 +141,9 @@ class Worker(object):
                     ch.connection.drain_events(timeout=1)
                 except socket.timeout:
                     pass
+                except OSError as e:
+                    if e.errno != errno.ETIMEDOUT:
+                        raise
                 except socket.error as e:
                     if e.errno != errno.EINTR:
                         raise
