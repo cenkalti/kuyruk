@@ -11,7 +11,7 @@ from kuyruk.config import Config
 from kuyruk.worker import Worker
 from kuyruk import signals
 
-__version__ = '8.5.0'
+__version__ = '8.5.1'
 __all__ = ['Kuyruk', 'Config', 'Task', 'Worker']
 
 
