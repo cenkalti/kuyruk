@@ -22,4 +22,4 @@ ADD kuyruk kuyruk
 ADD test_config.py /etc/kuyruk.py
 
 # run tests
-CMD python3 tests/integration/wait_rabbitmq.py && pytest -v tests/
+CMD python3 tests/integration/wait_rabbitmq.py && pytest -v --cov=kuyruk tests/
