@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 def new_instance():
     config = Config()
-    config.from_pyfile('/etc/kuyruk.py')
+    config.from_pyfile('/tmp/kuyruk_config.py')
     return Kuyruk(config=config)
 
 

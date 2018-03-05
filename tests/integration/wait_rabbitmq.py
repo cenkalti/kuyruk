@@ -5,7 +5,7 @@ import amqp
 from kuyruk import Config
 
 config = Config()
-config.from_pyfile('/etc/kuyruk.py')
+config.from_pyfile('/tmp/kuyruk_config.py')
 
 while True:
     conn = amqp.Connection(

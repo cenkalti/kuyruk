@@ -9,7 +9,7 @@ from what import What
 from kuyruk import Kuyruk, Config
 
 config = Config()
-config.from_pyfile('/etc/kuyruk.py')
+config.from_pyfile('/tmp/kuyruk_config.py')
 
 
 class LoaderTestCase(unittest.TestCase):
