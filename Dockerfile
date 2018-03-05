@@ -19,6 +19,7 @@ RUN pip3 install -e .
 # add test and package files
 ADD tests tests
 ADD kuyruk kuyruk
+ADD setup.cfg setup.cfg
 ADD test_config_docker.py /tmp/kuyruk_config.py
 
 # run tests
