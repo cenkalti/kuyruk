@@ -19,7 +19,7 @@ RUN pip3 install -e .
 # add test and package files
 ADD tests tests
 ADD kuyruk kuyruk
-ADD test_config.py /etc/kuyruk.py
+ADD test_config_docker.py /etc/kuyruk.py
 
 # run tests
 CMD python3 tests/integration/wait_rabbitmq.py && pytest -v --cov=kuyruk tests/
