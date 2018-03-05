@@ -1,0 +1,5 @@
+RABBIT_HOST = 'kuyruk_rabbitmq_1'
+RABBIT_PORT = 5672
+RABBIT_VIRTUAL_HOST = '/'
+RABBIT_USER = 'kuyruk'
+RABBIT_PASSWORD = '123'
