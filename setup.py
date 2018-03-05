@@ -1,6 +1,5 @@
 # coding=utf-8
 import os
-import re
 from setuptools import setup
 
 
@@ -9,17 +8,9 @@ def read(*fname):
         return f.read()
 
 
-def get_version():
-    for line in read('kuyruk', '__init__.py').splitlines():
-        m = re.match(r"""__version__\s*=\s*['"](.*)['"]""", line)
-        if m:
-            return m.groups()[0].strip()
-    raise Exception('Cannot find version')
-
-
 setup(
     name='Kuyruk',
-    version=get_version(),
+    version='8.5.1',
     author=u'Cenk Altı',
     author_email='cenkalti@gmail.com',
     keywords='rabbitmq distributed task queue',
