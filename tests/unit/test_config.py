@@ -40,6 +40,9 @@ class ConfigTestCase(unittest.TestCase):
     def test_from_env_vars(self):
         """Config is laoded from environment variables"""
         os.environ['KUYRUK_WORKER_MAX_LOAD'] = '21'
-        config = Config()
-        config.from_env_vars()
-        self.assertEqual(config.WORKER_MAX_LOAD, 21)
+        try:
+            config = Config()
+            config.from_env_vars()
+            self.assertEqual(config.WORKER_MAX_LOAD, 21)
+        finally:
+            del os.environ['KUYRUK_WORKER_MAX_LOAD']

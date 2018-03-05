@@ -6,11 +6,10 @@ import unittest
 import amqp
 from mock import patch
 
-from kuyruk import Kuyruk
 from kuyruk.exceptions import ResultTimeout, RemoteException
 from tests import tasks
 from tests.integration.util import run_worker, delete_queue, len_queue
-from tests.integration.util import drop_connections
+from tests.integration.util import drop_connections, new_instance
 
 
 logger = logging.getLogger(__name__)
@@ -191,7 +190,7 @@ class WorkerTestCase(unittest.TestCase):
         """Message is dropped when JSON is not valid"""
         with run_worker() as worker:
             worker.expect('Consumer started')
-            with Kuyruk().channel() as ch:
+            with new_instance().channel() as ch:
                 msg = amqp.Message(body='foo')
                 ch.basic_publish(msg, exchange='', routing_key='kuyruk')
             worker.expect('Cannot decode message')
@@ -201,7 +200,7 @@ class WorkerTestCase(unittest.TestCase):
         """Message is dropped when task cannot be imported"""
         with run_worker() as worker:
             worker.expect('Consumer started')
-            with Kuyruk().channel() as ch:
+            with new_instance().channel() as ch:
                 desc = {'module': 'kuyruk', 'function': 'foo'}
                 body = json.dumps(desc)
                 msg = amqp.Message(body=body)

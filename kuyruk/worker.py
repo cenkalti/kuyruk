@@ -147,6 +147,8 @@ class Worker(object):
                 except socket.error as e:
                     if e.errno != errno.EINTR:
                         raise
+
+            self._rejects.send_pending()
         logger.debug("End run worker")
 
     def _consumer_tag(self, queue):

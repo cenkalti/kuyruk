@@ -8,13 +8,14 @@ import string
 import random
 from time import sleep
 
-from kuyruk import Kuyruk, Task
+from kuyruk import Task
 from kuyruk import signals
-from kuyruk.config import Config
 from kuyruk.exceptions import Discard
 
+from tests.integration.util import new_instance
 
-kuyruk = Kuyruk()
+
+kuyruk = new_instance()
 # These functions below needs to be at module level in order that
 # Kuyruk worker to determine their fully qualified name.
 
@@ -81,9 +82,8 @@ def just_sleep(seconds):
     print('sleep finished')
 
 
-config_eager = Config()
-config_eager.EAGER = True
-kuyruk_eager = Kuyruk(config_eager)
+kuyruk_eager = new_instance()
+kuyruk_eager.config.EAGER = True
 
 
 @kuyruk_eager.task()
@@ -107,7 +107,7 @@ def sleeping_task(seconds):
 
 
 # Another kuyruk instance for testing before and after task decorators
-kuyruk2 = Kuyruk()
+kuyruk2 = new_instance()
 
 
 @kuyruk2.task

@@ -1,7 +1,10 @@
 from __future__ import print_function
-from kuyruk import Kuyruk
+from kuyruk import Kuyruk, Config
 
-kuyruk = Kuyruk()
+config = Config()
+config.from_pyfile('/etc/kuyruk.py')
+
+kuyruk = Kuyruk(config=config)
 
 
 @kuyruk.task
