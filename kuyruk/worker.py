@@ -24,7 +24,7 @@ from kuyruk.exceptions import Reject, Discard, HeartbeatError
 logger = logging.getLogger(__name__)
 
 
-class Worker(object):
+class Worker:
     """Consumes tasks from queues and runs them.
 
     :param app: An instance of :class:`~kuyruk.Kuyruk`

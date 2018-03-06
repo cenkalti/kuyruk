@@ -19,7 +19,7 @@ from kuyruk.result import Result
 logger = logging.getLogger(__name__)
 
 
-class Task(object):
+class Task:
     """Calling a :class:`~kuyruk.Task` object serializes the task to JSON
     and sends it to the queue.
 

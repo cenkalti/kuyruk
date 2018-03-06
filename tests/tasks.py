@@ -10,7 +10,7 @@ from time import sleep
 
 from kuyruk import Task
 from kuyruk import signals
-from kuyruk.exceptions import Discard
+from kuyruk.exceptions import Discard, Reject
 
 from tests.integration.util import new_instance
 
@@ -93,12 +93,12 @@ def eager_task():
 
 @kuyruk.task
 def rejecting_task():
-    raise kuyruk.Reject
+    raise Reject
 
 
 @kuyruk.task(reject_delay=1)
 def rejecting_task_with_delay():
-    raise kuyruk.Reject
+    raise Reject
 
 
 @kuyruk.task(max_run_time=1)

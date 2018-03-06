@@ -12,7 +12,7 @@ import kuyruk  # noqa; required for references in docs
 logger = logging.getLogger(__name__)
 
 
-class Config(object):
+class Config:
     """Kuyruk configuration object. Default values are defined as
     class attributes. Additional attributes may be added by extensions.
 

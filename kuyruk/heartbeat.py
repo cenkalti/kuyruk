@@ -7,7 +7,7 @@ import threading
 logger = logging.getLogger(__name__)
 
 
-class Heartbeat(object):
+class Heartbeat:
 
     def __init__(self, connection, on_error=None, rejects=None):
         self._connection = connection

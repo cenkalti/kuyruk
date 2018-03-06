@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 Reject = collections.namedtuple('Reject', 'send_time, delivery_tag, requeue')
 
 
-class DelayedRejects(object):
+class DelayedRejects:
 
     def __init__(self, channel):
         self._channel = channel

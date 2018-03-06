@@ -7,7 +7,6 @@ from typing import Dict, Any, Set  # noqa
 
 import amqp
 
-from kuyruk import exceptions
 from kuyruk.task import Task
 from kuyruk.config import Config
 from kuyruk.worker import Worker
@@ -24,7 +23,7 @@ null_handler = logging.NullHandler()
 logger.addHandler(null_handler)
 
 
-class Kuyruk(object):
+class Kuyruk:
     """
     Provides :func:`~kuyruk.Kuyruk.task` decorator to convert a function
     into a :class:`~kuyruk.Task`.
@@ -38,10 +37,6 @@ class Kuyruk(object):
                    See :class:`~kuyruk.Config` for default values.
 
     """
-    # Aliases for raising from tasks
-    Reject = exceptions.Reject
-    Discard = exceptions.Discard
-
     def __init__(self, config=None):
         if config is None:
             config = Config()
@@ -100,13 +95,7 @@ class Kuyruk(object):
             read_timeout=self.config.RABBIT_READ_TIMEOUT,
             write_timeout=self.config.RABBIT_WRITE_TIMEOUT,
         )
-
-        # from amqp==2.0.0 explicit connect is required.
-        try:
-            conn.connect()
-        except AttributeError:
-            pass
-
+        conn.connect()
         logger.info('Connected to RabbitMQ')
         with _safe_close(conn):
             yield conn

@@ -9,7 +9,7 @@ from kuyruk import Worker
 logger = logging.getLogger(__name__)
 
 
-class Args(object):
+class Args:
     def __init__(self, **kwargs):
         self.queues = []
         self.logging_level = None

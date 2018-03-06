@@ -10,7 +10,7 @@ from kuyruk.exceptions import ResultTimeout, RemoteException
 logger = logging.getLogger(__name__)
 
 
-class Result(object):
+class Result:
 
     def __init__(self, connection):
         self._connection = connection

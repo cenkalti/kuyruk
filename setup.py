@@ -10,7 +10,7 @@ def read(*fname):
 
 setup(
     name='Kuyruk',
-    version='8.5.1',
+    version='9.0.0',
     author=u'Cenk Altı',
     author_email='cenkalti@gmail.com',
     keywords='rabbitmq distributed task queue',
@@ -18,7 +18,7 @@ setup(
     packages=['kuyruk'],
     include_package_data=True,
     install_requires=[
-        'amqp>=1.4.6',
+        'amqp>=2',
         'blinker>=1.3',
         'monotonic>=1.2',
         'six>=1.10.0',
