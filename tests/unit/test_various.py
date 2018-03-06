@@ -1,10 +1,8 @@
 import logging
 import unittest
+from unittest.mock import patch
 
-from mock import patch
-
-from kuyruk import Kuyruk
-from kuyruk import Task
+from kuyruk import Kuyruk, Task
 from tests import tasks
 
 

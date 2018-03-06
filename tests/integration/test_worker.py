@@ -2,9 +2,9 @@ import json
 import signal
 import logging
 import unittest
+from unittest.mock import patch
 
 import amqp
-from mock import patch
 
 from kuyruk.exceptions import ResultTimeout, RemoteException
 from tests import tasks
