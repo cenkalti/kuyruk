@@ -82,13 +82,6 @@ class Worker(object):
         Returns only after `shutdown()` is called.
 
         """
-        # Lazy import setproctitle.
-        # There is bug with the latest version of Python with
-        # uWSGI and setproctitle combination.
-        # Watch: https://github.com/unbit/uwsgi/issues/1030
-        from setproctitle import setproctitle
-        setproctitle("kuyruk: worker on %s" % ','.join(self.queues))
-
         if self._logging_level:
             logging.basicConfig(
                 level=getattr(logging, self._logging_level.upper()),
