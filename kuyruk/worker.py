@@ -1,7 +1,6 @@
 import os
 import sys
 import json
-import errno
 import platform
 import socket
 import signal
@@ -140,9 +139,8 @@ class Worker:
                 ch.connection.drain_events(timeout=1)
             except socket.timeout:
                 pass
-            except OSError as e:
-                if e.errno != errno.ETIMEDOUT:
-                    raise
+            except TimeoutError:
+                pass
 
     def _consumer_tag(self, queue):
         return "%s:%s@%s" % (queue, self._pid, self._hostname)
