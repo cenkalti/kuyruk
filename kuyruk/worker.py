@@ -143,9 +143,6 @@ class Worker:
             except OSError as e:
                 if e.errno != errno.ETIMEDOUT:
                     raise
-            except socket.error as e:
-                if e.errno != errno.EINTR:
-                    raise
 
     def _consumer_tag(self, queue):
         return "%s:%s@%s" % (queue, self._pid, self._hostname)
