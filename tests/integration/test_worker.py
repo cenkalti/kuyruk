@@ -152,9 +152,7 @@ class WorkerTestCase(unittest.TestCase):
             with self.assertRaises(RemoteException) as cm:
                 tasks.raise_exception.send_to_queue(wait_result=2)
         e = cm.exception
-        # exceptions.ZeroDivisionError in Python 2
-        # builtins.ZeroDivisionError in Python 3
-        assert e.type.endswith('.ZeroDivisionError')
+        assert e.type == 'builtins.ZeroDivisionError'
 
     def test_result_wait_discard(self):
         """RemoteException is raised on discarded tasks"""

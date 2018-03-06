@@ -1,5 +1,4 @@
 import os
-import sys
 import ast
 import types
 import logging
@@ -7,7 +6,7 @@ import pkg_resources
 
 from kuyruk import importer
 
-import kuyruk  # required for references in docs
+import kuyruk  # noqa; required for references in docs
 
 logger = logging.getLogger(__name__)
 
@@ -87,13 +86,9 @@ class Config(object):
     def from_pyfile(self, filename):
         """Load values from a Python file."""
         globals_, locals_ = {}, {}
-        if sys.version_info[0] == 2:
-            execfile(filename, globals_, locals_)
-        elif sys.version_info[0] == 3:
-            with open(filename, "rb") as f:
-                exec(compile(f.read(), filename, 'exec'), globals_, locals_)
-        else:
-            raise RuntimeError
+        with open(filename, "rb") as f:
+            exec(compile(f.read(), filename, 'exec'), globals_, locals_)
+
         for key, value in locals_.items():
             if (key.isupper() and
                     not isinstance(value, types.ModuleType)):

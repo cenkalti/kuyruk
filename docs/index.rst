@@ -14,7 +14,7 @@ Kuyruk is a simple and easy way of distributing tasks to run on servers.
 It uses `RabbitMQ <http://www.rabbitmq.com>`_ as message broker and depends on
 `amqp <http://amqp.readthedocs.org/>`_
 which is a pure-Python RabbitMQ client library.
-Compatible with Python 2.7+ and 3.4+.
+Compatible with Python 3.5+.
 
 All design decisions is based on simplicity.
 Speed is not first priority. Kuyruk only supports RabbitMQ and does not plan

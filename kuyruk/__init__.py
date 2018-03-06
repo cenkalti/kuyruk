@@ -157,10 +157,7 @@ def _safe_close(obj):
             pass
 
         # After closing the object, we are re-raising the saved exception.
-        if sys.version_info.major == 3:
-            raise exc_info[1].with_traceback(exc_info[2])
-        else:
-            exec("raise exc_info[0], exc_info[1], exc_info[2]")
+        raise exc_info[1].with_traceback(exc_info[2])
     else:
         # No error occurred in block. We must close the object as usual.
         obj.close()
