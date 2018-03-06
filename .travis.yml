@@ -8,6 +8,7 @@ install:
   - pip install coveralls
 before_script:
   - cp test_config_travis.py /tmp/kuyruk_config.py
+  - flake8 kuyruk/
 script:
   - pytest -v --cov=kuyruk tests/
 after_success:
