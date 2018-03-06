@@ -10,11 +10,11 @@ import logging.config
 import threading
 import traceback
 import multiprocessing
+from time import monotonic
 from typing import Tuple  # noqa
 
 import six
 import amqp
-from monotonic import monotonic
 
 from kuyruk import importer, signals
 from kuyruk.reject import DelayedRejects

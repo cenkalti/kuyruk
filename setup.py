@@ -20,7 +20,6 @@ setup(
     install_requires=[
         'amqp>=2',
         'blinker>=1.3',
-        'monotonic>=1.2',
         'six>=1.10.0',
     ],
     description='Simple task queue',

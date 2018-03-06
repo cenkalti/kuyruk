@@ -1,8 +1,7 @@
 import logging
 import collections
+from time import monotonic
 from typing import MutableSequence  # noqa
-
-from monotonic import monotonic
 
 logger = logging.getLogger(__name__)
 

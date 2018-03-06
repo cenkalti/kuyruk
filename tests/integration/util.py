@@ -3,14 +3,13 @@ import os
 import sys
 import errno
 import logging
-from time import sleep
+from time import sleep, monotonic
 from functools import partial
 from contextlib import contextmanager
 
 import psutil
 import requests
 from what import What
-from monotonic import monotonic
 
 from kuyruk import Kuyruk, Config
 

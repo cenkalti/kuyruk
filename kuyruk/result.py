@@ -2,8 +2,7 @@ import json
 import errno
 import socket
 import logging
-
-from monotonic import monotonic
+from time import monotonic
 
 from kuyruk.exceptions import ResultTimeout, RemoteException
 
