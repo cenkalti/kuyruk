@@ -13,7 +13,6 @@ import multiprocessing
 from time import monotonic
 from typing import Tuple  # noqa
 
-import six
 import amqp
 
 from kuyruk import importer, signals
@@ -193,8 +192,6 @@ class Worker:
             return
 
         try:
-            if isinstance(message.body, six.binary_type):
-                message.body = message.body.decode('utf-8')
             description = json.loads(message.body)
         except Exception:
             message.channel.basic_reject(message.delivery_tag, requeue=False)
