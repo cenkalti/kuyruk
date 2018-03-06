@@ -125,8 +125,6 @@ class Worker:
             self._main_loop(ch)
             self._rejects.send_pending()
 
-        logger.debug("End run worker")
-
     def _main_loop(self, ch):
         while not self.shutdown_pending.is_set():
             if self._max_load:
