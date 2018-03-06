@@ -31,9 +31,8 @@ class Task:
         back to queue.
 
     """
-    def __init__(self, f, kuyruk, queue,
-                 retry=0, max_run_time=None,
-                 reject_delay=0):
+
+    def __init__(self, f, kuyruk, queue, retry=0, max_run_time=None, reject_delay=0):
         self.f = f
         self.kuyruk = kuyruk
         self.queue = queue
@@ -58,8 +57,7 @@ class Task:
     def subtask(self, args=(), kwargs={}, host=None):
         return SubTask(self, args, kwargs, host)
 
-    def send_to_queue(self, args=(), kwargs={},
-                      host=None, wait_result=None, message_ttl=None):
+    def send_to_queue(self, args=(), kwargs={}, host=None, wait_result=None, message_ttl=None):
         """
         Sends a message to the queue.
         A worker will run the task's function when it receives the message.
@@ -91,8 +89,7 @@ class Task:
         logger.debug("Task.send_to_queue args=%r, kwargs=%r", args, kwargs)
         queue = self._queue_for_host(host)
         description = self._get_description(args, kwargs)
-        self._send_signal(signals.task_presend, args=args, kwargs=kwargs,
-                          description=description)
+        self._send_signal(signals.task_presend, args=args, kwargs=kwargs, description=description)
 
         body = json.dumps(description)
         msg = amqp.Message(body=body)
@@ -107,13 +104,11 @@ class Task:
         with self.kuyruk.channel() as ch:
             if wait_result:
                 result = Result(ch.connection)
-                ch.basic_consume(queue='amq.rabbitmq.reply-to', no_ack=True,
-                                 callback=result.process_message)
+                ch.basic_consume(queue='amq.rabbitmq.reply-to', no_ack=True, callback=result.process_message)
 
             ch.queue_declare(queue=queue, durable=True, auto_delete=False)
             ch.basic_publish(msg, exchange="", routing_key=queue)
-            self._send_signal(signals.task_postsend, args=args, kwargs=kwargs,
-                              description=description)
+            self._send_signal(signals.task_postsend, args=args, kwargs=kwargs, description=description)
 
             if wait_result:
                 return result.wait(wait_result)
@@ -209,11 +204,9 @@ def time_limit(seconds):
         return
 
     if platform.system() == 'Windows':
-        raise NotImplementedError(
-            "There is no way to implement a general purpose time-limit on "
-            "Windows. Read this issue for more details: "
-            "https://github.com/cenkalti/kuyruk/issues/54"
-        )
+        raise NotImplementedError("There is no way to implement a general purpose time-limit on "
+                                  "Windows. Read this issue for more details: "
+                                  "https://github.com/cenkalti/kuyruk/issues/54")
 
     def signal_handler(signum, frame):
         raise Timeout

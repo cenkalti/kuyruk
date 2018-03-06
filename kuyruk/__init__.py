@@ -64,6 +64,7 @@ class Kuyruk:
                 queue_ = 'kuyruk' if callable(queue) else queue
 
                 return Task(f, self, queue_, **kwargs)
+
             return inner
 
         if callable(queue):
@@ -111,8 +112,7 @@ class Kuyruk:
             for subtask in subtasks:
                 queue = subtask.task._queue_for_host(subtask.host)
                 if queue not in declared_queues:
-                    ch.queue_declare(queue=queue,
-                                     durable=True, auto_delete=False)
+                    ch.queue_declare(queue=queue, durable=True, auto_delete=False)
                     declared_queues.add(queue)
 
                 description = subtask.task._get_description(subtask.args,

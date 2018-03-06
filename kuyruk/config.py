@@ -79,8 +79,7 @@ class Config:
             raise TypeError
         module = importer.import_module(name)
         for key, value in module.__dict__.items():
-            if (key.isupper() and
-                    not isinstance(value, types.ModuleType)):
+            if (key.isupper() and not isinstance(value, types.ModuleType)):
                 self._setattr(key, value)
         logger.info("Config is loaded from module: %s", name)
 

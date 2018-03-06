@@ -150,8 +150,7 @@ class Worker:
     def _declare_queues(self, ch):
         for queue in self.queues:
             logger.debug("queue_declare: %s", queue)
-            ch.queue_declare(
-                queue=queue, durable=True, auto_delete=False)
+            ch.queue_declare(queue=queue, durable=True, auto_delete=False)
 
     def _pause_or_resume(self, channel):
         try:
@@ -162,23 +161,17 @@ class Worker:
             should_pause = load > self._max_load
 
         if should_pause and self.consuming:
-            logger.warning(
-                'Load is above the treshold (%.2f/%s), '
-                'pausing consumer', load, self._max_load)
+            logger.warning('Load is above the treshold (%.2f/%s), ' 'pausing consumer', load, self._max_load)
             self._cancel_queues(channel)
         elif not should_pause and not self.consuming:
-            logger.warning(
-                'Load is below the treshold (%.2f/%s), '
-                'resuming consumer', load, self._max_load)
+            logger.warning('Load is below the treshold (%.2f/%s), ' 'resuming consumer', load, self._max_load)
             self._consume_queues(channel)
 
     def _consume_queues(self, ch):
         self.consuming = True
         for queue in self.queues:
             logger.debug("basic_consume: %s", queue)
-            ch.basic_consume(queue=queue,
-                             consumer_tag=self._consumer_tag(queue),
-                             callback=self._process_message)
+            ch.basic_consume(queue=queue, consumer_tag=self._consumer_tag(queue), callback=self._process_message)
 
     def _cancel_queues(self, ch):
         self.consuming = False
@@ -202,14 +195,12 @@ class Worker:
 
     def _process_description(self, message, description):
         try:
-            task = self._import_task(description['module'],
-                                     description['function'])
+            task = self._import_task(description['module'], description['function'])
             args, kwargs = description['args'], description['kwargs']
         except Exception:
             logger.error('Cannot import task')
             exc_info = sys.exc_info()
-            signals.worker_failure.send(self.kuyruk, description=description,
-                                        exc_info=exc_info, worker=self)
+            signals.worker_failure.send(self.kuyruk, description=description, exc_info=exc_info, worker=self)
             message.channel.basic_reject(message.delivery_tag, requeue=False)
         else:
             self._process_task(message, description, task, args, kwargs)
@@ -226,12 +217,10 @@ class Worker:
         queue = message.delivery_info['routing_key']
         reply_to = message.properties.get('reply_to')
         try:
-            result = self._run_task(message.channel.connection,
-                                    task, args, kwargs)
+            result = self._run_task(message.channel.connection, task, args, kwargs)
         except Reject:
             logger.warning('Task is rejected')
-            self._rejects.push(task.reject_delay, message.delivery_tag,
-                               requeue=True)
+            self._rejects.push(task.reject_delay, message.delivery_tag, requeue=True)
         except Discard:
             logger.warning('Task is discarded')
             message.channel.basic_reject(message.delivery_tag, requeue=False)
@@ -242,19 +231,29 @@ class Worker:
             logger.error('Error while sending heartbeat')
             exc_info = e.exc_info
             logger.error(''.join(traceback.format_exception(*exc_info)))
-            signals.worker_failure.send(self.kuyruk, description=description,
-                                        task=task, args=args, kwargs=kwargs,
-                                        exc_info=exc_info, worker=self,
-                                        queue=queue)
+            signals.worker_failure.send(
+                self.kuyruk,
+                description=description,
+                task=task,
+                args=args,
+                kwargs=kwargs,
+                exc_info=exc_info,
+                worker=self,
+                queue=queue)
             raise
         except Exception:
             logger.error('Task raised an exception')
             exc_info = sys.exc_info()
             logger.error(''.join(traceback.format_exception(*exc_info)))
-            signals.worker_failure.send(self.kuyruk, description=description,
-                                        task=task, args=args, kwargs=kwargs,
-                                        exc_info=exc_info, worker=self,
-                                        queue=queue)
+            signals.worker_failure.send(
+                self.kuyruk,
+                description=description,
+                task=task,
+                args=args,
+                kwargs=kwargs,
+                exc_info=exc_info,
+                worker=self,
+                queue=queue)
             self._rejects.push(0, message.delivery_tag, requeue=False)
             if reply_to:
                 self._send_reply(reply_to, message.channel, None, exc_info)
@@ -267,8 +266,7 @@ class Worker:
             logger.debug("Task is processed")
 
     def _run_task(self, connection, task, args, kwargs):
-        hb = Heartbeat(connection, self._on_heartbeat_error,
-                       rejects=self._rejects)
+        hb = Heartbeat(connection, self._on_heartbeat_error, rejects=self._rejects)
         hb.start()
 
         self.current_task = task
@@ -314,8 +312,7 @@ class Worker:
         except Exception as e:
             logger.error('Cannot serialize result as JSON: %s', e)
             exc_info = sys.exc_info()
-            reply = {'result': None,
-                     'exception': self._exc_info_dict(exc_info)}
+            reply = {'result': None, 'exception': self._exc_info_dict(exc_info)}
             body = json.dumps(reply)
 
         msg = amqp.Message(body=body)
@@ -327,7 +324,8 @@ class Worker:
         return {
             'type': '%s.%s' % (type_.__module__, str(type_.__name__)),
             'value': str(val),
-            'traceback': ''.join(traceback.format_tb(tb))}
+            'traceback': ''.join(traceback.format_tb(tb)),
+        }
 
     def _watch_load(self):
         """Pause consuming messages if lood goes above the allowed limit."""

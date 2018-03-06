@@ -18,13 +18,10 @@ def main():
     parser = argparse.ArgumentParser(conflict_handler='resolve')
 
     # Add common options
-    parser.add_argument(
-        '-v', '--version', action='version', version=__version__)
-    parser.add_argument(
-        '-a', '--app', required=True, help='path to the Kuyruk object')
+    parser.add_argument('-v', '--version', action='version', version=__version__)
+    parser.add_argument('-a', '--app', required=True, help='path to the Kuyruk object')
 
-    subparsers = parser.add_subparsers(
-        dest='subparser_name', help='sub-command name')
+    subparsers = parser.add_subparsers(dest='subparser_name', help='sub-command name')
 
     # Parser for the "worker" sub-command
     parser_worker = subparsers.add_parser('worker', help='run a worker')
