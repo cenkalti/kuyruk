@@ -23,4 +23,5 @@ ADD setup.cfg setup.cfg
 ADD test_config_docker.py /tmp/kuyruk_config.py
 
 # run tests
-CMD python3 tests/integration/wait_rabbitmq.py && pytest -v --cov=kuyruk tests/
+ENTRYPOINT ["pytest", "-v", "--cov=kuyruk"]
+CMD ["tests/"]
