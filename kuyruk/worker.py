@@ -10,6 +10,7 @@ import logging.config
 import threading
 import traceback
 import multiprocessing
+from typing import Tuple  # noqa
 
 import six
 import amqp
@@ -45,7 +46,7 @@ class Worker(object):
 
         self._hostname = socket.gethostname()
         self.queues = [add_host(q) for q in args.queues]
-        self._tasks = {}
+        self._tasks = {}  # type: Tuple[str, str]
         self.shutdown_pending = threading.Event()
         self.consuming = False
         self.current_task = None
@@ -69,7 +70,7 @@ class Worker(object):
         if self._max_load == -1:
             self._max_load == multiprocessing.cpu_count()
 
-        self._threads = []
+        self._threads = []  # type: threading.Thread
         if self._max_load:
             self._threads.append(threading.Thread(target=self._watch_load))
         if self._max_run_time:

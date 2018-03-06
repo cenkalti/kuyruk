@@ -36,7 +36,7 @@ class Heartbeat(object):
             except socket.timeout:
                 pass
             except Exception as e:
-                logger.error(e)
+                logger.exception("cannot send heartbeat: %s", e)
                 if self._on_error:
                     self._on_error(sys.exc_info())
                 break

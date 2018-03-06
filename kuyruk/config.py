@@ -3,6 +3,7 @@ import ast
 import types
 import logging
 import pkg_resources
+from typing import Dict, Any  # noqa
 
 from kuyruk import importer
 
@@ -85,14 +86,15 @@ class Config(object):
 
     def from_pyfile(self, filename):
         """Load values from a Python file."""
-        globals_, locals_ = {}, {}
+        globals_ = {}  # type: Dict[str, Any]
+        locals_ = {}  # type: Dict[str, Any]
         with open(filename, "rb") as f:
             exec(compile(f.read(), filename, 'exec'), globals_, locals_)
 
         for key, value in locals_.items():
-            if (key.isupper() and
-                    not isinstance(value, types.ModuleType)):
+            if (key.isupper() and not isinstance(value, types.ModuleType)):
                 self._setattr(key, value)
+
         logger.info("Config is loaded from file: %s", filename)
 
     def from_env_vars(self):

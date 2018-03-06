@@ -3,6 +3,7 @@ import json
 import logging
 import pkg_resources
 from contextlib import contextmanager
+from typing import Dict, Any, Set  # noqa
 
 import amqp
 
@@ -47,7 +48,7 @@ class Kuyruk(object):
         if not isinstance(config, Config):
             raise TypeError
         self.config = config
-        self.extensions = {}
+        self.extensions = {}  # type: Dict[str, Any]
 
     def task(self, queue='kuyruk', **kwargs):
         """
@@ -116,7 +117,7 @@ class Kuyruk(object):
                 subtask.task.apply(*subtask.args, **subtask.kwargs)
             return
 
-        declared_queues = set()
+        declared_queues = set()  # type: Set[str]
         with self.channel() as ch:
             for subtask in subtasks:
                 queue = subtask.task._queue_for_host(subtask.host)

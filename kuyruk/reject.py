@@ -1,5 +1,6 @@
 import logging
 import collections
+from typing import MutableSequence  # noqa
 
 from monotonic import monotonic
 
@@ -12,7 +13,7 @@ class DelayedRejects(object):
 
     def __init__(self, channel):
         self._channel = channel
-        self._queue = collections.deque()
+        self._queue = collections.deque()  # type: MutableSequence[Reject]
         self._prefetch_count = 1
 
     def push(self, delay, delivery_tag, requeue=False):
