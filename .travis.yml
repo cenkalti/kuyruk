@@ -1,21 +1,21 @@
 language: python
 python:
   - 2.7
-  - 3.4
   - 3.5
   - 3.6
 install:
   - pip install -r requirements_test.txt
-  - pip install --allow-all-external -e .
+  - pip install -e .
   - pip install coveralls
+before_script:
+  - cp test_config_travis.py /tmp/kuyruk_config.py
 script:
-  - nosetests --with-coverage --cover-package kuyruk --cover-erase
+  - pytest -v --cov=kuyruk tests/
 after_success:
   - coverage combine
   - coveralls
 services:
   - rabbitmq
-  - redis-server
 branches:
   only:
     - master

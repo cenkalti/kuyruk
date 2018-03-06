@@ -12,7 +12,7 @@ import requests
 from what import What
 from monotonic import monotonic
 
-from kuyruk import Kuyruk
+from kuyruk import Kuyruk, Config
 
 
 if os.environ.get('TRAVIS', '') == 'true':
@@ -23,10 +23,15 @@ else:
 logger = logging.getLogger(__name__)
 
 
+def new_instance():
+    config = Config()
+    config.from_pyfile('/tmp/kuyruk_config.py')
+    return Kuyruk(config=config)
+
+
 def delete_queue(*queues):
     """Delete queues from RabbitMQ"""
-    k = Kuyruk()
-    with k.connection() as conn:
+    with new_instance().connection() as conn:
         for name in queues:
             logger.debug("deleting queue %s", name)
             with conn.channel() as ch:
@@ -34,7 +39,7 @@ def delete_queue(*queues):
 
 
 def len_queue(queue):
-    with Kuyruk().channel() as ch:
+    with new_instance().channel() as ch:
         _, count, _ = ch.queue_declare(queue=queue, durable=True,
                                        passive=True, auto_delete=False)
         return count
@@ -45,18 +50,28 @@ def is_empty(queue):
 
 
 def drop_connections():
-    server = 'http://localhost:15672'
-    auth = ('guest', 'guest')
+    logger.debug("dropping connections...")
+    k = new_instance()
+    host = k.config.RABBIT_HOST
+    port = 15672
+    server = 'http://%s:%s' % (host, port)
+    auth = (k.config.RABBIT_USER, k.config.RABBIT_PASSWORD)
     r = requests.get(server + '/api/connections', auth=auth)
     r.raise_for_status()
+    count = 0
     for conn in r.json():
+        logger.debug("connection: %s", conn)
         if conn['client_properties'].get('product') == 'py-amqp':
+            logger.debug("deleting connection: %s", conn['name'])
             name = conn['name']
             url = server + '/api/connections/' + name
             r = requests.delete(url, auth=auth)
             r.raise_for_status()
             r = requests.delete(url, auth=auth)
             r.raise_for_status()
+            count += 1
+
+    return count
 
 
 @contextmanager

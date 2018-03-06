@@ -4,10 +4,12 @@ import signal
 import subprocess
 from time import sleep
 
-from kuyruk import Kuyruk
+from kuyruk import Kuyruk, Config
 
+config = Config()
+config.from_pyfile('/tmp/kuyruk_config.py')
 
-kuyruk = Kuyruk()
+kuyruk = Kuyruk(config=config)
 
 
 @kuyruk.task(queue='forever')
