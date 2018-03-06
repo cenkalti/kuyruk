@@ -174,7 +174,7 @@ class WorkerTestCase(unittest.TestCase):
         tasks.just_sleep(10)
         with run_worker(terminate=False) as worker:
             worker.expect('sleeping 10 seconds')
-            wait_until(lambda: drop_connections() > 0, 5)
+            wait_until(lambda: drop_connections() > 0, 10)
             worker.expect('HeartbeatError')
             worker.expect_exit(1)
 
