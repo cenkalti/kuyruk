@@ -102,6 +102,7 @@ class Worker:
 
         for t in self._threads:
             t.start()
+
         try:
             signals.worker_start.send(self.kuyruk, worker=self)
             self._consume_messages()
@@ -123,26 +124,28 @@ class Worker:
             self._declare_queues(ch)
             self._consume_queues(ch)
             logger.info('Consumer started')
-
-            while not self.shutdown_pending.is_set():
-                if self._max_load:
-                    self._pause_or_resume(ch)
-
-                try:
-                    self._rejects.send_pending()
-                    ch.connection.heartbeat_tick()
-                    ch.connection.drain_events(timeout=1)
-                except socket.timeout:
-                    pass
-                except OSError as e:
-                    if e.errno != errno.ETIMEDOUT:
-                        raise
-                except socket.error as e:
-                    if e.errno != errno.EINTR:
-                        raise
-
+            self._main_loop(ch)
             self._rejects.send_pending()
+
         logger.debug("End run worker")
+
+    def _main_loop(self, ch):
+        while not self.shutdown_pending.is_set():
+            if self._max_load:
+                self._pause_or_resume(ch)
+
+            try:
+                self._rejects.send_pending()
+                ch.connection.heartbeat_tick()
+                ch.connection.drain_events(timeout=1)
+            except socket.timeout:
+                pass
+            except OSError as e:
+                if e.errno != errno.ETIMEDOUT:
+                    raise
+            except socket.error as e:
+                if e.errno != errno.EINTR:
+                    raise
 
     def _consumer_tag(self, queue):
         return "%s:%s@%s" % (queue, self._pid, self._hostname)
