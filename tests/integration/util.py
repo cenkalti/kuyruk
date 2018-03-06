@@ -58,6 +58,7 @@ def drop_connections():
     auth = (k.config.RABBIT_USER, k.config.RABBIT_PASSWORD)
     r = requests.get(server + '/api/connections', auth=auth)
     r.raise_for_status()
+    count = 0
     for conn in r.json():
         logger.debug("connection: %s", conn)
         if conn['client_properties'].get('product') == 'py-amqp':
@@ -68,6 +69,9 @@ def drop_connections():
             r.raise_for_status()
             r = requests.delete(url, auth=auth)
             r.raise_for_status()
+            count += 1
+
+    return count
 
 
 @contextmanager

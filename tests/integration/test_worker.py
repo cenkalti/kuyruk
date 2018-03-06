@@ -9,7 +9,7 @@ from mock import patch
 from kuyruk.exceptions import ResultTimeout, RemoteException
 from tests import tasks
 from tests.integration.util import run_worker, delete_queue, len_queue
-from tests.integration.util import drop_connections, new_instance
+from tests.integration.util import drop_connections, new_instance, wait_until
 
 
 logger = logging.getLogger(__name__)
@@ -175,8 +175,8 @@ class WorkerTestCase(unittest.TestCase):
         """HeartbeatError is raised on disconnect"""
         tasks.just_sleep(10)
         with run_worker(terminate=False) as worker:
-            worker.expect('Processing task')
-            drop_connections()
+            worker.expect('sleeping 10 seconds')
+            wait_until(lambda: drop_connections() > 0, 5)
             worker.expect('HeartbeatError')
             worker.expect_exit(1)
 
