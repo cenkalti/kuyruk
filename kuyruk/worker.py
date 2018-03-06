@@ -84,8 +84,7 @@ class Worker:
         if self._logging_level:
             logging.basicConfig(
                 level=getattr(logging, self._logging_level.upper()),
-                format="%(levelname).1s "
-                       "%(name)s.%(funcName)s:%(lineno)d - %(message)s")
+                format="%(levelname).1s %(name)s.%(funcName)s:%(lineno)d - %(message)s")
 
         signal.signal(signal.SIGINT, self._handle_sigint)
         signal.signal(signal.SIGTERM, self._handle_sigterm)
