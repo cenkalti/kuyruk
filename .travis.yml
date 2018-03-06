@@ -9,6 +9,7 @@ install:
 before_script:
   - cp test_config_travis.py /tmp/kuyruk_config.py
   - flake8 kuyruk/
+  - mypy kuyruk/
 script:
   - pytest -v --cov=kuyruk tests/
 after_success:
