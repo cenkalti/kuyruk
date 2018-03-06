@@ -100,7 +100,7 @@ class WorkerTestCase(unittest.TestCase):
     def test_before_after(self, presend_mock):
         """Signal handlers are run"""
         tasks.task_with_signal_handlers('hello world')
-        presend_mock.assert_called_once()
+        presend_mock.assert_called_once_with()
         with run_worker() as worker:
             worker.expect('function2')
             worker.expect('hello world')
