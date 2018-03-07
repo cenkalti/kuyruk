@@ -39,8 +39,7 @@ def delete_queue(*queues):
 
 def len_queue(queue):
     with new_instance().channel() as ch:
-        _, count, _ = ch.queue_declare(queue=queue, durable=True,
-                                       passive=True, auto_delete=False)
+        _, count, _ = ch.queue_declare(queue=queue, durable=True, passive=True, auto_delete=False)
         return count
 
 
@@ -48,7 +47,19 @@ def is_empty(queue):
     return len_queue(queue) == 0
 
 
-def drop_connections():
+def drop_connections(count, timeout):
+    dropped_connections = set()
+
+    def drop():
+        for conn in _drop_connections():
+            dropped_connections.add(conn)
+
+        return len(dropped_connections) == count
+
+    wait_until(drop, timeout)
+
+
+def _drop_connections():
     logger.debug("dropping connections...")
     k = new_instance()
     host = k.config.RABBIT_HOST
@@ -57,18 +68,16 @@ def drop_connections():
     auth = (k.config.RABBIT_USER, k.config.RABBIT_PASSWORD)
     r = requests.get(server + '/api/connections', auth=auth)
     r.raise_for_status()
-    count = 0
     for conn in r.json():
         logger.debug("connection: %s", conn)
+        print('conn: %r' % conn)
         if conn['client_properties'].get('product') == 'py-amqp':
             logger.debug("deleting connection: %s", conn['name'])
             name = conn['name']
             url = server + '/api/connections/' + name
             r = requests.delete(url, auth=auth)
             r.raise_for_status()
-            count += 1
-
-    return count
+            yield name
 
 
 @contextmanager

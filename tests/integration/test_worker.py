@@ -9,7 +9,7 @@ import amqp
 from kuyruk.exceptions import ResultTimeout, RemoteException
 from tests import tasks
 from tests.integration.util import run_worker, delete_queue, len_queue
-from tests.integration.util import drop_connections, new_instance, wait_until
+from tests.integration.util import drop_connections, new_instance
 
 
 logger = logging.getLogger(__name__)
@@ -165,7 +165,7 @@ class WorkerTestCase(unittest.TestCase):
         tasks.just_sleep(10)
         with run_worker(terminate=False) as worker:
             worker.expect('sleeping 10 seconds')
-            wait_until(lambda: drop_connections() > 0, 10)
+            drop_connections(count=1, timeout=10)
             worker.expect('HeartbeatError')
             worker.expect_exit(1)
 
