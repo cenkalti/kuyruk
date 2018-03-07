@@ -124,15 +124,11 @@ class Worker:
 
     def _main_loop(self, ch):
         while not self.shutdown_pending.is_set():
-            if self._max_load:
-                self._pause_or_resume(ch)
-
+            self._pause_or_resume(ch)
             try:
                 ch.connection.heartbeat_tick()
                 ch.connection.drain_events(timeout=1)
             except socket.timeout:
-                pass
-            except TimeoutError:
                 pass
 
     def _consumer_tag(self, queue):
@@ -144,6 +140,9 @@ class Worker:
             ch.queue_declare(queue=queue, durable=True, auto_delete=False)
 
     def _pause_or_resume(self, channel):
+        if not self._max_load:
+            return
+
         try:
             load = self._current_load
         except AttributeError:
