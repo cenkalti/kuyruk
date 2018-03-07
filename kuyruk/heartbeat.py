@@ -1,5 +1,4 @@
 import sys
-import errno
 import socket
 import logging
 import threading
@@ -25,11 +24,7 @@ class Heartbeat:
     def _run(self):
         while not self._stop.wait(1):
             try:
-                try:
-                    self._connection.send_heartbeat()
-                except socket.error as e:
-                    if e.errno != errno.EINTR:
-                        raise
+                self._connection.send_heartbeat()
             except socket.timeout:
                 pass
             except Exception as e:
