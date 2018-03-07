@@ -15,7 +15,6 @@ from typing import Tuple  # noqa
 import amqp
 
 from kuyruk import importer, signals
-from kuyruk.reject import DelayedRejects
 from kuyruk.heartbeat import Heartbeat
 from kuyruk.exceptions import Reject, Discard, HeartbeatError
 
@@ -114,7 +113,6 @@ class Worker:
 
     def _consume_messages(self):
         with self.kuyruk.channel() as ch:
-            self._rejects = DelayedRejects(ch)
             # Set prefetch count to 1. If we don't set this, RabbitMQ keeps
             # sending messages while we are already working on a message.
             ch.basic_qos(0, 1, True)
@@ -123,7 +121,6 @@ class Worker:
             self._consume_queues(ch)
             logger.info('Consumer started')
             self._main_loop(ch)
-            self._rejects.send_pending()
 
     def _main_loop(self, ch):
         while not self.shutdown_pending.is_set():
@@ -131,7 +128,6 @@ class Worker:
                 self._pause_or_resume(ch)
 
             try:
-                self._rejects.send_pending()
                 ch.connection.heartbeat_tick()
                 ch.connection.drain_events(timeout=1)
             except socket.timeout:
@@ -215,7 +211,7 @@ class Worker:
             result = self._run_task(message.channel.connection, task, args, kwargs)
         except Reject:
             logger.warning('Task is rejected')
-            self._rejects.push(0, message.delivery_tag, requeue=True)
+            message.channel.basic_reject(message.delivery_tag, requeue=True)
         except Discard:
             logger.warning('Task is discarded')
             message.channel.basic_reject(message.delivery_tag, requeue=False)
@@ -249,7 +245,7 @@ class Worker:
                 exc_info=exc_info,
                 worker=self,
                 queue=queue)
-            self._rejects.push(0, message.delivery_tag, requeue=False)
+            message.channel.basic_reject(message.delivery_tag, requeue=False)
             if reply_to:
                 self._send_reply(reply_to, message.channel, None, exc_info)
         else:
@@ -261,7 +257,7 @@ class Worker:
             logger.debug("Task is processed")
 
     def _run_task(self, connection, task, args, kwargs):
-        hb = Heartbeat(connection, self._on_heartbeat_error, rejects=self._rejects)
+        hb = Heartbeat(connection, self._on_heartbeat_error)
         hb.start()
 
         self.current_task = task

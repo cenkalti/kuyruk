@@ -9,10 +9,9 @@ logger = logging.getLogger(__name__)
 
 class Heartbeat:
 
-    def __init__(self, connection, on_error=None, rejects=None):
+    def __init__(self, connection, on_error=None):
         self._connection = connection
         self._on_error = on_error
-        self._rejects = rejects
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run)
 
@@ -25,8 +24,6 @@ class Heartbeat:
 
     def _run(self):
         while not self._stop.wait(1):
-            if self._rejects:
-                self._rejects.send_pending()
             try:
                 try:
                     self._connection.send_heartbeat()
