@@ -2,6 +2,8 @@ language: python
 python:
   - 3.5
   - 3.6
+before_install:
+  - echo "$TRAVIS_TAG" > kuyruk/VERSION
 install:
   - pip install -r requirements_test.txt
   - pip install -e .
@@ -17,3 +19,12 @@ after_success:
   - coveralls
 services:
   - rabbitmq
+deploy:
+  on:
+    repo: cenkalti/kuyruk
+    tags: true
+  skip_cleanup: true
+  provider: pypi
+  user: cenkalti
+  password:
+    secure: WISXo+4rni+S51yz6YBiv+Nee8L+GEWb10chnAOkqobnk4IV8p87fyH6hlD5WwzdRUJmvnmvgLm8xni0vfGmQOAwfyCFdDMWdXubL74SRLjG0g7cKWzS8GumlgA+1m2tHDYv2fIFOjgrF7KKX3GXhFUlv8ei7RyYd8+ecLV6L/Y=

@@ -1,16 +1,15 @@
-# coding=utf-8
 import os
 from setuptools import setup
 
 
-def read(*fname):
+def read(*fname: str) -> str:
     with open(os.path.join(os.path.dirname(__file__), *fname)) as f:
         return f.read()
 
 
 setup(
     name='Kuyruk',
-    version='9.0.0',
+    version=read('kuyruk/VERSION').strip(),
     author=u'Cenk Altı',
     author_email='cenkalti@gmail.com',
     keywords='rabbitmq distributed task queue',
