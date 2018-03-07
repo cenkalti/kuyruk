@@ -1,7 +1,6 @@
 # .coveragerc to control coverage.py
 [run]
 source = kuyruk
-omit = kuyruk/test/*
 branch = True
 parallel = True
 
