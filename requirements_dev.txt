@@ -1,3 +1,0 @@
--r requirements_test.txt
-sphinx==1.3b1
-ipython==2.3.1

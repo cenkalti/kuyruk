@@ -1,2 +1,2 @@
 include README.rst LICENSE
-include kuyruk/VERSION
+include VERSION

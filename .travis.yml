@@ -1,24 +1,22 @@
 language: python
-python:
-  - 3.5
-  - 3.6
-before_install:
-  - echo "$TRAVIS_TAG" > kuyruk/VERSION
+python: 3.5
 install:
-  - pip install -r requirements_test.txt
   - pip install -e .
-  - pip install coveralls
+  - pip install -r requirements_test.txt
 before_script:
   - cp test_config_travis.py /tmp/kuyruk_config.py
+script:
   - flake8 kuyruk/
   - mypy kuyruk/
-script:
   - pytest -v --cov=kuyruk tests/
 after_success:
+  - pip install coveralls
   - coverage combine
   - coveralls
 services:
   - rabbitmq
+before_deploy:
+  - echo "$TRAVIS_TAG" > VERSION
 deploy:
   on:
     repo: cenkalti/kuyruk

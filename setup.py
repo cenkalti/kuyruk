@@ -7,9 +7,15 @@ def read(*fname: str) -> str:
         return f.read()
 
 
+try:
+    version = read('VERSION').strip()
+except FileNotFoundError:
+    version = '0'
+
+
 setup(
     name='Kuyruk',
-    version=read('kuyruk/VERSION').strip(),
+    version=version,
     author=u'Cenk Altı',
     author_email='cenkalti@gmail.com',
     keywords='rabbitmq distributed task queue',
