@@ -215,7 +215,7 @@ class Worker:
             result = self._run_task(message.channel.connection, task, args, kwargs)
         except Reject:
             logger.warning('Task is rejected')
-            self._rejects.push(task.reject_delay, message.delivery_tag, requeue=True)
+            self._rejects.push(0, message.delivery_tag, requeue=True)
         except Discard:
             logger.warning('Task is discarded')
             message.channel.basic_reject(message.delivery_tag, requeue=False)

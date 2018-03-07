@@ -87,15 +87,6 @@ class WorkerTestCase(unittest.TestCase):
             worker.expect('Task is rejected')
         assert len_queue("kuyruk") == 1
 
-    def test_reject_delay(self):
-        """Rejected task is requeued after delay"""
-        tasks.rejecting_task_with_delay()
-        with run_worker() as worker:
-            worker.expect('Task is rejected')
-            assert len_queue("kuyruk") == 0
-            worker.expect('Task is rejected')
-        assert len_queue("kuyruk") == 1
-
     @patch('tests.tasks.must_be_called')
     def test_before_after(self, presend_mock):
         """Signal handlers are run"""

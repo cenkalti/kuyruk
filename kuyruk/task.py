@@ -27,18 +27,15 @@ class Task:
         The failed task will be retried in the same worker.
     :param max_run_time: Maximum allowed time in seconds for task to
         complete.
-    :param reject_delay: Seconds to wait before sending rejected message
-        back to queue.
 
     """
 
-    def __init__(self, f, kuyruk, queue, retry=0, max_run_time=None, reject_delay=0):
+    def __init__(self, f, kuyruk, queue, retry=0, max_run_time=None):
         self.f = f
         self.kuyruk = kuyruk
         self.queue = queue
         self.retry = retry
         self.max_run_time = max_run_time
-        self.reject_delay = reject_delay
         self._send_signal(signals.task_init)
 
     def __repr__(self):
