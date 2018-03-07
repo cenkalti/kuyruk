@@ -61,10 +61,12 @@ class Config:
         """Load values from an object."""
         if isinstance(obj, str):
             obj = importer.import_object_str(obj)
+
         for key in dir(obj):
             if key.isupper():
                 value = getattr(obj, key)
                 self._setattr(key, value)
+
         logger.info("Config is loaded from object: %r", obj)
 
     def from_dict(self, d: Dict[str, Any]) -> None:
@@ -72,15 +74,15 @@ class Config:
         for key, value in d.items():
             if key.isupper():
                 self._setattr(key, value)
+
         logger.info("Config is loaded from dict: %r", d)
 
     def from_pymodule(self, name: str) -> None:
-        if not isinstance(name, str):
-            raise TypeError
         module = importer.import_module(name)
         for key, value in module.__dict__.items():
             if (key.isupper() and not isinstance(value, types.ModuleType)):
                 self._setattr(key, value)
+
         logger.info("Config is loaded from module: %s", name)
 
     def from_pyfile(self, filename: str) -> None:
@@ -107,11 +109,13 @@ class Config:
                         value = ast.literal_eval(value)
                     except (ValueError, SyntaxError):
                         pass
+
                     self._setattr(key, value)
 
     def _setattr(self, key: str, value: Any) -> None:
         if not hasattr(self.__class__, key):
             raise ValueError("Unknown config key: %s" % key)
+
         setattr(self, key, value)
 
 
