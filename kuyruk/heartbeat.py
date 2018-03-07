@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class Heartbeat:
 
-    def __init__(self, connection, on_error=None):
+    def __init__(self, connection, on_error):
         self._connection = connection
         self._on_error = on_error
         self._stop = threading.Event()
@@ -29,6 +29,5 @@ class Heartbeat:
                 pass
             except Exception as e:
                 logger.exception("cannot send heartbeat: %s", e)
-                if self._on_error:
-                    self._on_error(sys.exc_info())
+                self._on_error(sys.exc_info())
                 break
