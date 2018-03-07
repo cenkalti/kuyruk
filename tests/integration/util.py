@@ -66,8 +66,6 @@ def drop_connections():
             url = server + '/api/connections/' + name
             r = requests.delete(url, auth=auth)
             r.raise_for_status()
-            r = requests.delete(url, auth=auth)
-            r.raise_for_status()
             count += 1
 
     return count
