@@ -358,7 +358,11 @@ class Worker:
 
         """
         logger.warning("Catched SIGHUP")
-        raise HeartbeatError(self._heartbeat_exc_info)
+        exc_info = self._heartbeat_exc_info
+        self._heartbeat_exc_info = None
+        # Format exception info to see in tools like Sentry.
+        formatted_exception = ''.join(traceback.format_exception(*exc_info))  # noqa
+        raise HeartbeatError(exc_info)
 
     @staticmethod
     def _handle_sigusr1(signum, frame):
