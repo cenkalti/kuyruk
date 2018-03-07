@@ -17,6 +17,3 @@ after_success:
   - coveralls
 services:
   - rabbitmq
-branches:
-  only:
-    - master
