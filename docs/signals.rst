@@ -28,7 +28,7 @@ executing the function and commiting it after the task is executed:
     def close_session(sender, task=None, **extra):
         task.session.close()
 
-    @kuyruk.task
+    @kuyruk.task()
     def task_with_a_session():
         session = task_with_a_session.session
         # Work with the session...

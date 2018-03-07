@@ -20,18 +20,18 @@ kuyruk = new_instance()
 # Kuyruk worker to determine their fully qualified name.
 
 
-@kuyruk.task
+@kuyruk.task()
 def echo(message):
     print(message)
     must_be_called()
 
 
-@kuyruk.task
+@kuyruk.task()
 def add(a, b):
     return a + b
 
 
-@kuyruk.task
+@kuyruk.task()
 def object_result():
     return object()
 
@@ -41,7 +41,7 @@ def echo_another(message):
     print(message)
 
 
-@kuyruk.task
+@kuyruk.task()
 def flood():
     s = ''.join(random.choice(string.ascii_uppercase) for _ in range(70))
     while True:
@@ -53,12 +53,12 @@ def flood():
         sys.stderr.flush()
 
 
-@kuyruk.task
+@kuyruk.task()
 def raise_exception():
     return 1 / 0
 
 
-@kuyruk.task
+@kuyruk.task()
 def discard():
     raise Discard
 
@@ -68,14 +68,14 @@ def retry_task():
     return 1 / 0
 
 
-@kuyruk.task
+@kuyruk.task()
 def loop_forever():
     while 1:
         print('looping forever')
         sleep(1)
 
 
-@kuyruk.task
+@kuyruk.task()
 def just_sleep(seconds):
     print('sleeping', seconds, 'seconds')
     sleep(seconds)
@@ -91,7 +91,7 @@ def eager_task():
     must_be_called()
 
 
-@kuyruk.task
+@kuyruk.task()
 def rejecting_task():
     raise Reject
 
@@ -105,7 +105,7 @@ def sleeping_task(seconds):
 kuyruk2 = new_instance()
 
 
-@kuyruk2.task
+@kuyruk2.task()
 def task_with_signal_handlers(message):
     print(message)
     return 42

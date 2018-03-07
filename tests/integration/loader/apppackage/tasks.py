@@ -7,6 +7,6 @@ config.from_pyfile('/tmp/kuyruk_config.py')
 kuyruk = Kuyruk(config=config)
 
 
-@kuyruk.task
+@kuyruk.task()
 def print_message(m):
     print(m)

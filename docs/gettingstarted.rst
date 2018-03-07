@@ -34,7 +34,7 @@ This will convert your function into a :class:`~kuyruk.Task` object.
 
    kuyruk = Kuyruk()
 
-   @kuyruk.task
+   @kuyruk.task()
    def echo(message):
        print message
 

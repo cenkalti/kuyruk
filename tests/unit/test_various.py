@@ -41,6 +41,6 @@ class KuyrukTestCase(unittest.TestCase):
         def f():
             return
 
-        t = k.task(f)
+        t = k.task()(f)
         self.assertEqual(t._queue_for_host(None), 'kuyruk')
         self.assertEqual(t._queue_for_host('foo'), 'kuyruk.foo')

@@ -67,12 +67,7 @@ class Kuyruk:
 
             return inner
 
-        if callable(queue):
-            # task without args
-            return decorator()(queue)
-        else:
-            # task with args
-            return decorator()
+        return decorator()
 
     @contextmanager
     def channel(self):
