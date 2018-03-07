@@ -1,5 +1,4 @@
 import json
-import errno
 import socket
 import logging
 from time import monotonic
@@ -16,6 +15,8 @@ class Result:
 
     def __init__(self, connection: amqp.Connection) -> None:
         self._connection = connection
+        self.exception = None
+        self.result = None
 
     def process_message(self, message: amqp.Message) -> None:
         logger.debug("Reply received: %s", message.body)
@@ -27,23 +28,19 @@ class Result:
         logger.debug("Waiting for task result")
 
         start = monotonic()
-
         while True:
-            try:
-                if self.exception:
-                    raise RemoteException(self.exception['type'],
-                                          self.exception['value'],
-                                          self.exception['traceback'])
+            if self.exception:
+                raise RemoteException(self.exception['type'],
+                                      self.exception['value'],
+                                      self.exception['traceback'])
+            if self.result:
                 return self.result
-            except AttributeError:
-                pass
+
+            if monotonic() - start > timeout:
+                raise ResultTimeout
 
             try:
                 self._connection.heartbeat_tick()
                 self._connection.drain_events(timeout=1)
             except socket.timeout:
-                if monotonic() - start > timeout:
-                    raise ResultTimeout
-            except socket.error as e:
-                if e.errno != errno.EINTR:
-                    raise
+                pass
