@@ -22,9 +22,10 @@ class Heartbeat:
         self._thread.join()
 
     def _run(self):
-        while not self._stop.wait(1):
+        while not self._stop.is_set():
             try:
-                self._connection.send_heartbeat()
+                self._connection.heartbeat_tick()
+                self._connection.drain_events(timeout=1)
             except socket.timeout:
                 pass
             except Exception as e:
