@@ -3,7 +3,7 @@ import ast
 import types
 import logging
 import pkg_resources
-from typing import Dict, Any  # noqa
+from typing import Dict, Any, Union  # noqa
 
 from kuyruk import importer
 
@@ -57,7 +57,7 @@ class Config:
     WORKER_LOGGING_LEVEL = 'INFO'
     """Logging level of root logger."""
 
-    def from_object(self, obj):
+    def from_object(self, obj: Union[str, Any]) -> None:
         """Load values from an object."""
         if isinstance(obj, str):
             obj = importer.import_object_str(obj)
@@ -67,14 +67,14 @@ class Config:
                 self._setattr(key, value)
         logger.info("Config is loaded from object: %r", obj)
 
-    def from_dict(self, d):
+    def from_dict(self, d: Dict[str, Any]) -> None:
         """Load values from a dict."""
         for key, value in d.items():
             if key.isupper():
                 self._setattr(key, value)
         logger.info("Config is loaded from dict: %r", d)
 
-    def from_pymodule(self, name):
+    def from_pymodule(self, name: str) -> None:
         if not isinstance(name, str):
             raise TypeError
         module = importer.import_module(name)
@@ -83,7 +83,7 @@ class Config:
                 self._setattr(key, value)
         logger.info("Config is loaded from module: %s", name)
 
-    def from_pyfile(self, filename):
+    def from_pyfile(self, filename: str) -> None:
         """Load values from a Python file."""
         globals_ = {}  # type: Dict[str, Any]
         locals_ = {}  # type: Dict[str, Any]
@@ -96,7 +96,7 @@ class Config:
 
         logger.info("Config is loaded from file: %s", filename)
 
-    def from_env_vars(self):
+    def from_env_vars(self) -> None:
         """Load values from environment variables.
         Keys must start with `KUYRUK_`."""
         for key, value in os.environ.items():
@@ -109,7 +109,7 @@ class Config:
                         pass
                     self._setattr(key, value)
 
-    def _setattr(self, key, value):
+    def _setattr(self, key: str, value: Any) -> None:
         if not hasattr(self.__class__, key):
             raise ValueError("Unknown config key: %s" % key)
         setattr(self, key, value)

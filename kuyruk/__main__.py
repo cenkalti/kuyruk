@@ -14,7 +14,7 @@ from kuyruk.worker import Worker
 logger = logging.getLogger(__name__)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(conflict_handler='resolve')
 
     # Add common options
@@ -73,7 +73,7 @@ def main():
     args.func(app, args)
 
 
-def run_worker(app, args):
+def run_worker(app: Kuyruk, args: argparse.Namespace) -> None:
     w = Worker(app, args)
     w.run()
 

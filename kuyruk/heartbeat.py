@@ -2,26 +2,29 @@ import sys
 import socket
 import logging
 import threading
+from typing import Callable, Tuple, Any
+
+import amqp
 
 logger = logging.getLogger(__name__)
 
 
 class Heartbeat:
 
-    def __init__(self, connection, on_error):
+    def __init__(self, connection: amqp.Connection, on_error: Callable[[Tuple[Any, Any, Any]], None]) -> None:
         self._connection = connection
         self._on_error = on_error
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run)
 
-    def start(self):
+    def start(self) -> None:
         self._thread.start()
 
-    def stop(self):
+    def stop(self) -> None:
         self._stop.set()
         self._thread.join()
 
-    def _run(self):
+    def _run(self) -> None:
         while not self._stop.is_set():
             try:
                 self._connection.heartbeat_tick()

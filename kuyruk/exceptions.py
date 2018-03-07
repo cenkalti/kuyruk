@@ -1,3 +1,9 @@
+from typing import Tuple, Type
+from types import TracebackType
+
+ExcInfoType = Tuple[Type[BaseException], BaseException, TracebackType]
+
+
 class KuyrukError(Exception):
     """Base class for Kuyruk exceptions."""
     pass
@@ -41,12 +47,12 @@ class RemoteException(KuyrukError):
     exception is raised on the worker while running the task.
 
     """
-    def __init__(self, type_, value, traceback):
+    def __init__(self, type_: Type, value: Exception, traceback: TracebackType) -> None:
         self.type = type_
         self.value = value
         self.traceback = traceback
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "%s(%r)" % (self.type, self.value)
 
 
@@ -55,5 +61,5 @@ class HeartbeatError(KuyrukError):
     Raised when there is problem while sending heartbeat during task execution.
 
     """
-    def __init__(self, exc_info):
+    def __init__(self, exc_info: ExcInfoType) -> None:
         self.exc_info = exc_info

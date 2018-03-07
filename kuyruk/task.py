@@ -8,15 +8,27 @@ import logging
 from uuid import uuid1
 from datetime import datetime
 from contextlib import contextmanager
-from collections import namedtuple
+from typing import Callable, Tuple, Dict, Any, NamedTuple, TYPE_CHECKING, Union, Iterator
 
 import amqp
+from blinker import Signal
 
 from kuyruk import signals, importer
 from kuyruk.exceptions import Timeout
 from kuyruk.result import Result
 
+if TYPE_CHECKING:
+    from kuyruk.kuyruk import Kuyruk  # noqa
+
 logger = logging.getLogger(__name__)
+
+
+SubTask = NamedTuple("SubTask", [
+    ("task", 'Task'),
+    ("args", Tuple),
+    ("kwargs", Dict[str, Any]),
+    ("host", str),
+])
 
 
 class Task:
@@ -30,7 +42,7 @@ class Task:
 
     """
 
-    def __init__(self, f, kuyruk, queue, retry=0, max_run_time=None):
+    def __init__(self, f: Callable, kuyruk: 'Kuyruk', queue: str, retry: int=0, max_run_time: int=None) -> None:
         self.f = f
         self.kuyruk = kuyruk
         self.queue = queue
@@ -38,10 +50,10 @@ class Task:
         self.max_run_time = max_run_time
         self._send_signal(signals.task_init)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Task of %r>" % self.name
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Tuple, **kwargs: Any) -> None:
         """When a function is wrapped with a task decorator it will be
         converted to a Task object. By overriding __call__ method we are
         sending this task to queue instead of invoking the function
@@ -51,10 +63,17 @@ class Task:
         logger.debug("Task.__call__ args=%r, kwargs=%r", args, kwargs)
         self.send_to_queue(args, kwargs)
 
-    def subtask(self, args=(), kwargs={}, host=None):
+    def subtask(self, args: Tuple=(), kwargs: Dict[str, Any]={}, host: str=None) -> SubTask:
         return SubTask(self, args, kwargs, host)
 
-    def send_to_queue(self, args=(), kwargs={}, host=None, wait_result=None, message_ttl=None):
+    def send_to_queue(
+            self,
+            args: Tuple=(),
+            kwargs: Dict[str, Any]={},
+            host: str=None,
+            wait_result: Union[int, float]=None,
+            message_ttl: Union[int, float]=None,
+    ) -> Any:
         """
         Sends a message to the queue.
         A worker will run the task's function when it receives the message.
@@ -110,14 +129,14 @@ class Task:
             if wait_result:
                 return result.wait(wait_result)
 
-    def _queue_for_host(self, host):
+    def _queue_for_host(self, host: str) -> str:
         if not host:
             return self.queue
         if host == 'localhost':
             host = socket.gethostname()
         return "%s.%s" % (self.queue, host)
 
-    def _get_description(self, args, kwargs):
+    def _get_description(self, args: Tuple, kwargs: Dict[str, Any]) -> Dict[str, Any]:
         """Return the dictionary to be sent to the queue."""
         return {
             'id': uuid1().hex,
@@ -131,10 +150,10 @@ class Task:
             'sender_timestamp': datetime.utcnow().isoformat()[:19],
         }
 
-    def _send_signal(self, sig, **data):
+    def _send_signal(self, sig: Signal, **data: Any) -> None:
         sig.send(self.kuyruk, task=self, **data)
 
-    def apply(self, *args, **kwargs):
+    def apply(self, *args: Any, **kwargs: Any) -> Any:
         """Called by workers to run the wrapped function.
         You may call it yourself if you want to run the task in current process
         without sending to the queue.
@@ -144,7 +163,7 @@ class Task:
         If task has a `max_run_time` property the task will not be allowed to
         run more than that.
         """
-        def send_signal(sig, **extra):
+        def send_signal(sig: Signal, **extra: Any) -> None:
             self._send_signal(sig, args=args, kwargs=kwargs, **extra)
 
         logger.debug("Applying %r, args=%r, kwargs=%r", self, args, kwargs)
@@ -175,7 +194,7 @@ class Task:
             send_signal(signals.task_postapply)
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Full path to the task in the form of `<module>.<function>`.
         Workers find and import tasks by this path.
 
@@ -183,19 +202,16 @@ class Task:
         return "%s:%s" % (self._module_name, self.f.__name__)
 
     @property
-    def _module_name(self):
+    def _module_name(self) -> str:
         """Module name of the wrapped function."""
         name = self.f.__module__
         if name == '__main__':
-            name = importer.get_main_module().name
+            return importer.main_module_name()
         return name
 
 
-SubTask = namedtuple("SubTask", ("task", "args", "kwargs", "host"))
-
-
 @contextmanager
-def time_limit(seconds):
+def time_limit(seconds: int) -> Iterator[None]:
     if seconds == 0:
         yield
         return
@@ -205,8 +221,9 @@ def time_limit(seconds):
                                   "Windows. Read this issue for more details: "
                                   "https://github.com/cenkalti/kuyruk/issues/54")
 
-    def signal_handler(signum, frame):
+    def signal_handler(signum: int, frame: Any) -> None:
         raise Timeout
+
     signal.signal(signal.SIGALRM, signal_handler)
     signal.alarm(seconds)
     try:
