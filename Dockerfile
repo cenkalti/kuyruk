@@ -8,8 +8,8 @@ RUN apt-get update && \
 WORKDIR /kuyruk
 
 # install test requirements
-ADD requirements_test.txt .
-RUN pip3 install -r requirements_test.txt
+ADD requirements.txt .
+RUN pip3 install -r requirements.txt
 
 # install project requirements
 ADD setup.py MANIFEST.in README.rst ./
