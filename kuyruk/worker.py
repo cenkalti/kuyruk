@@ -178,6 +178,8 @@ class Worker:
             return
 
         try:
+            if isinstance(message.body, bytes):
+                message.body = message.body.decode()
             description = json.loads(message.body)
         except Exception:
             logger.error("Cannot decode message. Dropping. Message: %r", message.body)
