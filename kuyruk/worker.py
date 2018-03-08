@@ -180,8 +180,9 @@ class Worker:
         try:
             description = json.loads(message.body)
         except Exception:
+            logger.error("Cannot decode message. Dropping. Message: %r", message.body)
+            traceback.print_exc()
             message.channel.basic_reject(message.delivery_tag, requeue=False)
-            logger.error("Cannot decode message. Dropping.")
         else:
             logger.info("Processing task: %r", description)
             self._process_description(message, description)
