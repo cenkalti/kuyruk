@@ -27,10 +27,10 @@ class Heartbeat:
         self._thread.join()
 
     def _run(self) -> None:
-        while not self._stop.is_set():
+        while not self._stop.wait(timeout=1):
             try:
                 self._connection.heartbeat_tick()
-                self._connection.drain_events(timeout=1)
+                self._connection.drain_events(timeout=0)
             except socket.timeout:
                 pass
             except Exception as e:
