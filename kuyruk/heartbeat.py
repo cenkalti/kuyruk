@@ -23,13 +23,17 @@ class Heartbeat:
         self._thread.start()
 
     def stop(self) -> None:
+        """Make sure this method does not block too long because
+        it is called from the main worker thread."""
         self._stop.set()
         self._thread.join()
 
     def _run(self) -> None:
         while not self._stop.wait(timeout=1):
             try:
+                # Sends Heartbeat only if necessary
                 self._connection.heartbeat_tick()
+                # Processes incoming heartbeats
                 self._connection.drain_events(timeout=0)
             except socket.timeout:
                 pass
