@@ -3,6 +3,18 @@ Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 9.0.6
+-------------
+
+Released on 09-03-2018.
+
+- Removed support for Python 2.
+- Workers do not change process title anymore.
+- Removed ``reject_delay`` argument from ``Kuyruk.task`` decorator.
+- Removed task decorator syntax without arguments.
+- Improved heartbeat handling.
+- Worker does not retry on ``TimeoutError`` exceptions.
+
 Version 8.5.0
 -------------
 
