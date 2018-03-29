@@ -64,6 +64,7 @@ class Kuyruk:
     @contextmanager
     def connection(self) -> Iterator[amqp.Connection]:
         """Returns a new connection as a context manager."""
+        TCP_USER_TIMEOUT = 18  # constant is available on Python 3.6+.
         conn = amqp.Connection(
             host="%s:%s" % (self.config.RABBIT_HOST, self.config.RABBIT_PORT),
             userid=self.config.RABBIT_USER,
@@ -72,6 +73,7 @@ class Kuyruk:
             connect_timeout=self.config.RABBIT_CONNECT_TIMEOUT,
             read_timeout=self.config.RABBIT_READ_TIMEOUT,
             write_timeout=self.config.RABBIT_WRITE_TIMEOUT,
+            socket_settings={TCP_USER_TIMEOUT: self.config.RABBIT_CONNECT_TIMEOUT},
         )
         conn.connect()
         logger.info('Connected to RabbitMQ')
