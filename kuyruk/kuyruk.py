@@ -79,6 +79,7 @@ class Kuyruk:
             read_timeout=self.config.RABBIT_READ_TIMEOUT,
             write_timeout=self.config.RABBIT_WRITE_TIMEOUT,
             socket_settings=socket_settings,
+            heartbeat=self.config.RABBIT_HEARTBEAT,
         )
         conn.connect()
         logger.info('Connected to RabbitMQ')
