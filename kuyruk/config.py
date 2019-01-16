@@ -38,6 +38,7 @@ class Config:
     RABBIT_CONNECT_TIMEOUT = 5
     RABBIT_READ_TIMEOUT = 5
     RABBIT_WRITE_TIMEOUT = 5
+    TCP_USER_TIMEOUT = 60
 
     # Instance Options
     ##################
