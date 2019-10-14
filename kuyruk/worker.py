@@ -11,7 +11,7 @@ import traceback
 import argparse
 import multiprocessing
 from time import monotonic
-from typing import Dict, Any, List, Tuple, Type, Optional  # noqa
+from typing import Dict, Any, List, Tuple  # noqa
 
 import amqp
 
