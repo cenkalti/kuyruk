@@ -10,6 +10,9 @@ Kuyruk
 .. image:: https://coveralls.io/repos/github/cenkalti/kuyruk/badge.svg?branch=master
    :target: https://coveralls.io/github/cenkalti/kuyruk?branch=master
 
+.. image:: https://img.shields.io/pypi/v/kuyruk.svg?branch=master
+   :target: https://pypi.org/project/Kuyruk/
+
 
 Kuyruk is a simple and easy way of distributing tasks to run on servers.
 
