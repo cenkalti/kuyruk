@@ -106,11 +106,12 @@ class Worker:
         try:
             signals.worker_start.send(self.kuyruk, worker=self)
             self._consume_messages()
-            signals.worker_shutdown.send(self.kuyruk, worker=self)
         finally:
             self.shutdown_pending.set()
             for t in self._threads:
                 t.join()
+
+            signals.worker_shutdown.send(self.kuyruk, worker=self)
 
         logger.debug("End run worker")
 
