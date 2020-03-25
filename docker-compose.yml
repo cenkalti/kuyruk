@@ -2,10 +2,8 @@ version: '3.2'
 services:
   test:
     build:
-      dockerfile: Dockerfile
       context: .
     tty: true
   rabbitmq:
     build:
-      dockerfile: Dockerfile
       context: rabbitmq
