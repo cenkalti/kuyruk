@@ -1,0 +1,12 @@
+# Ignore large folders to keep build context small.
+# Build context is sent to docker daemon on every image build.
+
+# All files that start with a dot
+**/.*
+
+# Ignore certain extensions
+**/*.pyc
+**/*.egg-info
+
+# Ignore Python code cache dirs
+**/__pycache__
