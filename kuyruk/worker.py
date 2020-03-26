@@ -111,12 +111,13 @@ class Worker:
                 try:
                     self._consume_messages()
                     break
-                except HeartbeatError as e:
-                    logger.error("Heartbeat error: %s", e)
+                except HeartbeatError:
+                    logger.error("Heartbeat error")
                 except (ConnectionError, amqp.exceptions.ConnectionError) as e:
                     logger.error("Connection error: %s", e)
                     traceback.print_exc()
 
+                logger.info("Waiting %d seconds before reconnecting...", self._reconnect_interval)
                 self.shutdown_pending.wait(self._reconnect_interval)
         finally:
             self.shutdown_pending.set()
