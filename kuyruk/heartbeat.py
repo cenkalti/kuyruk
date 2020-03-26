@@ -33,11 +33,23 @@ class Heartbeat:
             try:
                 # Sends Heartbeat only if necessary
                 self._connection.heartbeat_tick()
+            except amqp.exceptions.ConnectionForced as e:
+                # Missed too many heartbeats
+                logger.error(e.message)
+                self._on_error(sys.exc_info())
+                break
+            except Exception as e:
+                logger.error("cannot send heartbeat: %s", e)
+                self._on_error(sys.exc_info())
+                break
+
+            try:
                 # Processes incoming heartbeats
                 self._connection.drain_events(timeout=0)
             except socket.timeout:
-                pass
+                # No events in connection
+                continue
             except Exception as e:
-                logger.exception("cannot send heartbeat: %s", e)
+                logger.error("cannot drain events from connection: %s", e)
                 self._on_error(sys.exc_info())
                 break

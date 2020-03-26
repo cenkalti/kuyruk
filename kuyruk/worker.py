@@ -129,8 +129,8 @@ class Worker:
     def _main_loop(self, ch: amqp.Channel) -> None:
         while not self.shutdown_pending.is_set():
             self._pause_or_resume(ch)
+            ch.connection.heartbeat_tick()
             try:
-                ch.connection.heartbeat_tick()
                 ch.connection.drain_events(timeout=1)
             except socket.timeout:
                 pass
