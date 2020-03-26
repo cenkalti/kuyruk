@@ -232,8 +232,8 @@ class Worker:
                 exc_info = sys.exc_info()
                 self._send_reply(reply_to, message.channel, None, exc_info)
         except HeartbeatError as e:
-            logger.error('Error while sending heartbeat')
-            exc_info = e.exc_info
+            logger.error('Heartbeat error')
+            exc_info = sys.exc_info()
             logger.error(''.join(traceback.format_exception(*exc_info)))
             signals.worker_failure.send(
                 self.kuyruk,
@@ -382,9 +382,7 @@ class Worker:
         logger.debug("Catched SIGHUP")
         exc_info = self._heartbeat_exc_info
         self._heartbeat_exc_info = None
-        # Format exception info to see in tools like Sentry.
-        formatted_exception = ''.join(traceback.format_exception(*exc_info))  # noqa
-        raise HeartbeatError(exc_info)
+        raise HeartbeatError(exc_info) from exc_info[1]
 
     @staticmethod
     def _handle_sigusr1(signum: int, frame: Any) -> None:
