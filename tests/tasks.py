@@ -2,7 +2,6 @@
 Contains sample tasks to be used in unit and integration tests.
 
 """
-from __future__ import print_function
 import sys
 import string
 import random

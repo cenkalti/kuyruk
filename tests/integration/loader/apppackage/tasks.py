@@ -1,4 +1,3 @@
-from __future__ import print_function
 from kuyruk import Kuyruk, Config
 
 config = Config()
