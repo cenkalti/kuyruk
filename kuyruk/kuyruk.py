@@ -1,7 +1,7 @@
 import sys
 import json
 import logging
-from contextlib import contextmanager
+from contextlib import contextmanager, closing
 from typing import Dict, Any, Set, Callable, Iterator, List  # noqa
 
 import amqp
@@ -58,7 +58,7 @@ class Kuyruk:
         with self.connection() as conn:
             ch = conn.channel()
             logger.info('Opened new channel')
-            with _safe_close(ch):
+            with closing(ch):
                 yield ch
 
     @contextmanager
@@ -83,7 +83,7 @@ class Kuyruk:
         )
         conn.connect()
         logger.info('Connected to RabbitMQ')
-        with _safe_close(conn):
+        with closing(conn):
             yield conn
 
     def send_tasks_to_queue(self, subtasks: List[SubTask]) -> None:
@@ -114,25 +114,3 @@ class Kuyruk:
                                           args=subtask.args,
                                           kwargs=subtask.kwargs,
                                           description=description)
-
-
-@contextmanager
-def _safe_close(obj: Any) -> Iterator[None]:
-    try:
-        yield
-    except Exception:
-        # Error occurred in block. Save exception info for re-raising later.
-        exc_info = sys.exc_info()
-
-        # We still need to close the object but not interested with errors,
-        # because we will raise the original exception above.
-        try:
-            obj.close()
-        except Exception:
-            pass
-
-        # After closing the object, we are re-raising the saved exception.
-        raise exc_info[1].with_traceback(exc_info[2])
-    else:
-        # No error occurred in block. We must close the object as usual.
-        obj.close()
