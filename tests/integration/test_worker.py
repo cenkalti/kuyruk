@@ -163,11 +163,12 @@ class WorkerTestCase(unittest.TestCase):
     def test_heartbeat_error(self):
         """HeartbeatError is raised on disconnect"""
         tasks.just_sleep(10)
-        with run_worker(terminate=False) as worker:
+        with run_worker() as worker:
             worker.expect('sleeping 10 seconds')
             drop_connections(count=1, timeout=10)
-            worker.expect('HeartbeatError')
-            worker.expect_exit(1)
+            worker.expect('Heartbeat error')
+            worker.expect('Task is processed')
+            worker.expect('seconds before reconnecting')
 
     def test_import_app_error(self):
         """TypeError is raised when app is not istance of Kuyruk"""
