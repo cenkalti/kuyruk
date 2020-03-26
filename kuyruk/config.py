@@ -41,6 +41,7 @@ class Config:
     RABBIT_READ_TIMEOUT = 5
     RABBIT_WRITE_TIMEOUT = 5
     TCP_USER_TIMEOUT = 60
+    """Socket option to specify max seconds before a TCP connection is aborted."""
 
     # Instance Options
     ##################

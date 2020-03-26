@@ -67,7 +67,7 @@ class Kuyruk:
         socket_settings = {}
         if sys.platform.startswith('linux'):
             TCP_USER_TIMEOUT = 18  # constant is available on Python 3.6+.
-            socket_settings[TCP_USER_TIMEOUT] = self.config.TCP_USER_TIMEOUT
+            socket_settings[TCP_USER_TIMEOUT] = self.config.TCP_USER_TIMEOUT * 1000
 
         conn = amqp.Connection(
             host="%s:%s" % (self.config.RABBIT_HOST, self.config.RABBIT_PORT),
