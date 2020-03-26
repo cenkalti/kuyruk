@@ -105,7 +105,16 @@ class Worker:
 
         try:
             signals.worker_start.send(self.kuyruk, worker=self)
-            self._consume_messages()
+            while True:
+                try:
+                    self._consume_messages()
+                except HeartbeatError as e:
+                    logger.error("Going to reconnect because of heartbeat error: %s", e)
+                    continue
+                except amqp.exceptions.ConnectionError as e:
+                    logger.error("Going to reconnect because of AMQP connection error: %s", e)
+                    continue
+                break
         finally:
             self.shutdown_pending.set()
             for t in self._threads:
