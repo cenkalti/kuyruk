@@ -56,9 +56,10 @@ class RemoteException(KuyrukError):
         return "%s(%r)" % (self.type, self.value)
 
 
-class HeartbeatError(KuyrukError):
+class HeartbeatError(BaseException):
     """
-    Raised when there is problem while sending heartbeat during task execution.
+    Raised when there is problem while processing heartbeats during task execution.
+    This class is not derived from Exception to prevent being catched accidentally by application code.
 
     """
     def __init__(self, exc_info: ExcInfoType) -> None:
