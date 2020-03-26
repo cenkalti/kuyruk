@@ -3,6 +3,13 @@ Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 9.4.0
+-------------
+
+Relesed on 27-03-2020.
+
+- Fixed various heartbeat related bugs.
+
 Version 9.0.6
 -------------
 
