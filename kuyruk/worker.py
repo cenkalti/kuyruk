@@ -70,6 +70,8 @@ class Worker:
         if self._max_load == -1:
             self._max_load == multiprocessing.cpu_count()
 
+        self._reconnect_interval = app.config.WORKER_RECONNECT_INTERVAL
+
         self._threads = []  # type: List[threading.Thread]
         if self._max_load:
             self._threads.append(threading.Thread(target=self._watch_load))
@@ -105,17 +107,17 @@ class Worker:
 
         try:
             signals.worker_start.send(self.kuyruk, worker=self)
-            while True:
+            while not self.shutdown_pending.is_set():
                 try:
                     self._consume_messages()
+                    break
                 except HeartbeatError as e:
                     logger.error("Heartbeat error: %s", e)
-                    continue
-                except amqp.exceptions.ConnectionError as e:
-                    logger.error("AMQP connection error: %s", e)
+                except (ConnectionError, amqp.exceptions.ConnectionError) as e:
+                    logger.error("Connection error: %s", e)
                     traceback.print_exc()
-                    continue
-                break
+
+                self.shutdown_pending.wait(self._reconnect_interval)
         finally:
             self.shutdown_pending.set()
             for t in self._threads:

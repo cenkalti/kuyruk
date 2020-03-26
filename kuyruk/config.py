@@ -61,6 +61,9 @@ class Config:
     WORKER_LOGGING_LEVEL = 'INFO'
     """Logging level of root logger."""
 
+    WORKER_RECONNECT_INTERVAL = 5
+    """Number of seconds to wait after a connection error."""
+
     def from_object(self, obj: Union[str, Any]) -> None:
         """Load values from an object."""
         if isinstance(obj, str):
