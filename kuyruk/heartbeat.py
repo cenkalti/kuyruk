@@ -1,4 +1,3 @@
-import sys
 import socket
 import logging
 import threading
@@ -6,14 +5,12 @@ from typing import Callable
 
 import amqp
 
-from kuyruk.exceptions import ExcInfoType
-
 logger = logging.getLogger(__name__)
 
 
 class Heartbeat:
 
-    def __init__(self, connection: amqp.Connection, on_error: Callable[[ExcInfoType], None]) -> None:
+    def __init__(self, connection: amqp.Connection, on_error: Callable[[Exception], None]) -> None:
         self._connection = connection
         self._on_error = on_error
         self._stop = threading.Event()
@@ -36,11 +33,11 @@ class Heartbeat:
             except amqp.exceptions.ConnectionForced as e:
                 # Missed too many heartbeats
                 logger.error(e.message)
-                self._on_error(sys.exc_info())
+                self._on_error(e)
                 break
             except Exception as e:
                 logger.error("cannot send heartbeat: %s", e)
-                self._on_error(sys.exc_info())
+                self._on_error(e)
                 break
 
             try:
@@ -51,5 +48,5 @@ class Heartbeat:
                 continue
             except Exception as e:
                 logger.error("cannot drain events from connection: %s", e)
-                self._on_error(sys.exc_info())
+                self._on_error(e)
                 break

@@ -109,10 +109,11 @@ class Worker:
                 try:
                     self._consume_messages()
                 except HeartbeatError as e:
-                    logger.error("Going to reconnect because of heartbeat error: %s", e)
+                    logger.error("Heartbeat error: %s", e)
                     continue
                 except amqp.exceptions.ConnectionError as e:
-                    logger.error("Going to reconnect because of AMQP connection error: %s", e)
+                    logger.error("AMQP connection error: %s", e)
+                    traceback.print_exc()
                     continue
                 break
         finally:
@@ -292,8 +293,8 @@ class Worker:
 
             hb.stop()
 
-    def _on_heartbeat_error(self, exc_info: ExcInfoType) -> None:
-        self._heartbeat_exc_info = exc_info
+    def _on_heartbeat_error(self, error: Exception) -> None:
+        self._heartbeat_error = error
         os.kill(os.getpid(), signal.SIGHUP)
 
     @staticmethod
@@ -387,9 +388,9 @@ class Worker:
 
         """
         logger.debug("Catched SIGHUP")
-        exc_info = self._heartbeat_exc_info
-        self._heartbeat_exc_info = None
-        raise HeartbeatError(exc_info) from exc_info[1]
+        error = self._heartbeat_error
+        self._heartbeat_error = None
+        raise HeartbeatError from error
 
     @staticmethod
     def _handle_sigusr1(signum: int, frame: Any) -> None:

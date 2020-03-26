@@ -62,5 +62,4 @@ class HeartbeatError(BaseException):
     This class is not derived from Exception to prevent being catched accidentally by application code.
 
     """
-    def __init__(self, exc_info: ExcInfoType) -> None:
-        self.exc_info = exc_info
+    pass
