@@ -241,9 +241,8 @@ class Worker:
                 exc_info = sys.exc_info()
                 self._send_reply(reply_to, message.channel, None, exc_info)
         except HeartbeatError as e:
-            logger.error('Heartbeat error')
             exc_info = sys.exc_info()
-            logger.error(''.join(traceback.format_exception(*exc_info)))
+            logger.error('Heartbeat error:\n%s', ''.join(traceback.format_exception(*exc_info)))
             signals.worker_failure.send(
                 self.kuyruk,
                 description=description,
@@ -255,9 +254,8 @@ class Worker:
                 queue=queue)
             raise
         except Exception:
-            logger.error('Task raised an exception')
             exc_info = sys.exc_info()
-            logger.error(''.join(traceback.format_exception(*exc_info)))
+            logger.error('Task raised an exception:\n%s', ''.join(traceback.format_exception(*exc_info)))
             signals.worker_failure.send(
                 self.kuyruk,
                 description=description,
