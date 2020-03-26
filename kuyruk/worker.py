@@ -379,7 +379,7 @@ class Worker:
         lost during the execution of the task.
 
         """
-        logger.warning("Catched SIGHUP")
+        logger.debug("Catched SIGHUP")
         exc_info = self._heartbeat_exc_info
         self._heartbeat_exc_info = None
         # Format exception info to see in tools like Sentry.
