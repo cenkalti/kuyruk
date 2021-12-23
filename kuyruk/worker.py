@@ -20,6 +20,7 @@ from kuyruk.kuyruk import Kuyruk
 from kuyruk.task import Task
 from kuyruk.heartbeat import Heartbeat
 from kuyruk.exceptions import Reject, Discard, HeartbeatError, ExcInfoType
+from kuyruk.process import Process
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class Worker:
     :param args: Command line arguments
 
     """
+
     def __init__(self, app: Kuyruk, args: argparse.Namespace) -> None:
         self.kuyruk = app
 
@@ -77,6 +79,8 @@ class Worker:
             self._threads.append(threading.Thread(target=self._watch_load))
         if self._max_run_time:
             self._threads.append(threading.Thread(target=self._shutdown_timer))
+
+        self._spawn_task_process = args.spawn_task_process  #  defaults to False
 
         signals.worker_init.send(self.kuyruk, worker=self)
 
@@ -244,7 +248,7 @@ class Worker:
             if reply_to:
                 exc_info = sys.exc_info()
                 self._send_reply(reply_to, message.channel, None, exc_info)
-        except HeartbeatError as e:
+        except HeartbeatError:
             exc_info = sys.exc_info()
             logger.error('Heartbeat error:\n%s', ''.join(traceback.format_exception(*exc_info)))
             signals.worker_failure.send(
@@ -288,7 +292,18 @@ class Worker:
         self.current_args = args
         self.current_kwargs = kwargs
         try:
-            return self._apply_task(task, args, kwargs)
+            if self._spawn_task_process:
+                p = Process(target=self._apply_task, args=(task, args, kwargs))
+                p.start()
+                p.join()
+
+                # result is a Tuple with (return_value, exception)
+                if p.result:
+                    if p.result[1]:
+                        raise p.result[1]
+                    return p.result[0]
+            else:
+                return self._apply_task(task, args, kwargs)
         finally:
             self.current_task = None
             self.current_args = None
