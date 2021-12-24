@@ -1,24 +1,21 @@
-import multiprocessing as mp
+import multiprocessing
 
 
-class Process(mp.Process):
+class Process(multiprocessing.Process):
     def __init__(self, *args, **kwargs):
-        mp.Process.__init__(self, *args, **kwargs)
+        super().__init__(self, *args, **kwargs)
 
-        # this pipe has a limited size buffer
-        # if there is no consumers, it will hang after buffer is full
-        self._pconn, self._cconn = mp.Pipe()
+        self._queue = multiprocessing.Queue(maxsize=1)
         self._result = None
 
     def run(self):
         try:
             result = self._target(*self._args, **self._kwargs)
-            self._cconn.send((result, None))
+            self._queue.put((result, None))
         except Exception as exc:
-            self._cconn.send((None, exc))
+            self._queue.put((None, exc))
 
     @property
     def result(self):
-        if self._pconn.poll():
-            self._result = self._pconn.recv()
+        self._result = self._queue.get()
         return self._result
