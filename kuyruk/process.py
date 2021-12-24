@@ -20,12 +20,9 @@ class Process(multiprocessing.Process):
         finally:
             self._queue.close()
 
-    def _handle_signal(self, signum, frame):
-        sys.exit(0)
-
     def _clear_signal_handlers(self):
-        signal.signal(signal.SIGINT, self._handle_signal)
-        signal.signal(signal.SIGTERM, self._handle_signal)
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
         signal.signal(signal.SIGHUP, signal.SIG_DFL)
         signal.signal(signal.SIGUSR2, signal.SIG_DFL)
 
