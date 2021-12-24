@@ -49,6 +49,7 @@ class Worker:
         self._hostname = socket.gethostname()
         self.queues = [add_host(q) for q in args.queues]
         self._tasks = {}  # type: Dict[Tuple[str, str], Task]
+        self._task_process = None
         self.shutdown_pending = threading.Event()
         self.consuming = False
         self.current_task = None  # type: Task
@@ -293,12 +294,12 @@ class Worker:
         self.current_kwargs = kwargs
         try:
             if self._spawn_task_process:
-                p = Process(target=self._apply_task, args=(task, args, kwargs))
-                p.start()
-                p.join()
+                self._task_process = Process(target=self._apply_task, args=(task, args, kwargs))
+                self._task_process.start()
+                self._task_process.join()
 
-                if p.result:
-                    return_value, exception = p.result
+                if self._task_process.result:
+                    return_value, exception = self._task_process.result
                     if exception:
                         raise exception
                     return return_value
@@ -308,6 +309,7 @@ class Worker:
             self.current_task = None
             self.current_args = None
             self.current_kwargs = None
+            self._task_process = None
 
             hb.stop()
 
@@ -408,6 +410,9 @@ class Worker:
         logger.debug("Catched SIGHUP")
         error = self._heartbeat_error
         self._heartbeat_error = None
+        if self._task_process:
+            self._task_process.terminate()
+            self._task_process.join()
         raise HeartbeatError from error
 
     @staticmethod
@@ -422,6 +427,9 @@ class Worker:
         logger.warning("Catched SIGUSR2")
         if self.current_task:
             logger.warning("Dropping current task...")
+            if self._task_process:
+                self._task_process.terminate()
+                self._task_process.join()
             raise Discard
 
     def drop_task(self) -> None:
