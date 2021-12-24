@@ -80,7 +80,7 @@ class Worker:
         if self._max_run_time:
             self._threads.append(threading.Thread(target=self._shutdown_timer))
 
-        self._spawn_task_process = args.spawn_task_process  #  defaults to False
+        self._spawn_task_process = args.spawn_task_process
 
         signals.worker_init.send(self.kuyruk, worker=self)
 
@@ -297,11 +297,11 @@ class Worker:
                 p.start()
                 p.join()
 
-                # result is a Tuple with (return_value, exception)
                 if p.result:
-                    if p.result[1]:
-                        raise p.result[1]
-                    return p.result[0]
+                    return_value, exception = p.result
+                    if exception:
+                        raise exception
+                    return return_value
             else:
                 return self._apply_task(task, args, kwargs)
         finally:
