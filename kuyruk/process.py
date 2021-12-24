@@ -1,6 +1,5 @@
 import multiprocessing
 import signal
-import sys
 
 
 class Process(multiprocessing.Process):
