@@ -13,10 +13,7 @@ from what import What
 from kuyruk import Kuyruk, Config
 
 
-if os.environ.get('TRAVIS', '') == 'true':
-    TIMEOUT = 30
-else:
-    TIMEOUT = 3
+TIMEOUT = 3
 
 logger = logging.getLogger(__name__)
 
