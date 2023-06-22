@@ -21,10 +21,7 @@ jobs:
       with:
         RABBITMQ_TAG: '3-management-alpine'
     - run: pytest -v --cov=kuyruk --cov-report xml tests/
-    - run: coverage combine
-    - run: coveralls --service=github
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - uses: coverallsapp/github-action@v2
     - run: echo ${{github.ref_name}} > VERSION
     - name: Publish package
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
