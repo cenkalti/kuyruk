@@ -1,4 +1,4 @@
-FROM ubuntu:xenial
+FROM ubuntu:focal
 
 RUN apt-get update && \
     apt-get -y install \
@@ -23,5 +23,5 @@ ADD setup.cfg setup.cfg
 ADD test_config_docker.py /tmp/kuyruk_config.py
 
 # run tests
-ENTRYPOINT ["pytest", "-v", "--cov=kuyruk"]
+ENTRYPOINT ["pytest", "-v", "--full-trace", "--cov=kuyruk"]
 CMD ["tests/"]

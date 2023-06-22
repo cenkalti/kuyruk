@@ -11,7 +11,7 @@ import traceback
 import argparse
 import multiprocessing
 from time import monotonic
-from typing import Dict, Any, List, Tuple  # noqa
+from typing import Dict, Any, List, Tuple, Optional, Type, cast  # noqa
 
 import amqp
 
@@ -52,11 +52,12 @@ class Worker:
         self._task_process = None
         self.shutdown_pending = threading.Event()
         self.consuming = False
-        self.current_task = None  # type: Task
-        self.current_args = None  # type: Tuple
-        self.current_kwargs = None  # type: Dict[str, Any]
+        self.current_task = None  # type: Optional[Task]
+        self.current_args = None  # type: Optional[Tuple]
+        self.current_kwargs = None  # type: Optional[Dict[str, Any]]
+        self._heartbeat_error: Optional[Exception]
 
-        self._started_at = None  # type: float
+        self._started_at = None  # type: Optional[float]
         self._pid = os.getpid()
 
         self._logging_level = app.config.WORKER_LOGGING_LEVEL
@@ -337,7 +338,7 @@ class Worker:
             reply_to: str,
             channel: amqp.Channel,
             result: Any,
-            exc_info: ExcInfoType,
+            exc_info: Optional[ExcInfoType],
     ) -> None:
         logger.debug("Sending reply result=%r", result)
 
@@ -360,7 +361,7 @@ class Worker:
     def _exc_info_dict(exc_info: ExcInfoType) -> Dict[str, str]:
         type_, val, tb = exc_info
         return {
-            'type': '%s.%s' % (type_.__module__, type_.__name__),
+            'type': '%s.%s' % (type_.__module__, cast(Type[BaseException], type_).__name__),
             'value': str(val),
             'traceback': ''.join(traceback.format_tb(tb)),
         }
@@ -382,7 +383,7 @@ class Worker:
         gracefully.
 
         """
-        remaining = self._max_run_time - self.uptime
+        remaining = cast(float, self._max_run_time) - self.uptime
         if not self.shutdown_pending.wait(remaining):
             logger.warning('Run time reached zero')
             self.shutdown()
