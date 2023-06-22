@@ -8,7 +8,7 @@ import logging
 from uuid import uuid1
 from datetime import datetime
 from contextlib import contextmanager
-from typing import Callable, Tuple, Dict, Any, NamedTuple, TYPE_CHECKING, Union, Iterator
+from typing import Callable, Tuple, Dict, Any, NamedTuple, TYPE_CHECKING, Union, Iterator, Optional
 
 import amqp
 from blinker import Signal
@@ -27,7 +27,7 @@ SubTask = NamedTuple("SubTask", [
     ("task", 'Task'),
     ("args", Tuple),
     ("kwargs", Dict[str, Any]),
-    ("host", str),
+    ("host", Optional[str]),
 ])
 
 
@@ -63,14 +63,14 @@ class Task:
         logger.debug("Task.__call__ args=%r, kwargs=%r", args, kwargs)
         self.send_to_queue(args, kwargs)
 
-    def subtask(self, args: Tuple=(), kwargs: Dict[str, Any]={}, host: str=None) -> SubTask:
+    def subtask(self, args: Tuple=(), kwargs: Dict[str, Any]={}, host: Optional[str]=None) -> SubTask:
         return SubTask(self, args, kwargs, host)
 
     def send_to_queue(
             self,
             args: Tuple=(),
             kwargs: Dict[str, Any]={},
-            host: str=None,
+            host: Optional[str]=None,
             wait_result: Union[int, float]=None,
             message_ttl: Union[int, float]=None,
     ) -> Any:
@@ -129,7 +129,7 @@ class Task:
             if wait_result:
                 return result.wait(wait_result)
 
-    def _queue_for_host(self, host: str) -> str:
+    def _queue_for_host(self, host: Optional[str]) -> str:
         if not host:
             return self.queue
         if host == 'localhost':

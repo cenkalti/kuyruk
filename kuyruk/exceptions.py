@@ -1,7 +1,7 @@
-from typing import Tuple, Type
+from typing import Tuple, Type, Union
 from types import TracebackType
 
-ExcInfoType = Tuple[Type[BaseException], BaseException, TracebackType]
+ExcInfoType = Union[Tuple[Type[BaseException], BaseException, TracebackType], Tuple[None, None, None]]
 
 
 class KuyrukError(Exception):
