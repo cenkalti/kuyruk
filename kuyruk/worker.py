@@ -133,7 +133,7 @@ class Worker:
         with self.kuyruk.channel() as ch:
             # Set prefetch count to 1. If we don't set this, RabbitMQ keeps
             # sending messages while we are already working on a message.
-            ch.basic_qos(0, 1, True)
+            ch.basic_qos(0, 1, False)
 
             self._declare_queues(ch)
             self._consume_queues(ch)
