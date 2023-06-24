@@ -1,2 +1,0 @@
-amqp>=2
-blinker>=1.3
