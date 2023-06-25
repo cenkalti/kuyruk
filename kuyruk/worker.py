@@ -20,6 +20,7 @@ from kuyruk.kuyruk import Kuyruk
 from kuyruk.task import Task
 from kuyruk.heartbeat import Heartbeat
 from kuyruk.exceptions import Reject, Discard, HeartbeatError, ExcInfoType
+from kuyruk.process import Process
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class Worker:
     :param args: Command line arguments
 
     """
+
     def __init__(self, app: Kuyruk, args: argparse.Namespace) -> None:
         self.kuyruk = app
 
@@ -47,6 +49,7 @@ class Worker:
         self._hostname = socket.gethostname()
         self.queues = [add_host(q) for q in args.queues]
         self._tasks = {}  # type: Dict[Tuple[str, str], Task]
+        self._task_process = None
         self.shutdown_pending = threading.Event()
         self.consuming = False
         self.current_task = None  # type: Optional[Task]
@@ -78,6 +81,8 @@ class Worker:
             self._threads.append(threading.Thread(target=self._watch_load))
         if self._max_run_time:
             self._threads.append(threading.Thread(target=self._shutdown_timer))
+
+        self._spawn_task_process = args.spawn_task_process
 
         signals.worker_init.send(self.kuyruk, worker=self)
 
@@ -289,11 +294,23 @@ class Worker:
         self.current_args = args
         self.current_kwargs = kwargs
         try:
-            return self._apply_task(task, args, kwargs)
+            if self._spawn_task_process:
+                self._task_process = Process(target=self._apply_task, args=(task, args, kwargs))
+                self._task_process.start()
+                self._task_process.join()
+
+                if self._task_process.result:
+                    return_value, exception = self._task_process.result
+                    if exception:
+                        raise exception
+                    return return_value
+            else:
+                return self._apply_task(task, args, kwargs)
         finally:
             self.current_task = None
             self.current_args = None
             self.current_kwargs = None
+            self._task_process = None
 
             hb.stop()
 
@@ -394,6 +411,9 @@ class Worker:
         logger.debug("Catched SIGHUP")
         error = self._heartbeat_error
         self._heartbeat_error = None
+        if self._task_process:
+            self._task_process.terminate()
+            self._task_process.join()
         raise HeartbeatError from error
 
     @staticmethod
@@ -408,6 +428,9 @@ class Worker:
         logger.warning("Catched SIGUSR2")
         if self.current_task:
             logger.warning("Dropping current task...")
+            if self._task_process:
+                self._task_process.terminate()
+                self._task_process.join()
             raise Discard
 
     def drop_task(self) -> None:

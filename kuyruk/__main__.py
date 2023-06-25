@@ -51,6 +51,10 @@ def main() -> None:
         '--logging-level',
         choices=['debug', 'info', 'warning', 'error', 'critical'],
         help='console logging level')
+    parser_worker.add_argument(
+        '--spawn-task-process',
+        action='store_true',
+        help='spawns a child process for each task')
 
     # Add additional subcommands from extensions.
     for entry_point in pkg_resources.iter_entry_points("kuyruk.commands"):
