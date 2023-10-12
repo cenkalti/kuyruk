@@ -1,8 +1,9 @@
 import sys
 import json
 import logging
-from contextlib import contextmanager, closing
-from typing import Dict, Any, Set, Callable, Iterator, List  # noqa
+import threading
+from contextlib import contextmanager, closing, suppress
+from typing import Dict, Any, Set, Callable, Iterator, List, Optional
 
 import amqp
 
@@ -20,7 +21,7 @@ class Kuyruk:
 
     Provides :func:`~kuyruk.Kuyruk.channel` context manager for opening a
     new channel on the connection.
-    Connection is opened when the first channel is created.
+    Connection is opened when the first channel is created and kept open.
 
     :param config: Must be an instance of :class:`~kuyruk.Config`.
                    If ``None``, default config is used.
@@ -32,7 +33,10 @@ class Kuyruk:
             config = Config()
 
         self.config = config
-        self.extensions = {}  # type: Dict[str, Any]
+        self.extensions: Dict[str, Any] = {}
+
+        self._connection: Optional[amqp.Connection] = None
+        self._connection_lock = threading.RLock()
 
     def task(self, queue: str = 'kuyruk', **kwargs: Any) -> Callable:
         """
@@ -64,6 +68,45 @@ class Kuyruk:
     @contextmanager
     def connection(self) -> Iterator[amqp.Connection]:
         """Returns a new connection as a context manager."""
+        with self._connection_lock:
+            conn = self._get_connection()
+            if conn is None:
+                conn = self._new_connection()
+                logger.info('Connected to RabbitMQ')
+
+            yield conn
+
+    def _get_connection(self) -> Optional[amqp.Connection]:
+        if self._connection is None:
+            return None
+
+        if not self._connection_is_alive():
+            self._remove_connection()
+            return None
+
+        return self._connection
+
+    def _remove_connection(self) -> None:
+        if self._connection is None:
+            return
+
+        with suppress(Exception):
+            self._connection.close()
+
+        self._connection = None
+
+    def _connection_is_alive(self) -> bool:
+        if self._connection is None:
+            return False
+
+        try:
+            self._connection.send_heartbeat()
+        except IOError:
+            return False
+        else:
+            return True
+
+    def _new_connection(self) -> amqp.Connection:
         socket_settings = {}
         if sys.platform.startswith('linux'):
             TCP_USER_TIMEOUT = 18  # constant is available on Python 3.6+.
@@ -82,9 +125,9 @@ class Kuyruk:
             ssl=self.config.RABBIT_SSL,
         )
         conn.connect()
-        logger.info('Connected to RabbitMQ')
-        with closing(conn):
-            yield conn
+
+        self._connection = conn
+        return conn
 
     def send_tasks_to_queue(self, subtasks: List[SubTask]) -> None:
         if self.config.EAGER:
@@ -92,7 +135,7 @@ class Kuyruk:
                 subtask.task.apply(*subtask.args, **subtask.kwargs)
             return
 
-        declared_queues = set()  # type: Set[str]
+        declared_queues: Set[str] = set()
         with self.channel() as ch:
             for subtask in subtasks:
                 queue = subtask.task._queue_for_host(subtask.host)
