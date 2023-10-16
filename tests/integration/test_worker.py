@@ -25,7 +25,6 @@ class WorkerTestCase(unittest.TestCase):
     """
     def setUp(self):
         delete_queue('kuyruk')
-        remove_connections()
 
     def test_simple_task(self):
         """Task is run on default queue"""
@@ -163,6 +162,7 @@ class WorkerTestCase(unittest.TestCase):
 
     def test_heartbeat_error(self):
         """HeartbeatError is raised on disconnect"""
+        remove_connections()
         tasks.just_sleep(10)
         with run_worker() as worker:
             worker.expect('sleeping 10 seconds')
