@@ -9,7 +9,7 @@ import amqp
 from kuyruk.exceptions import ResultTimeout, RemoteException
 from tests import tasks
 from tests.integration.util import run_worker, delete_queue, len_queue
-from tests.integration.util import drop_connections, new_instance
+from tests.integration.util import drop_connections, remove_connections, new_instance
 
 
 logger = logging.getLogger(__name__)
@@ -25,6 +25,7 @@ class WorkerTestCase(unittest.TestCase):
     """
     def setUp(self):
         delete_queue('kuyruk')
+        remove_connections()
 
     def test_simple_task(self):
         """Task is run on default queue"""
@@ -165,7 +166,7 @@ class WorkerTestCase(unittest.TestCase):
         tasks.just_sleep(10)
         with run_worker() as worker:
             worker.expect('sleeping 10 seconds')
-            drop_connections(count=1, timeout=10)
+            drop_connections(count=2, timeout=10)  # one for `tasks.kuyruk`, one for worker
             worker.expect('Heartbeat error')
             worker.expect('Task is processed')
             worker.expect('seconds before reconnecting')
