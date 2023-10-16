@@ -65,14 +65,14 @@ class Kuyruk:
             except amqp.exceptions.RecoverableConnectionError:
                 ch = self._new_channel()
 
-            logger.info('Opened new channel')
-
             with closing(ch):
                 yield ch
 
     def _new_channel(self) -> amqp.Channel:
         with self.connection() as conn:
-            return conn.channel()
+            ch = conn.channel()
+            logger.info('Opened new channel')
+            return ch
 
     @contextmanager
     def connection(self) -> Iterator[amqp.Connection]:
@@ -81,7 +81,6 @@ class Kuyruk:
             conn = self._get_connection()
             if conn is None:
                 conn = self._new_connection()
-                logger.info('Connected to RabbitMQ')
 
             yield conn
 
@@ -134,6 +133,7 @@ class Kuyruk:
             ssl=self.config.RABBIT_SSL,
         )
         conn.connect()
+        logger.info('Connected to RabbitMQ')
 
         self._connection = conn
         return conn
