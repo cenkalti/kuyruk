@@ -11,6 +11,7 @@ import requests
 from what import What
 
 from kuyruk import Kuyruk, Config
+from tests import tasks
 
 
 TIMEOUT = 3
@@ -18,10 +19,15 @@ TIMEOUT = 3
 logger = logging.getLogger(__name__)
 
 
+instances = []
+
+
 def new_instance():
     config = Config()
     config.from_pyfile('/tmp/kuyruk_config.py')
-    return Kuyruk(config=config)
+    instance = Kuyruk(config=config)
+    instances.append(instance)
+    return instance
 
 
 def delete_queue(*queues):
@@ -41,6 +47,11 @@ def len_queue(queue):
 
 def is_empty(queue):
     return len_queue(queue) == 0
+
+
+def remove_connections():
+    for instance in instances:
+        instance._remove_connection()
 
 
 def drop_connections(count, timeout):
