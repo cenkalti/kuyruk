@@ -25,6 +25,7 @@ setup(
     install_requires=[
         'amqp>=2',
         'blinker>=1.3',
+        'monotonic>=1.6',
     ],
     description='Simple task queue',
     long_description=read('README.rst'),
