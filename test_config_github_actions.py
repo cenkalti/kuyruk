@@ -1,5 +1,0 @@
-RABBIT_HOST = 'localhost'
-RABBIT_PORT = 5672
-RABBIT_VIRTUAL_HOST = '/'
-RABBIT_USER = 'guest'
-RABBIT_PASSWORD = 'guest'

@@ -1,7 +1,8 @@
+import socket
 import logging
 import threading
 from time import monotonic
-from typing import Callable
+from contextlib import suppress
 
 import amqp
 import amqp.exceptions
@@ -31,8 +32,7 @@ class SingleConnection:
                  tcp_user_timeout: int = None,
                  heartbeat: int = 60,
                  max_idle_duration: int = None,
-                 ssl: bool = False,
-                 on_connect: Callable = None):
+                 ssl: bool = False):
         self._host = host
         self._port = port
         self._user = user
@@ -45,7 +45,6 @@ class SingleConnection:
         self._heartbeat = heartbeat
         self._max_idle_duration: int = max_idle_duration if max_idle_duration else heartbeat * 10
         self._ssl = ssl
-        self._on_connect = on_connect
 
         self._connection: amqp.Connection = None
         self._lock = threading.Lock()
@@ -54,6 +53,7 @@ class SingleConnection:
         self._last_used_at: float = None  # Time of last connection used at in monotonic time
 
     def __enter__(self):
+        """Acquire the lock and return underlying connection."""
         self._lock.acquire()
         try:
             return self._get()
@@ -62,46 +62,38 @@ class SingleConnection:
             raise
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """Release the lock."""
         self._last_used_at = monotonic()
         self._lock.release()
         return False
 
-    def close(self):
+    # Called by GC on cleanup.
+    def __del__(self):
+        self.close(suppress_exceptions=True)
+
+    def close(self, suppress_exceptions=False):
         """Close the underlying connection."""
         with self._lock:
-            if self._heartbeat_thread is not None:
-                self._stop_heartbeat.set()
-                self._heartbeat_thread.join()
-                self._heartbeat_thread = None
-                self._stop_heartbeat.clear()
-            if self._connection is not None:
-                self._connection.close()
-                self._connection = None
+            self._remove_heartbeat_thread()
+            self._remove_connection(suppress_exceptions=suppress_exceptions)
 
     def _get(self):
         """Returns the underlying connection if it is already connected.
         Creates a new connection if necessary."""
         if self._connection is None:
-            self._connect()
+            self._connection = self.new_connection()
 
-        if not self._is_alive():
-            self._remove()
-            self._connect()
+        if not self._is_alive:
+            self._remove_connection(suppress_exceptions=True)
+            self._connection = self.new_connection()
 
         if not self._heartbeat_thread:
             self._heartbeat_thread = self._start_heartbeat_thread()
 
         return self._connection
 
-    def _connect(self):
-        """Open new connection and save the object."""
-        conn = self._new_connection()
-        if self._on_connect:
-            self._on_connect(conn)
-        self._connection = conn
-        return conn
-
-    def _is_alive(self):
+    @property
+    def _is_alive(self) -> bool:
         """Check aliveness by sending a heartbeat frame."""
         try:
             self._connection.send_heartbeat()
@@ -110,13 +102,11 @@ class SingleConnection:
         else:
             return True
 
-    def _new_connection(self):
+    def new_connection(self):
         """Returns a new connection."""
-        # Copy-pasted from kuyruk.
         socket_settings: dict[int, int] = {}
         if self._tcp_user_timeout:
-            TCP_USER_TIMEOUT = 18  # constant is available on Python 3.6+.
-            socket_settings[TCP_USER_TIMEOUT] = self._tcp_user_timeout * 1000
+            socket_settings[socket.TCP_USER_TIMEOUT] = self._tcp_user_timeout * 1000
 
         conn = amqp.Connection(
             host="{h}:{p}".format(h=self._host, p=self._port),
@@ -129,18 +119,27 @@ class SingleConnection:
             socket_settings=socket_settings,
             heartbeat=self._heartbeat,
             ssl=self._ssl)
-        logger.info("Connecting to amqp")
         conn.connect()
+        logger.info('Connected to RabbitMQ')
         return conn
 
-    def _remove(self):
+    def _remove_connection(self, suppress_exceptions: bool):
         """Close the connection and dispose connection object."""
-        logger.debug("closing connection")
-        try:
-            self._connection.close()
-        except Exception:
-            pass
-        self._connection = None
+        if self._connection is not None:
+            logger.debug("Closing RabbitMQ connection")
+            exceptions = ()
+            if suppress_exceptions:
+                exceptions = (Exception, )
+            with suppress(exceptions):
+                self._connection.close()
+            self._connection = None
+
+    def _remove_heartbeat_thread(self):
+        if self._heartbeat_thread is not None:
+            self._stop_heartbeat.set()
+            self._heartbeat_thread.join()
+            self._heartbeat_thread = None
+            self._stop_heartbeat.clear()
 
     def _start_heartbeat_thread(self):
         t = threading.Thread(target=self._heartbeat_sender)
@@ -167,15 +166,16 @@ class SingleConnection:
                     continue
 
                 if self._is_idle_enough:
-                    self._remove()
+                    logger.debug("Removing idle connection")
+                    self._remove_connection(suppress_exceptions=True)
                     continue
 
-                logger.debug("sending heartbeat")
+                logger.debug("Sending heartbeat")
                 try:
                     self._connection.send_heartbeat()
                 except Exception as e:
-                    logger.warning("Cannot send heartbeat: %s", e)
+                    logger.error("Cannot send heartbeat: %s", e)
                     # There must be a connection error.
                     # Let's make sure that the connection is closed
                     # so next publish call can create a new connection.
-                    self._remove()
+                    self._remove_connection(suppress_exceptions=True)

@@ -1,9 +1,10 @@
 FROM ubuntu:focal
 
-RUN apt-get update && \
-    apt-get -y install \
+RUN apt update && \
+    DEBIAN_FRONTEND=noninteractive  apt install -y \
         python3 \
-        python3-pip
+        python3-pip \
+        docker.io
 
 WORKDIR /kuyruk
 
@@ -17,10 +18,9 @@ RUN mkdir kuyruk && touch kuyruk/__init__.py
 RUN pip3 install -e .
 
 # add test and package files
+ADD setup.cfg setup.cfg
 ADD tests tests
 ADD kuyruk kuyruk
-ADD setup.cfg setup.cfg
-ADD test_config_docker.py /tmp/kuyruk_config.py
 
 # run tests
 ENTRYPOINT ["pytest", "-v", "--full-trace", "--cov=kuyruk"]

@@ -1,15 +1,14 @@
-import sys
 import json
 import logging
-import threading
-from contextlib import contextmanager, closing, suppress
-from typing import Dict, Any, Set, Callable, Iterator, List, Optional
+from contextlib import contextmanager, closing
+from typing import Dict, Any, Set, Callable, Iterator, List
 
 import amqp
 
 from kuyruk import signals
 from kuyruk.config import Config
 from kuyruk.task import Task, SubTask
+from kuyruk.connection import SingleConnection
 
 logger = logging.getLogger(__name__)
 
@@ -28,25 +27,22 @@ class Kuyruk:
                    See :class:`~kuyruk.Config` for default values.
 
     """
+
     def __init__(self, config: Config = None) -> None:
         if config is None:
             config = Config()
 
         self.config = config
         self.extensions: Dict[str, Any] = {}
-
-        self._connection: Optional[amqp.Connection] = None
-        self._connection_lock = threading.RLock()
+        self._connection = self._new_connection()
 
     def task(self, queue: str = 'kuyruk', **kwargs: Any) -> Callable:
         """
         Wrap functions with this decorator to convert them to *tasks*.
-        After wrapping, calling the function will send a message to
-        a queue instead of running the function.
+        After wrapping, calling the function will send a message to a queue instead of running the function.
 
         :param queue: Queue name for the tasks.
-        :param kwargs: Keyword arguments will be passed to
-            :class:`~kuyruk.Task` constructor.
+        :param kwargs: Keyword arguments will be passed to :class:`~kuyruk.Task` constructor.
         :return: Callable :class:`~kuyruk.Task` object wrapping the original
             function.
 
@@ -57,86 +53,45 @@ class Kuyruk:
         return wrapper
 
     @contextmanager
-    def channel(self) -> Iterator[amqp.Channel]:
-        """Returns a new channel from a new connection as a context manager."""
-        with self._connection_lock:
-            try:
-                ch = self._new_channel()
-            except amqp.exceptions.RecoverableConnectionError:
-                ch = self._new_channel()
-
-            with closing(ch):
-                yield ch
-
-    def _new_channel(self) -> amqp.Channel:
-        with self.connection() as conn:
-            ch = conn.channel()
-            logger.info('Opened new channel')
-            return ch
+    def connection(self) -> Iterator[amqp.Connection]:
+        """Returns underlying AMQP connection as a context manager.
+        Connection object is locked while in context and cannot be used by other threads.
+        If you need a connection for a longer duration, use :class:`~kuyruk.Kuyruk.new_connection` method."""
+        with self._connection as connection:
+            yield connection
 
     @contextmanager
-    def connection(self) -> Iterator[amqp.Connection]:
-        """Returns a new connection as a context manager."""
-        with self._connection_lock:
-            conn = self._get_connection()
-            if conn is None:
-                conn = self._new_connection()
-
-            yield conn
-
-    def _get_connection(self) -> Optional[amqp.Connection]:
-        if self._connection is None:
-            return None
-
-        if not self._connection_is_alive():
-            self._remove_connection()
-            return None
-
-        return self._connection
-
-    def _remove_connection(self) -> None:
-        if self._connection is None:
-            return
-
-        with suppress(Exception):
-            self._connection.close()
-
-        self._connection = None
-
-    def _connection_is_alive(self) -> bool:
-        if self._connection is None:
-            return False
-
+    def new_connection(self) -> Iterator[amqp.Connection]:
+        """Returns new AMQP connection as a context manager.
+        Connection is closed when context manager exits."""
+        conn: amqp.Connection = self._new_connection().new_connection()
         try:
-            self._connection.send_heartbeat()
-        except IOError:
-            return False
-        else:
-            return True
+            yield conn
+        finally:
+            conn.close()
 
-    def _new_connection(self) -> amqp.Connection:
-        socket_settings = {}
-        if sys.platform.startswith('linux'):
-            TCP_USER_TIMEOUT = 18  # constant is available on Python 3.6+.
-            socket_settings[TCP_USER_TIMEOUT] = self.config.TCP_USER_TIMEOUT * 1000
+    @contextmanager
+    def channel(self) -> Iterator[amqp.Channel]:
+        """Returns a new channel created on the uderlying connection as a context manager."""
+        with self._connection as connection:
+            channel = connection.channel()
+            logger.info('Opened new channel')
+            with closing(channel):
+                yield channel
 
-        conn = amqp.Connection(
-            host="%s:%s" % (self.config.RABBIT_HOST, self.config.RABBIT_PORT),
-            userid=self.config.RABBIT_USER,
+    def _new_connection(self) -> SingleConnection:
+        return SingleConnection(
+            host=self.config.RABBIT_HOST,
+            port=self.config.RABBIT_PORT,
+            user=self.config.RABBIT_USER,
             password=self.config.RABBIT_PASSWORD,
-            virtual_host=self.config.RABBIT_VIRTUAL_HOST,
+            vhost=self.config.RABBIT_VIRTUAL_HOST,
             connect_timeout=self.config.RABBIT_CONNECT_TIMEOUT,
             read_timeout=self.config.RABBIT_READ_TIMEOUT,
             write_timeout=self.config.RABBIT_WRITE_TIMEOUT,
-            socket_settings=socket_settings,
             heartbeat=self.config.RABBIT_HEARTBEAT,
             ssl=self.config.RABBIT_SSL,
         )
-        conn.connect()
-        logger.info('Connected to RabbitMQ')
-
-        self._connection = conn
-        return conn
 
     def send_tasks_to_queue(self, subtasks: List[SubTask]) -> None:
         if self.config.EAGER:

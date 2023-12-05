@@ -2,17 +2,17 @@ import threading
 import unittest
 from unittest.mock import patch
 
-from kuyruk import Kuyruk
+from kuyruk.connection import SingleConnection
 from tests import tasks
-from tests.integration.util import delete_queue, drop_connections, run_worker
+from tests.integration.util import delete_queue, run_worker
 
 
 class ConnectionTestCase(unittest.TestCase):
     def setUp(self):
         delete_queue('kuyruk')
-        tasks.kuyruk._remove_connection()
+        tasks.kuyruk._connection.close()
 
-    @patch.object(Kuyruk, '_new_connection', wraps=tasks.kuyruk._new_connection)
+    @patch.object(SingleConnection, 'new_connection', wraps=tasks.kuyruk._connection.new_connection)
     def test_serial_tasks(self, new_connection):
         tasks.echo('foo')
         tasks.echo('bar')
@@ -25,7 +25,7 @@ class ConnectionTestCase(unittest.TestCase):
 
         assert new_connection.call_count == 1
 
-    @patch.object(Kuyruk, '_new_connection', wraps=tasks.kuyruk._new_connection)
+    @patch.object(SingleConnection, 'new_connection', wraps=tasks.kuyruk._connection.new_connection)
     def test_task_in_new_thread(self, new_connection):
         tasks.echo('in_main')
 
