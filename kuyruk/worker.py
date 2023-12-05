@@ -11,7 +11,7 @@ import traceback
 import argparse
 import multiprocessing
 from time import monotonic
-from typing import Dict, Any, Tuple, Optional, Type, cast  # noqa
+from typing import Dict, Any, Tuple, Optional, Type, cast, List
 
 import amqp
 
@@ -74,7 +74,7 @@ class Worker:
 
         self._reconnect_interval = app.config.WORKER_RECONNECT_INTERVAL
 
-        self._threads = []  # type: List[threading.Thread]
+        self._threads: List[threading.Thread] = []
         if self._max_load:
             self._threads.append(threading.Thread(target=self._watch_load))
         if self._max_run_time:

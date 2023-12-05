@@ -2,7 +2,8 @@ import socket
 import logging
 import threading
 from time import monotonic
-from contextlib import suppress
+from types import TracebackType
+from typing import Literal, Optional, Type, Dict
 
 import amqp
 import amqp.exceptions
@@ -48,11 +49,11 @@ class SingleConnection:
 
         self._connection: amqp.Connection = None
         self._lock = threading.Lock()
-        self._heartbeat_thread = None
+        self._heartbeat_thread: Optional[threading.Thread] = None
         self._stop_heartbeat = threading.Event()
-        self._last_used_at: float = None  # Time of last connection used at in monotonic time
+        self._last_used_at: float = 0  # Time of last connection used at in monotonic time
 
-    def __enter__(self):
+    def __enter__(self) -> amqp.Connection:
         """Acquire the lock and return underlying connection."""
         self._lock.acquire()
         try:
@@ -61,23 +62,25 @@ class SingleConnection:
             self._lock.release()
             raise
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Optional[Type[BaseException]],
+                 exc_value: Optional[BaseException],
+                 traceback: Optional[TracebackType]) -> Literal[False]:
         """Release the lock."""
         self._last_used_at = monotonic()
         self._lock.release()
-        return False
+        return False  # False re-raises the exception.
 
     # Called by GC on cleanup.
-    def __del__(self):
+    def __del__(self) -> None:
         self.close(suppress_exceptions=True)
 
-    def close(self, suppress_exceptions=False):
+    def close(self, suppress_exceptions: bool = False) -> None:
         """Close the underlying connection."""
         with self._lock:
             self._remove_heartbeat_thread()
             self._remove_connection(suppress_exceptions=suppress_exceptions)
 
-    def _get(self):
+    def _get(self) -> amqp.Connection:
         """Returns the underlying connection if it is already connected.
         Creates a new connection if necessary."""
         if self._connection is None:
@@ -102,9 +105,9 @@ class SingleConnection:
         else:
             return True
 
-    def new_connection(self):
+    def new_connection(self) -> amqp.Connection:
         """Returns a new connection."""
-        socket_settings: dict[int, int] = {}
+        socket_settings: Dict[int, int] = {}
         if self._tcp_user_timeout:
             socket_settings[socket.TCP_USER_TIMEOUT] = self._tcp_user_timeout * 1000
 
@@ -123,25 +126,26 @@ class SingleConnection:
         logger.info('Connected to RabbitMQ')
         return conn
 
-    def _remove_connection(self, suppress_exceptions: bool):
+    def _remove_connection(self, suppress_exceptions: bool) -> None:
         """Close the connection and dispose connection object."""
         if self._connection is not None:
             logger.debug("Closing RabbitMQ connection")
-            exceptions = ()
-            if suppress_exceptions:
-                exceptions = (Exception, )
-            with suppress(exceptions):
+            try:
                 self._connection.close()
-            self._connection = None
+            except Exception:
+                if not suppress_exceptions:
+                    raise
+            else:
+                self._connection = None
 
-    def _remove_heartbeat_thread(self):
+    def _remove_heartbeat_thread(self) -> None:
         if self._heartbeat_thread is not None:
             self._stop_heartbeat.set()
             self._heartbeat_thread.join()
             self._heartbeat_thread = None
             self._stop_heartbeat.clear()
 
-    def _start_heartbeat_thread(self):
+    def _start_heartbeat_thread(self) -> threading.Thread:
         t = threading.Thread(target=self._heartbeat_sender)
         t.daemon = True
         t.start()
@@ -155,7 +159,7 @@ class SingleConnection:
         delta = monotonic() - self._last_used_at
         return delta > self._max_idle_duration
 
-    def _heartbeat_sender(self):
+    def _heartbeat_sender(self) -> None:
         """Target function for heartbeat thread."""
         while not self._stop_heartbeat.wait(timeout=self._heartbeat / 4):
             with self._lock:
