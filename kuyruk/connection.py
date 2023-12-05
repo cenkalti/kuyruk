@@ -87,6 +87,7 @@ class SingleConnection:
             self._connection = self.new_connection()
 
         if not self._is_alive:
+            logger.error("RabbitMQ connection is not alive. New connection will be opened.")
             self._remove_connection(suppress_exceptions=True)
             self._connection = self.new_connection()
 
