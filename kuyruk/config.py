@@ -3,11 +3,9 @@ import ast
 import types
 import logging
 import pkg_resources
-from typing import Dict, Any, Union  # noqa
+from typing import Dict, Any, Union
 
 from kuyruk import importer
-
-import kuyruk  # noqa; required for references in docs
 
 logger = logging.getLogger(__name__)
 
