@@ -1,7 +1,6 @@
-FROM ubuntu:focal
+FROM ubuntu:22.04
 
-RUN apt update && \
-    DEBIAN_FRONTEND=noninteractive  apt install -y \
+RUN apt update && apt install -y \
         python3 \
         python3-pip \
         docker.io
