@@ -36,7 +36,7 @@ class Heartbeat:
                 self._on_error(e)
                 break
             except Exception as e:
-                logger.error("cannot send heartbeat: %s", e)
+                logger.error("Cannot send heartbeat: %s", e)
                 self._on_error(e)
                 break
 
@@ -47,6 +47,6 @@ class Heartbeat:
                 # No events in connection
                 continue
             except Exception as e:
-                logger.error("cannot drain events from connection: %s", e)
+                logger.error("Cannot drain events from connection: %s", e)
                 self._on_error(e)
                 break
