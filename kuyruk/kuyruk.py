@@ -83,14 +83,16 @@ class Kuyruk:
         return SingleConnection(
             host=self.config.RABBIT_HOST,
             port=self.config.RABBIT_PORT,
+            vhost=self.config.RABBIT_VIRTUAL_HOST,
             user=self.config.RABBIT_USER,
             password=self.config.RABBIT_PASSWORD,
-            vhost=self.config.RABBIT_VIRTUAL_HOST,
+            ssl=self.config.RABBIT_SSL,
+            heartbeat=self.config.RABBIT_HEARTBEAT,
+            max_idle_duration=self.config.RABBIT_IDLE_DURATION,
             connect_timeout=self.config.RABBIT_CONNECT_TIMEOUT,
             read_timeout=self.config.RABBIT_READ_TIMEOUT,
             write_timeout=self.config.RABBIT_WRITE_TIMEOUT,
-            heartbeat=self.config.RABBIT_HEARTBEAT,
-            ssl=self.config.RABBIT_SSL,
+            tcp_user_timeout=self.config.TCP_USER_TIMEOUT,
         )
 
     def send_tasks_to_queue(self, subtasks: List[SubTask]) -> None:

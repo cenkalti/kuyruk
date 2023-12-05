@@ -34,10 +34,23 @@ class Config:
     """RabbitMQ password."""
 
     RABBIT_SSL = False
+    """RabbitMQ connectin uses SSL if True."""
+
     RABBIT_HEARTBEAT = 60
+    """Heartbeat interval value proposed by client."""
+
+    RABBIT_IDLE_DURATION = 60
+    """RabbitMQ connection is closed if it's not active for this duration."""
+
     RABBIT_CONNECT_TIMEOUT = 5
+    """TCP connect timeout."""
+
     RABBIT_READ_TIMEOUT = 5
+    """TCP read timeout."""
+
     RABBIT_WRITE_TIMEOUT = 5
+    """TCP write timeout."""
+
     TCP_USER_TIMEOUT = 60
     """Socket option to specify max seconds before a TCP connection is aborted."""
 
