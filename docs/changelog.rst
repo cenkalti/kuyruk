@@ -3,6 +3,13 @@ Changelog
 
 Here you can see the full list of changes between each Kuyruk release.
 
+Version 10.0.0
+--------------
+
+Released on 05-12-2023.
+
+- ``Kuyruk.connection()`` does not return new connection anymore. It returns the underlying connection. The connection is locked while the context manager is active. If you need to hold the connection for a long time, use ``Kuyruk.new_connection()`` to create a separate connection.
+
 Version 9.4.0
 -------------
 
