@@ -11,7 +11,7 @@ import traceback
 import argparse
 import multiprocessing
 from time import monotonic
-from typing import Dict, Any, List, Tuple, Optional, Type, cast  # noqa
+from typing import Dict, Any, Tuple, Optional, Type, cast  # noqa
 
 import amqp
 
@@ -31,6 +31,7 @@ class Worker:
     :param args: Command line arguments
 
     """
+
     def __init__(self, app: Kuyruk, args: argparse.Namespace) -> None:
         self.kuyruk = app
 

@@ -9,10 +9,23 @@ import amqp
 from kuyruk.exceptions import ResultTimeout, RemoteException
 from tests import tasks
 from tests.integration.util import run_worker, delete_queue, len_queue
-from tests.integration.util import drop_connections, remove_connections, new_instance
+from tests.integration.util import drop_connections, new_instance
 
 
 logger = logging.getLogger(__name__)
+
+
+# Needs to be a separate function because we need to access fixture and pytest is not compatible with unittest module.
+def test_heartbeat_error(rabbitmq):
+    """HeartbeatError is raised on disconnect"""
+    tasks.just_sleep(30)
+    with run_worker() as worker:
+        worker.expect('sleeping 30 seconds')
+        drop_connections(rabbitmq, timeout=10)
+        logger.debug("waiting for heartbeat error message")
+        worker.expect('Heartbeat error', timeout=10)
+        worker.expect('Task is processed')
+        worker.expect('seconds before reconnecting')
 
 
 class WorkerTestCase(unittest.TestCase):
@@ -23,6 +36,7 @@ class WorkerTestCase(unittest.TestCase):
     and make some assertion in their output.
 
     """
+
     def setUp(self):
         delete_queue('kuyruk')
 
@@ -159,17 +173,6 @@ class WorkerTestCase(unittest.TestCase):
         with run_worker(max_run_time=1) as worker:
             worker.expect('Consumer started')
             worker.expect('Shutdown requested', timeout=2)
-
-    def test_heartbeat_error(self):
-        """HeartbeatError is raised on disconnect"""
-        remove_connections()
-        tasks.just_sleep(10)
-        with run_worker() as worker:
-            worker.expect('sleeping 10 seconds')
-            drop_connections(count=2, timeout=10)  # one for `tasks.kuyruk`, one for worker
-            worker.expect('Heartbeat error')
-            worker.expect('Task is processed')
-            worker.expect('seconds before reconnecting')
 
     def test_import_app_error(self):
         """TypeError is raised when app is not istance of Kuyruk"""

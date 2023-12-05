@@ -1,20 +1,22 @@
 import os
 import sys
+import time
 import errno
 import logging
 from time import sleep, monotonic
 from functools import partial
 from contextlib import contextmanager
 
+import amqp
 import psutil
 import requests
 from what import What
 
 from kuyruk import Kuyruk, Config
-from tests import tasks
 
 
 TIMEOUT = 3
+CONFIG_PATH = '/tmp/kuyruk_config.py'
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +26,63 @@ instances = []
 
 def new_instance():
     config = Config()
-    config.from_pyfile('/tmp/kuyruk_config.py')
+    if os.path.exists(CONFIG_PATH):
+        config.from_pyfile(CONFIG_PATH)
     instance = Kuyruk(config=config)
     instances.append(instance)
     return instance
+
+
+def override_connection_params(rabbitmq):
+    params = rabbitmq.get_connection_params()
+
+    # Writing a config for worker processes that we're going to start in this test suite.
+    with open(CONFIG_PATH, 'w') as f:
+        f.write(f"""
+RABBIT_HOST = '{params.host}'
+RABBIT_PORT = {params.port}
+RABBIT_VIRTUAL_HOST = '{params.virtual_host}'
+RABBIT_USER = 'kuyruk'
+RABBIT_PASSWORD = '123'
+""")
+
+    for instance in instances:
+        # Override default connection params.
+        # Because the tasks module imported before rabbitmq server is created,
+        # we have to manually override config values.
+        # Kuyruk instance do not use the connection params until it sends a task.
+        instance.config.RABBIT_HOST = params.host
+        instance.config.RABBIT_PORT = params.port
+        instance.config.RABBIT_VIRTUAL_HOST = params.virtual_host
+        instance.config.RABBIT_USER = params.credentials.username
+        instance.config.RABBIT_PASSWORD = params.credentials.password
+
+        # Because the connection object is created inside the constructor
+        # we have to manually override SingleConnection instance variables.
+        instance._connection._host = params.host
+        instance._connection._port = params.port
+        instance._connection._vhost = params.virtual_host
+        instance._connection._user = params.credentials.username
+        instance._connection._password = params.credentials.password
+
+
+@contextmanager
+def amqp_channel(rabbitmq):
+    params = rabbitmq.get_connection_params()
+    connection = amqp.Connection(
+        host="{h}:{p}".format(h=params.host, p=params.port),
+        userid=params.credentials.username,
+        password=params.credentials.password,
+        virtual_host=params.virtual_host)
+    try:
+        connection.connect()
+        channel = connection.channel()
+        try:
+            yield channel
+        finally:
+            channel.close()
+    finally:
+        connection.close()
 
 
 def delete_queue(*queues):
@@ -49,42 +104,49 @@ def is_empty(queue):
     return len_queue(queue) == 0
 
 
-def remove_connections():
-    for instance in instances:
-        instance._remove_connection()
-
-
-def drop_connections(count, timeout):
-    dropped_connections = set()
+def drop_connections(container, timeout):
+    logger.debug("dropping connections...")
+    params = container.get_connection_params()
+    auth = (params.credentials.username, params.credentials.password)
+    time.sleep(5)  # Need some time before the connections become available in management API.
+    original_connections = _get_connections(container)
 
     def drop():
-        for conn in _drop_connections():
-            dropped_connections.add(conn)
-
-        return len(dropped_connections) == count
+        _drop_connections(auth, original_connections)
+        return not original_connections.intersection(_get_connections(container))
 
     wait_until(drop, timeout)
 
+    for instance in instances:
+        instance._connection.close(suppress_exceptions=True)
 
-def _drop_connections():
-    logger.debug("dropping connections...")
-    k = new_instance()
-    host = k.config.RABBIT_HOST
-    port = 15672
+
+def _drop_connections(auth, connections):
+    for url in connections:
+        logger.debug("deleting connection: %s", url)
+        r = requests.delete(url, auth=auth)
+        if r.status_code not in [204, 404]:
+            r.raise_for_status()
+
+
+def _get_connections(container):
+    logger.debug("getting connections...")
+    params = container.get_connection_params()
+    auth = (params.credentials.username, params.credentials.password)
+    host = params.host
+    port = container.get_exposed_port(15672)
     server = 'http://%s:%s' % (host, port)
-    auth = (k.config.RABBIT_USER, k.config.RABBIT_PASSWORD)
+    logger.info("connecting to %s", server)
     r = requests.get(server + '/api/connections', auth=auth)
     r.raise_for_status()
+    ret = set()
     for conn in r.json():
-        logger.debug("connection: %s", conn)
-        print('conn: %r' % conn)
         if conn['client_properties'].get('product') == 'py-amqp':
-            logger.debug("deleting connection: %s", conn['name'])
+            logger.debug("matched connection: %s", conn['name'])
             name = conn['name']
-            url = server + '/api/connections/' + name
-            r = requests.delete(url, auth=auth)
-            r.raise_for_status()
-            yield name
+            ret.add(server + '/api/connections/' + name)
+    logger.debug("match count: %s", len(ret))
+    return ret
 
 
 @contextmanager
