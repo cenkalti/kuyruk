@@ -18,7 +18,7 @@ from kuyruk.exceptions import Timeout
 from kuyruk.result import Result
 
 if TYPE_CHECKING:
-    from kuyruk.kuyruk import Kuyruk  # noqa
+    from kuyruk.kuyruk import Kuyruk
 
 logger = logging.getLogger(__name__)
 
