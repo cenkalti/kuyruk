@@ -6,6 +6,11 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    # Specifying a GitHub environment is optional, but strongly encouraged
+    environment: release
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
@@ -38,6 +43,3 @@ jobs:
     - name: Publish package
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        user: __token__
-        password: ${{ secrets.PYPI_API_TOKEN }}
