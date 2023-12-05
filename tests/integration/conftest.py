@@ -1,30 +1,17 @@
-import time
-
-import amqp
 import pytest
 
-from kuyruk import Config
+from tests.integration.util import override_connection_params
+
+from testcontainers.rabbitmq import RabbitMqContainer
 
 
 @pytest.fixture(scope="session", autouse=True)
-def wait_for_rabbitmq(request):
-    config = Config()
-    config.from_pyfile('/tmp/kuyruk_config.py')
+def rabbitmq(request):
+    rabbitmq = RabbitMqContainer("rabbitmq:3.12-management", username='kuyruk', password='123')
+    rabbitmq.with_exposed_ports(15672)
+    rabbitmq.start()
+    override_connection_params(rabbitmq)
 
-    while True:
-        conn = amqp.Connection(
-            host="%s:%s" % (config.RABBIT_HOST, config.RABBIT_PORT),
-            userid=config.RABBIT_USER,
-            password=config.RABBIT_PASSWORD,
-            virtual_host=config.RABBIT_VIRTUAL_HOST,
-            connect_timeout=1)
+    yield rabbitmq
 
-        try:
-            conn.connect()
-        except Exception:
-            print("RabbitMQ is not ready yet.")
-            time.sleep(1)
-            continue
-
-        conn.close()
-        break
+    rabbitmq.stop()
