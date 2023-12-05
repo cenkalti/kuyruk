@@ -24,28 +24,28 @@ class SingleConnection:
     def __init__(self,
                  host: str = 'localhost',
                  port: int = 5672,
+                 vhost: str = '/',
                  user: str = 'guest',
                  password: str = 'guest',
-                 vhost: str = '/',
+                 ssl: bool = False,
+                 heartbeat: int = 60,
+                 max_idle_duration: int = 60,
                  connect_timeout: int = 5,
                  read_timeout: int = 5,
                  write_timeout: int = 5,
-                 tcp_user_timeout: int = None,
-                 heartbeat: int = 60,
-                 max_idle_duration: int = None,
-                 ssl: bool = False):
+                 tcp_user_timeout: int = 60):
         self._host = host
         self._port = port
+        self._vhost = vhost
         self._user = user
         self._password = password
-        self._vhost = vhost
+        self._ssl = ssl
+        self._heartbeat = heartbeat
+        self._max_idle_duration = max_idle_duration
         self._connect_timeout = connect_timeout
         self._read_timeout = read_timeout
         self._write_timeout = write_timeout
         self._tcp_user_timeout = tcp_user_timeout
-        self._heartbeat = heartbeat
-        self._max_idle_duration: int = max_idle_duration if max_idle_duration else heartbeat * 10
-        self._ssl = ssl
 
         self._connection: amqp.Connection = None
         self._lock = threading.Lock()
@@ -100,15 +100,15 @@ class SingleConnection:
         """Check aliveness by sending a heartbeat frame."""
         try:
             self._connection.send_heartbeat()
-        except IOError:
-            return False
-        else:
+            self._connection.drain_events(timeout=0)
             return True
+        except Exception:
+            return False
 
     def new_connection(self) -> amqp.Connection:
         """Returns a new connection."""
         socket_settings: Dict[int, int] = {}
-        if self._tcp_user_timeout:
+        if self._tcp_user_timeout and hasattr(socket, 'TCP_USER_TIMEOUT'):
             socket_settings[socket.TCP_USER_TIMEOUT] = self._tcp_user_timeout * 1000
 
         conn = amqp.Connection(
@@ -182,4 +182,13 @@ class SingleConnection:
                     # There must be a connection error.
                     # Let's make sure that the connection is closed
                     # so next publish call can create a new connection.
+                    self._remove_connection(suppress_exceptions=True)
+
+                try:
+                    self._connection.drain_events(timeout=0)
+                except socket.timeout:
+                    # No events in connection
+                    pass
+                except Exception as e:
+                    logger.error("Cannot drain events from connection: %s", e)
                     self._remove_connection(suppress_exceptions=True)
