@@ -100,10 +100,17 @@ class SingleConnection:
         """Check aliveness by sending a heartbeat frame."""
         try:
             self._connection.send_heartbeat()
+        except Exception:
+            return False
+
+        try:
             self._connection.drain_events(timeout=0)
+        except socket.timeout:
             return True
         except Exception:
             return False
+        else:
+            return True
 
     def new_connection(self) -> amqp.Connection:
         """Returns a new connection."""
