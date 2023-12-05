@@ -92,8 +92,8 @@ class Config:
 
     def from_pyfile(self, filename: str) -> None:
         """Load values from a Python file."""
-        globals_ = {}  # type: Dict[str, Any]
-        locals_ = {}  # type: Dict[str, Any]
+        globals_: Dict[str, Any] = {}
+        locals_: Dict[str, Any] = {}
         with open(filename, "rb") as f:
             exec(compile(f.read(), filename, 'exec'), globals_, locals_)
 

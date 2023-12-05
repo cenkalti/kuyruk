@@ -48,16 +48,16 @@ class Worker:
 
         self._hostname = socket.gethostname()
         self.queues = [add_host(q) for q in args.queues]
-        self._tasks = {}  # type: Dict[Tuple[str, str], Task]
+        self._tasks: Dict[Tuple[str, str], Task] = {}
         self._task_process = None
         self.shutdown_pending = threading.Event()
         self.consuming = False
-        self.current_task = None  # type: Optional[Task]
-        self.current_args = None  # type: Optional[Tuple]
-        self.current_kwargs = None  # type: Optional[Dict[str, Any]]
+        self.current_task: Optional[Task] = None
+        self.current_args: Optional[Tuple] = None
+        self.current_kwargs: Optional[Dict[str, Any]] = None
         self._heartbeat_error: Optional[Exception]
 
-        self._started_at = None  # type: Optional[float]
+        self._started_at: Optional[float] = None
         self._pid = os.getpid()
 
         self._logging_level = app.config.WORKER_LOGGING_LEVEL
