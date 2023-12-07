@@ -48,7 +48,7 @@ class SingleConnection:
         self._tcp_user_timeout = tcp_user_timeout
 
         self._connection: amqp.Connection = None
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._heartbeat_thread: Optional[threading.Thread] = None
         self._stop_heartbeat = threading.Event()
         self._last_used_at: float = 0  # Time of last connection used at in monotonic time

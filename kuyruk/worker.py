@@ -135,7 +135,9 @@ class Worker:
         logger.debug("End run worker")
 
     def _consume_messages(self) -> None:
-        with self.kuyruk.channel() as ch:
+        with self.kuyruk.new_connection() as connection:
+            ch = connection.channel()
+
             # Set prefetch count to 1. If we don't set this, RabbitMQ keeps
             # sending messages while we are already working on a message.
             ch.basic_qos(0, 1, False)
@@ -144,6 +146,7 @@ class Worker:
             self._consume_queues(ch)
             logger.info('Consumer started')
             self._main_loop(ch)
+            ch.close()
 
     def _main_loop(self, ch: amqp.Channel) -> None:
         while not self.shutdown_pending.is_set():
