@@ -30,11 +30,6 @@ class Heartbeat:
             try:
                 # Sends Heartbeat only if necessary
                 self._connection.heartbeat_tick()
-            except amqp.exceptions.ConnectionForced as e:
-                # Missed too many heartbeats
-                logger.error(e.message)
-                self._on_error(e)
-                break
             except Exception as e:
                 logger.error("Cannot send heartbeat: %s", e)
                 self._on_error(e)
