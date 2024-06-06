@@ -75,6 +75,9 @@ class Config:
     WORKER_RECONNECT_INTERVAL = 5
     """Number of seconds to wait after a connection error."""
 
+    WORKER_PRIORITY = None
+    """Sets worker priority. Larger number means higher priority."""
+
     def from_object(self, obj: Union[str, Any]) -> None:
         """Load values from an object."""
         if isinstance(obj, str):

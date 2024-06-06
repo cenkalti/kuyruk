@@ -47,6 +47,11 @@ def main() -> None:
         help='gracefully shutdown worker after this duration in seconds, '
         'set to 0 for running forever')
     parser_worker.add_argument(
+        '--priority',
+        type=int,
+        help='sets priority for the worker'
+        'Default is 0. Larger numbers indicate higher priority, and both positive and negative numbers can be used.')
+    parser_worker.add_argument(
         '-l',
         '--logging-level',
         choices=['debug', 'info', 'warning', 'error', 'critical'],

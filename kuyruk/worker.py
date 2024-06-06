@@ -72,6 +72,10 @@ class Worker:
         if self._max_load == -1:
             self._max_load == multiprocessing.cpu_count()
 
+        self._priority = app.config.WORKER_PRIORITY
+        if args.priority is not None:
+            self._priority = args.priority
+
         self._reconnect_interval = app.config.WORKER_RECONNECT_INTERVAL
 
         self._threads: List[threading.Thread] = []
@@ -183,7 +187,15 @@ class Worker:
         self.consuming = True
         for queue in self.queues:
             logger.debug("basic_consume: %s", queue)
-            ch.basic_consume(queue=queue, consumer_tag=self._consumer_tag(queue), callback=self._process_message)
+
+            arguments = {}
+            if self._priority:
+                arguments['x-priority'] = self._priority
+
+            ch.basic_consume(queue=queue,
+                             consumer_tag=self._consumer_tag(queue),
+                             callback=self._process_message,
+                             arguments=arguments)
 
     def _cancel_queues(self, ch: amqp.Channel) -> None:
         self.consuming = False
