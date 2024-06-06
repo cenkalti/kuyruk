@@ -15,6 +15,7 @@ class Args:
         self.logging_level = None
         self.max_load = None
         self.max_run_time = None
+        self.priority = None
         for k, v in kwargs.items():
             setattr(self, k, v)
 
