@@ -1,6 +1,6 @@
 pytest==7.3.2
 pytest-cov==4.1.0
-requests==2.31.0
+requests==2.32.2
 what==0.5.0
 psutil==4.4.2
 flake8==6.1.0
