@@ -2,7 +2,7 @@ import os
 import ast
 import types
 import logging
-import pkg_resources
+import importlib.metadata
 from typing import Dict, Any, Union
 
 from kuyruk import importer
@@ -141,6 +141,6 @@ class Config:
 
 
 # Add additional config keys from extensions.
-for entry_point in pkg_resources.iter_entry_points("kuyruk.config"):
+for entry_point in importlib.metadata.entry_points().get("kuyruk.config", []):
     for k, v in entry_point.load().items():
         setattr(Config, k, v)

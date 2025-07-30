@@ -1,5 +1,5 @@
 import logging
-import pkg_resources
+import importlib.metadata
 
 from kuyruk.kuyruk import Kuyruk
 from kuyruk.task import Task
@@ -8,7 +8,7 @@ from kuyruk.worker import Worker
 
 __all__ = ['Kuyruk', 'Config', 'Task', 'Worker']
 
-__version__ = pkg_resources.get_distribution('kuyruk').version
+__version__ = importlib.metadata.version('kuyruk')
 
 logger = logging.getLogger(__name__)
 
