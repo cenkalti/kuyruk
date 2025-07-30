@@ -26,6 +26,7 @@ setup(
         'amqp>=2',
         'blinker>=1.3',
         'monotonic>=1.6',
+        'setuptools>=69',
     ],
     description='Simple task queue',
     long_description=read('README.rst'),
