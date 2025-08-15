@@ -141,6 +141,6 @@ class Config:
 
 
 # Add additional config keys from extensions.
-for entry_point in importlib.metadata.entry_points().get("kuyruk.config", []):
+for entry_point in importlib.metadata.entry_points(group="kuyruk.config"):
     for k, v in entry_point.load().items():
         setattr(Config, k, v)
