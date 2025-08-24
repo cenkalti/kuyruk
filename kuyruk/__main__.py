@@ -58,7 +58,7 @@ def main() -> None:
         help='console logging level')
 
     # Add additional subcommands from extensions.
-    for entry_point in importlib.metadata.entry_points().get("kuyruk.commands", []):
+    for entry_point in importlib.metadata.entry_points(group="kuyruk.commands"):
         command_func, help_text, customize_parser = entry_point.load()
         ext_parser = subparsers.add_parser(entry_point.name, help=help_text)
         ext_parser.set_defaults(func=command_func)
