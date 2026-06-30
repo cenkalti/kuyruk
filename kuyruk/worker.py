@@ -53,7 +53,7 @@ class Worker:
         self.current_task: Optional[Task] = None
         self.current_args: Optional[Tuple] = None
         self.current_kwargs: Optional[Dict[str, Any]] = None
-        self._heartbeat_error: Optional[Exception]
+        self._heartbeat_error: Optional[Exception] = None
 
         self._started_at: Optional[float] = None
         self._pid = os.getpid()
