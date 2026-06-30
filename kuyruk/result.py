@@ -2,7 +2,7 @@ import json
 import socket
 import logging
 from time import monotonic
-from typing import Union
+from typing import Any, Union
 
 import amqp
 
@@ -17,23 +17,25 @@ class Result:
         self._connection = connection
         self.exception = None
         self.result = None
+        self._received = False
 
     def process_message(self, message: amqp.Message) -> None:
         logger.debug("Reply received: %s", message.body)
         d = json.loads(message.body)
         self.result = d['result']
         self.exception = d.get('exception')
+        self._received = True
 
-    def wait(self, timeout: Union[float, int]) -> None:
+    def wait(self, timeout: Union[float, int]) -> Any:
         logger.debug("Waiting for task result")
 
         start = monotonic()
         while True:
-            if self.exception:
-                raise RemoteException(self.exception['type'],
-                                      self.exception['value'],
-                                      self.exception['traceback'])
-            if self.result:
+            if self._received:
+                if self.exception:
+                    raise RemoteException(self.exception['type'],
+                                          self.exception['value'],
+                                          self.exception['traceback'])
                 return self.result
 
             if monotonic() - start > timeout:
