@@ -176,7 +176,7 @@ class Task:
                 send_signal(signals.task_prerun)
                 try:
                     with time_limit(self.max_run_time or 0):
-                        return self.f(*args, **kwargs)
+                        result = self.f(*args, **kwargs)
                 except Exception:
                     send_signal(signals.task_error, exc_info=sys.exc_info())
                     if tries <= 0:
@@ -190,6 +190,7 @@ class Task:
             raise
         else:
             send_signal(signals.task_success)
+            return result
         finally:
             send_signal(signals.task_postapply)
 
