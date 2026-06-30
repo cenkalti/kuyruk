@@ -212,7 +212,7 @@ class Task:
 
 
 @contextmanager
-def time_limit(seconds: int) -> Iterator[None]:
+def time_limit(seconds: float) -> Iterator[None]:
     if seconds == 0:
         yield
         return
@@ -226,8 +226,8 @@ def time_limit(seconds: int) -> Iterator[None]:
         raise Timeout
 
     signal.signal(signal.SIGALRM, signal_handler)
-    signal.alarm(seconds)
+    signal.setitimer(signal.ITIMER_REAL, seconds)
     try:
         yield
     finally:
-        signal.alarm(0)
+        signal.setitimer(signal.ITIMER_REAL, 0)
