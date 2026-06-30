@@ -6,7 +6,7 @@ import signal
 import socket
 import logging
 from uuid import uuid1
-from datetime import datetime
+from datetime import datetime, timezone
 from contextlib import contextmanager
 from typing import Callable, Tuple, Dict, Any, NamedTuple, TYPE_CHECKING, Union, Iterator, Optional
 
@@ -147,7 +147,7 @@ class Task:
             'sender_hostname': socket.gethostname(),
             'sender_pid': os.getpid(),
             'sender_cmd': ' '.join(sys.argv),
-            'sender_timestamp': datetime.utcnow().isoformat()[:19],
+            'sender_timestamp': datetime.now(timezone.utc).isoformat()[:19],
         }
 
     def _send_signal(self, sig: Signal, **data: Any) -> None:
