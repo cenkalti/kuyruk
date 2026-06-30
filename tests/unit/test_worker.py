@@ -1,9 +1,12 @@
+import signal
 import socket
 import logging
 import unittest
+import multiprocessing
 
 from kuyruk import Kuyruk
 from kuyruk import Worker
+from kuyruk.exceptions import HeartbeatError
 
 
 logger = logging.getLogger(__name__)
@@ -38,3 +41,16 @@ class WorkerTestCase(unittest.TestCase):
         expected = ['foo', 'bar.%s' % hostname]
 
         self.assertListEqual(w.queues, expected)
+
+    def test_max_load_minus_one(self):
+        """--max-load -1 resolves to the number of CPUs"""
+        k = Kuyruk()
+        w = Worker(k, Args(max_load=-1))
+        self.assertEqual(w._max_load, multiprocessing.cpu_count())
+
+    def test_sighup_raises_heartbeat_error(self):
+        """SIGHUP handler raises HeartbeatError instead of AttributeError"""
+        k = Kuyruk()
+        w = Worker(k, Args())
+        with self.assertRaises(HeartbeatError):
+            w._handle_sighup(signal.SIGHUP, None)
