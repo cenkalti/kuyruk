@@ -72,7 +72,7 @@ class Kuyruk:
 
     @contextmanager
     def channel(self) -> Iterator[amqp.Channel]:
-        """Returns a new channel created on the uderlying connection as a context manager."""
+        """Returns a new channel created on the underlying connection as a context manager."""
         with self._connection as connection:
             channel = connection.channel()
             logger.info('Opened new channel')

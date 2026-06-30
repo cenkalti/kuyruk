@@ -177,10 +177,10 @@ class Worker:
             should_pause = load > self._max_load
 
         if should_pause and self.consuming:
-            logger.warning('Load is above the treshold (%.2f/%s), ' 'pausing consumer', load, self._max_load)
+            logger.warning('Load is above the threshold (%.2f/%s), ' 'pausing consumer', load, self._max_load)
             self._cancel_queues(channel)
         elif not should_pause and not self.consuming:
-            logger.warning('Load is below the treshold (%.2f/%s), ' 'resuming consumer', load, self._max_load)
+            logger.warning('Load is below the threshold (%.2f/%s), ' 'resuming consumer', load, self._max_load)
             self._consume_queues(channel)
 
     def _consume_queues(self, ch: amqp.Channel) -> None:
@@ -366,7 +366,7 @@ class Worker:
         }
 
     def _watch_load(self) -> None:
-        """Pause consuming messages if lood goes above the allowed limit."""
+        """Pause consuming messages if load goes above the allowed limit."""
         while not self.shutdown_pending.wait(1):
             self._current_load = os.getloadavg()[0]
 
@@ -378,7 +378,7 @@ class Worker:
         return os.times().elapsed - self._started_at
 
     def _shutdown_timer(self) -> None:
-        """Counts down from MAX_WORKER_RUN_TIME. When it reaches zero sutdown
+        """Counts down from WORKER_MAX_RUN_TIME. When it reaches zero shutdown
         gracefully.
 
         """
@@ -394,12 +394,12 @@ class Worker:
 
     def _handle_sigint(self, signum: int, frame: Any) -> None:
         """Shutdown after processing current task."""
-        logger.warning("Catched SIGINT")
+        logger.warning("Caught SIGINT")
         self.shutdown()
 
     def _handle_sigterm(self, signum: int, frame: Any) -> None:
         """Shutdown after processing current task."""
-        logger.warning("Catched SIGTERM")
+        logger.warning("Caught SIGTERM")
         self.shutdown()
 
     def _handle_sighup(self, signum: int, frame: Any) -> None:
@@ -407,7 +407,7 @@ class Worker:
         lost during the execution of the task.
 
         """
-        logger.debug("Catched SIGHUP")
+        logger.debug("Caught SIGHUP")
         error = self._heartbeat_error
         self._heartbeat_error = None
         raise HeartbeatError from error
@@ -421,7 +421,7 @@ class Worker:
 
     def _handle_sigusr2(self, signum: int, frame: Any) -> None:
         """Drop current task."""
-        logger.warning("Catched SIGUSR2")
+        logger.warning("Caught SIGUSR2")
         if self.current_task:
             logger.warning("Dropping current task...")
             raise Discard

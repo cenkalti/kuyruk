@@ -34,7 +34,7 @@ class Config:
     """RabbitMQ password."""
 
     RABBIT_SSL = False
-    """RabbitMQ connectin uses SSL if True."""
+    """RabbitMQ connection uses SSL if True."""
 
     RABBIT_HEARTBEAT = 60
     """Heartbeat interval value proposed by client."""

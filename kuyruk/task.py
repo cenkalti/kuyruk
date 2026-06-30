@@ -88,7 +88,7 @@ class Task:
             Wait for result from worker for ``wait_result`` seconds.
             If timeout occurs,
             :class:`~kuyruk.exceptions.ResultTimeout` is raised.
-            If excecption occurs in worker,
+            If exception occurs in worker,
             :class:`~kuyruk.exceptions.RemoteException` is raised.
         :param message_ttl:
             If set, message will be destroyed in queue after ``message_ttl``
