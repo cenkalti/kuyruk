@@ -70,7 +70,7 @@ class Worker:
         if args.max_load is not None:
             self._max_load = args.max_load
         if self._max_load == -1:
-            self._max_load == multiprocessing.cpu_count()
+            self._max_load = multiprocessing.cpu_count()
 
         self._priority = app.config.WORKER_PRIORITY
         if args.priority is not None:
