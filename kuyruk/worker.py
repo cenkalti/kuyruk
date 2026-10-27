@@ -227,7 +227,13 @@ class Worker:
         except Exception:
             logger.error('Cannot import task')
             exc_info = sys.exc_info()
-            signals.worker_failure.send(self.kuyruk, description=description, exc_info=exc_info, worker=self)
+            queue = message.delivery_info['routing_key']
+            signals.worker_failure.send(
+                self.kuyruk,
+                description=description,
+                exc_info=exc_info,
+                worker=self,
+                queue=queue)
             message.channel.basic_reject(message.delivery_tag, requeue=False)
         else:
             self._process_task(message, description, task, args, kwargs)
