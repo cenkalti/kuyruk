@@ -92,16 +92,17 @@ task_presend = Signal()
 #:    * description: dict representation of the task
 task_postsend = Signal()
 
-#: Sent when the task fails.
+#: Sent when the task fails or cannot be imported.
 #:
 #: Arguments:
 #:    * sender: Kuyruk object
 #:    * worker: The Worker object
-#:    * task: Task object
-#:    * args: Positional arguments to the task
-#:    * kwargs: Keyword arguments to the task
+#:    * task: Task object (not sent if the task cannot be imported)
+#:    * args: Positional arguments to the task (not sent if the task cannot be imported)
+#:    * kwargs: Keyword arguments to the task (not sent if the task cannot be imported)
 #:    * description: dict representation of the task
 #:    * exc_info: Return value of ``sys.exc_info()``
+#:    * queue: Name of the queue the task is consumed from
 worker_failure = Signal()
 
 #: Sent when the worker is initialized.

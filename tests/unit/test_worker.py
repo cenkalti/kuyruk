@@ -10,6 +10,7 @@ import amqp
 
 from kuyruk import Kuyruk
 from kuyruk import Worker
+from kuyruk import signals
 from kuyruk.connection import SingleConnection
 from kuyruk.exceptions import HeartbeatError
 
@@ -100,3 +101,24 @@ class WorkerTestCase(unittest.TestCase):
             w.run()
 
         healthy.close.assert_called_once()
+
+    def test_import_failure_sends_queue(self):
+        """worker_failure is sent with queue when task cannot be imported"""
+        k = Kuyruk()
+        w = Worker(k, Args())
+        message = MagicMock()
+        message.delivery_info = {'routing_key': 'foo'}
+        received = []
+
+        def on_failure(sender, **kwargs):
+            received.append(kwargs)
+
+        signals.worker_failure.connect(on_failure, sender=k)
+        try:
+            w._process_description(message, {'module': 'no_such_module', 'function': 'f'})
+        finally:
+            signals.worker_failure.disconnect(on_failure, sender=k)
+
+        self.assertEqual(len(received), 1)
+        self.assertEqual(received[0]['queue'], 'foo')
+        message.channel.basic_reject.assert_called_once_with(message.delivery_tag, requeue=False)
